@@ -8,6 +8,13 @@
       "when": 1769189263905,
       "tag": "0000_complex_randall",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1769358099946,
+      "tag": "0001_solid_silver_samurai",
+      "breakpoints": true
     }
   ]
 }

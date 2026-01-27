@@ -1,22 +1,15 @@
-import { Hono } from "hono";
-import { pinoLogger } from "hono-pino";
-import { requestId } from "hono/request-id";
+import type { Env } from "./types/cloudflare";
+import app from "./app";
 
-const app = new Hono();
+export default {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
+    // Set environment variables globally for database access
+    Object.assign(process.env, env);
 
-app.use(requestId());
-app.use(
-  pinoLogger({
-    pino: {
-      level: "info",
-    },
-  }),
-);
-
-app.get("/", (c) => {
-  const { logger } = c.var;
-  logger.info("Request received");
-  return c.text("Hello Cloudflare Workers!");
-});
-
-export default app;
+    return app.fetch(request, env, ctx);
+  },
+} satisfies ExportedHandler<Env>;
