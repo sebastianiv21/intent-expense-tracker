@@ -4,11 +4,7 @@ import { requestId } from "hono/request-id";
 import { HTTPException } from "hono/http-exception";
 import { cors } from "hono/cors";
 
-import { authRoutes } from "./modules/auth/routes";
-import { transactionsRoutes } from "./modules/transactions/routes";
-import { categoriesRoutes } from "./modules/categories/routes";
-import { budgetsRoutes } from "./modules/budgets/routes";
-import { insightsRoutes } from "./modules/insights/routes";
+import { v1Routes } from "./routes/v1";
 
 const app = new Hono();
 
@@ -46,11 +42,7 @@ app.get("/health", (c) => {
 });
 
 // Routes
-app.route("/api/auth", authRoutes);
-app.route("/api/transactions", transactionsRoutes);
-app.route("/api/categories", categoriesRoutes);
-app.route("/api/budgets", budgetsRoutes);
-app.route("/api/insights", insightsRoutes);
+app.route("/api/v1", v1Routes);
 
 // Error handler
 app.onError((err, c) => {

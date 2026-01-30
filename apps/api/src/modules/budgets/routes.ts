@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { eq, and, sql } from "drizzle-orm";
-import { db } from "../../db";
+import { eq, and } from "drizzle-orm";
+import { getDb } from "../../db";
 import { budget } from "../../db/schema/budget";
 import { category } from "../../db/schema/category";
 import { createBudgetSchema, updateBudgetSchema } from "@repo/shared";
@@ -12,7 +12,8 @@ export const budgetsRoutes = new Hono();
 // Get all budgets for current user
 budgetsRoutes.get("/", requireAuth, async (c) => {
   const session = c.var.session;
-  
+  const db = getDb();
+
   const budgets = await db.query.budget.findMany({
     where: eq(budget.userId, session.user.id),
     orderBy: [budget.period, budget.startDate],
@@ -20,7 +21,7 @@ budgetsRoutes.get("/", requireAuth, async (c) => {
       category: true,
     },
   });
-  
+
   return c.json(budgets);
 });
 
@@ -29,25 +30,27 @@ budgetsRoutes.post("/", requireAuth, async (c) => {
   const session = c.var.session;
   const body = await c.req.json();
   const parsed = createBudgetSchema.safeParse(body);
-  
+  const db = getDb();
+
   if (!parsed.success) {
-    throw new HTTPException(400, { 
-      message: "Invalid data",
+    throw new HTTPException(400, {
+      message:
+        parsed.error.issues.map((i) => i.message).join(", ") || "Invalid data",
     });
   }
-  
+
   // Verify category exists and belongs to user
   const cat = await db.query.category.findFirst({
     where: and(
       eq(category.id, parsed.data.categoryId),
-      eq(category.userId, session.user.id)
+      eq(category.userId, session.user.id),
     ),
   });
-  
+
   if (!cat) {
     throw new HTTPException(404, { message: "Category not found" });
   }
-  
+
   const newBudget = await db
     .insert(budget)
     .values({
@@ -58,14 +61,14 @@ budgetsRoutes.post("/", requireAuth, async (c) => {
       startDate: new Date(parsed.data.startDate),
     })
     .returning();
-  
+
   const created = await db.query.budget.findFirst({
-    where: eq(budget.id, newBudget[0]?.id),
+    where: eq(budget.id, newBudget[0]!.id),
     with: {
       category: true,
     },
   });
-  
+
   return c.json(created, 201);
 });
 
@@ -73,18 +76,19 @@ budgetsRoutes.post("/", requireAuth, async (c) => {
 budgetsRoutes.get("/:id", requireAuth, async (c) => {
   const session = c.var.session;
   const id = c.req.param("id");
-  
+  const db = getDb();
+
   const bud = await db.query.budget.findFirst({
     where: and(eq(budget.id, id), eq(budget.userId, session.user.id)),
     with: {
       category: true,
     },
   });
-  
+
   if (!bud) {
     throw new HTTPException(404, { message: "Budget not found" });
   }
-  
+
   return c.json(bud);
 });
 
@@ -94,26 +98,28 @@ budgetsRoutes.patch("/:id", requireAuth, async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
   const parsed = updateBudgetSchema.safeParse(body);
-  
+  const db = getDb();
+
   if (!parsed.success) {
-    throw new HTTPException(400, { 
-      message: "Invalid data",
+    throw new HTTPException(400, {
+      message:
+        parsed.error.issues.map((i) => i.message).join(", ") || "Invalid data",
     });
   }
-  
+
   // Verify budget exists and belongs to user
   const existing = await db.query.budget.findFirst({
     where: and(eq(budget.id, id), eq(budget.userId, session.user.id)),
   });
-  
+
   if (!existing) {
     throw new HTTPException(404, { message: "Budget not found" });
   }
-  
+
   const updateData: any = {
     updatedAt: new Date(),
   };
-  
+
   if (parsed.data.amount !== undefined) {
     updateData.amount = parsed.data.amount.toString();
   }
@@ -123,20 +129,20 @@ budgetsRoutes.patch("/:id", requireAuth, async (c) => {
   if (parsed.data.startDate !== undefined) {
     updateData.startDate = new Date(parsed.data.startDate);
   }
-  
+
   const updated = await db
     .update(budget)
     .set(updateData)
     .where(and(eq(budget.id, id), eq(budget.userId, session.user.id)))
     .returning();
-  
+
   const result = await db.query.budget.findFirst({
-    where: eq(budget.id, updated[0]?.id),
+    where: eq(budget.id, updated[0]!.id),
     with: {
       category: true,
     },
   });
-  
+
   return c.json(result);
 });
 
@@ -144,17 +150,20 @@ budgetsRoutes.patch("/:id", requireAuth, async (c) => {
 budgetsRoutes.delete("/:id", requireAuth, async (c) => {
   const session = c.var.session;
   const id = c.req.param("id");
-  
+  const db = getDb();
+
   // Verify budget exists and belongs to user
   const existing = await db.query.budget.findFirst({
     where: and(eq(budget.id, id), eq(budget.userId, session.user.id)),
   });
-  
+
   if (!existing) {
     throw new HTTPException(404, { message: "Budget not found" });
   }
-  
-  await db.delete(budget).where(and(eq(budget.id, id), eq(budget.userId, session.user.id)));
-  
+
+  await db
+    .delete(budget)
+    .where(and(eq(budget.id, id), eq(budget.userId, session.user.id)));
+
   return c.json({ message: "Budget deleted successfully" });
 });

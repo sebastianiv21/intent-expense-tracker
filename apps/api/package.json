@@ -9,6 +9,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/db/seed.ts",
+    "check-types": "tsc --noEmit",
     "cf-types": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
