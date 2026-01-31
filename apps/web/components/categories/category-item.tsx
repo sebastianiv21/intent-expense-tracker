@@ -1,18 +1,15 @@
 "use client";
 
-import { Trash2, Tag, Pencil } from "lucide-react";
+import { Trash2, Tag, Pencil, Loader2 } from "lucide-react";
 import { type Category } from "@/app/(app)/categories/page";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { CategoryForm } from "./category-form";
 import { type CreateCategory } from "@repo/shared";
+import {
+  ResponsiveModal,
+  ResponsiveModalClose,
+} from "@/components/ui/responsive-modal";
 
 interface CategoryItemProps {
   category: Category;
@@ -26,6 +23,7 @@ export function CategoryItem({
   onUpdate,
 }: CategoryItemProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
     <>
@@ -61,22 +59,48 @@ export function CategoryItem({
         </div>
       </div>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
-            <DialogDescription>Update your category details.</DialogDescription>
-          </DialogHeader>
-          <CategoryForm
-            initialValues={category}
-            onSubmit={async (values) => {
+      <ResponsiveModal
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        title="Edit Category"
+        description="Update your category details."
+        footer={
+          <>
+            <ResponsiveModalClose>
+              <Button variant="outline" className="w-full sm:w-auto">
+                Cancel
+              </Button>
+            </ResponsiveModalClose>
+            <Button
+              type="submit"
+              form={`edit-category-form-${category.id}`}
+              className="w-full sm:w-auto"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <CategoryForm
+          id={`edit-category-form-${category.id}`}
+          showFooter={false}
+          initialValues={category}
+          onSubmit={async (values) => {
+            setIsSubmitting(true);
+            try {
               await onUpdate(values);
               setIsEditDialogOpen(false);
-            }}
-            onCancel={() => setIsEditDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+            } finally {
+              setIsSubmitting(false);
+            }
+          }}
+          onCancel={() => setIsEditDialogOpen(false)}
+        />
+      </ResponsiveModal>
     </>
   );
 }

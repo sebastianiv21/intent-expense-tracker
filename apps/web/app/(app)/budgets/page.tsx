@@ -10,21 +10,13 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { api, ApiError } from "@/lib/api-client";
 import { BudgetForm } from "@/components/budgets/budget-form";
 import { BudgetCard } from "@/components/budgets/budget-card";
 import { type Category } from "@/app/(app)/categories/page";
+import { ResponsiveModal, ResponsiveModalClose } from "@/components/ui/responsive-modal";
 
 interface BudgetStatus {
   budgetId: string;
@@ -41,6 +33,7 @@ export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<BudgetStatus[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<BudgetStatus | null>(null);
 
@@ -64,9 +57,11 @@ export default function BudgetsPage() {
 
   useEffect(() => {
     fetchBudgets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreateBudget = async (values: CreateBudget) => {
+    setIsSubmitting(true);
     try {
       await api.post("/budgets", values);
       toast.success("Budget set successfully");
@@ -75,11 +70,14 @@ export default function BudgetsPage() {
     } catch (err: unknown) {
       const message = err instanceof ApiError ? err.message : "Failed to create budget";
       toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleUpdateBudget = async (values: CreateBudget) => {
     if (!editingBudget) return;
+    setIsSubmitting(true);
     try {
       await api.patch(`/budgets/${editingBudget.budgetId}`, values);
       toast.success("Budget updated");
@@ -89,6 +87,8 @@ export default function BudgetsPage() {
     } catch (err: unknown) {
       const message = err instanceof ApiError ? err.message : "Failed to update budget";
       toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -126,13 +126,61 @@ export default function BudgetsPage() {
             Set limits for your spending categories.
           </p>
         </div>
-        <Button onClick={() => {
-          setEditingBudget(null);
-          setIsDialogOpen(true);
-        }}>
+        <Button
+          onClick={() => {
+            setEditingBudget(null);
+            setIsDialogOpen(true);
+          }}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Set Budget
         </Button>
+        <ResponsiveModal
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          title={editingBudget ? "Edit Budget" : "Set Budget"}
+          description={
+            editingBudget
+              ? "Update your budget amount for this category."
+              : "Choose a category and set a spending limit."
+          }
+          footer={
+            <>
+              <ResponsiveModalClose>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  Cancel
+                </Button>
+              </ResponsiveModalClose>
+              <Button
+                type="submit"
+                form="budget-form"
+                className="w-full sm:w-auto"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {editingBudget ? "Update Budget" : "Save Budget"}
+              </Button>
+            </>
+          }
+        >
+          <BudgetForm
+            id="budget-form"
+            showFooter={false}
+            categories={categories}
+            initialValues={
+              editingBudget
+                ? {
+                    categoryId: editingBudget.categoryId,
+                    amount: editingBudget.budgetAmount,
+                  }
+                : undefined
+            }
+            onSubmit={editingBudget ? handleUpdateBudget : handleCreateBudget}
+            onCancel={() => setIsDialogOpen(false)}
+          />
+        </ResponsiveModal>
       </div>
 
       <Card className="bg-muted/30">
@@ -167,33 +215,6 @@ export default function BudgetsPage() {
           )}
         </CardContent>
       </Card>
-
-      <Dialog open={isDialogOpen} onOpenChange={(open) => {
-        setIsDialogOpen(open);
-        if (!open) setEditingBudget(null);
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingBudget ? "Edit Budget" : "Set Budget"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingBudget 
-                ? "Update your budget amount for this category." 
-                : "Choose a category and set a spending limit."}
-            </DialogDescription>
-          </DialogHeader>
-          <BudgetForm
-            categories={categories}
-            initialValues={editingBudget ? {
-              categoryId: editingBudget.categoryId,
-              amount: editingBudget.budgetAmount,
-            } : undefined}
-            onSubmit={editingBudget ? handleUpdateBudget : handleCreateBudget}
-            onCancel={() => setIsDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

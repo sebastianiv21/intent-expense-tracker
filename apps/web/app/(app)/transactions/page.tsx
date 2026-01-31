@@ -8,19 +8,12 @@ import { type CreateTransaction } from "@repo/shared";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
 } from "@/components/ui/card";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { api, ApiError } from "@/lib/api-client";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { TransactionItem } from "@/components/transactions/transaction-item";
 import { type Category } from "@/app/(app)/categories/page";
+import { ResponsiveModal, ResponsiveModalClose } from "@/components/ui/responsive-modal";
 
 export interface Transaction {
   id: string;
@@ -38,6 +31,7 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
@@ -62,6 +56,7 @@ export default function TransactionsPage() {
   }, []);
 
   const handleCreateTransaction = async (values: CreateTransaction) => {
+    setIsSubmitting(true);
     try {
       await api.post("/transactions", values);
       toast.success("Transaction recorded");
@@ -70,11 +65,14 @@ export default function TransactionsPage() {
     } catch (err: unknown) {
       const message = err instanceof ApiError ? err.message : "Failed to create transaction";
       toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleUpdateTransaction = async (values: CreateTransaction) => {
     if (!editingTransaction) return;
+    setIsSubmitting(true);
     try {
       await api.patch(`/transactions/${editingTransaction.id}`, values);
       toast.success("Transaction updated");
@@ -84,6 +82,8 @@ export default function TransactionsPage() {
     } catch (err: unknown) {
       const message = err instanceof ApiError ? err.message : "Failed to update transaction";
       toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -129,13 +129,71 @@ export default function TransactionsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button onClick={() => {
-            setEditingTransaction(null);
-            setIsSheetOpen(true);
-          }}>
+          <Button
+            onClick={() => {
+              setEditingTransaction(null);
+              setIsSheetOpen(true);
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Transaction
           </Button>
+          <ResponsiveModal
+            open={isSheetOpen}
+            onOpenChange={(open) => {
+              setIsSheetOpen(open);
+              if (!open) setEditingTransaction(null);
+            }}
+            title={editingTransaction ? "Edit Transaction" : "Add Transaction"}
+            description={
+              editingTransaction
+                ? "Update the details of your transaction."
+                : "Enter the details of your new income or expense."
+            }
+            footer={
+              <>
+                <ResponsiveModalClose>
+                  <Button variant="outline" className="w-full sm:w-auto">
+                    Cancel
+                  </Button>
+                </ResponsiveModalClose>
+                <Button
+                  type="submit"
+                  form="transaction-form"
+                  className="w-full sm:w-auto"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {editingTransaction ? "Save Changes" : "Record Transaction"}
+                </Button>
+              </>
+            }
+          >
+            <div className="py-2">
+              <TransactionForm
+                id="transaction-form"
+                showFooter={false}
+                categories={categories}
+                initialValues={
+                  editingTransaction
+                    ? {
+                        ...editingTransaction,
+                        amount: Number(editingTransaction.amount),
+                        categoryId: editingTransaction.categoryId || null,
+                      }
+                    : undefined
+                }
+                onSubmit={
+                  editingTransaction
+                    ? handleUpdateTransaction
+                    : handleCreateTransaction
+                }
+                onCancel={() => setIsSheetOpen(false)}
+              />
+            </div>
+          </ResponsiveModal>
         </div>
       </div>
 
@@ -166,36 +224,6 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
-
-      <Sheet open={isSheetOpen} onOpenChange={(open) => {
-        setIsSheetOpen(open);
-        if (!open) setEditingTransaction(null);
-      }}>
-        <SheetContent className="sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>
-              {editingTransaction ? "Edit Transaction" : "Add Transaction"}
-            </SheetTitle>
-            <SheetDescription>
-              {editingTransaction 
-                ? "Update the details of your transaction." 
-                : "Enter the details of your new income or expense."}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="py-6">
-            <TransactionForm
-              categories={categories}
-              initialValues={editingTransaction ? {
-                ...editingTransaction,
-                amount: Number(editingTransaction.amount),
-                categoryId: editingTransaction.categoryId || null
-              } : undefined}
-              onSubmit={editingTransaction ? handleUpdateTransaction : handleCreateTransaction}
-              onCancel={() => setIsSheetOpen(false)}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

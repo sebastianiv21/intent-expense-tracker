@@ -37,6 +37,8 @@ interface TransactionFormProps {
   onCancel: () => void;
   categories: Category[];
   initialValues?: Partial<CreateTransaction>;
+  showFooter?: boolean;
+  id?: string;
 }
 
 export function TransactionForm({
@@ -44,6 +46,8 @@ export function TransactionForm({
   onCancel,
   categories,
   initialValues,
+  showFooter = true,
+  id,
 }: TransactionFormProps) {
   const form = useForm<CreateTransaction>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -62,7 +66,11 @@ export function TransactionForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        id={id}
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-4"
+      >
         <FormField
           control={form.control}
           name="amount"
@@ -206,17 +214,19 @@ export function TransactionForm({
           )}
         />
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            Save
-          </Button>
-        </div>
+        {showFooter && (
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );

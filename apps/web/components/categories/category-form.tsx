@@ -28,12 +28,16 @@ interface CategoryFormProps {
   onSubmit: (values: CreateCategory) => Promise<void>;
   onCancel: () => void;
   initialValues?: Partial<CreateCategory>;
+  showFooter?: boolean;
+  id?: string;
 }
 
 export function CategoryForm({
   onSubmit,
   onCancel,
   initialValues,
+  showFooter = true,
+  id,
 }: CategoryFormProps) {
   const form = useForm<CreateCategory>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,7 +58,11 @@ export function CategoryForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form
+        id={id}
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="space-y-4"
+      >
         <FormField
           control={form.control}
           name="name"
@@ -129,17 +137,19 @@ export function CategoryForm({
           />
         )}
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            Save
-          </Button>
-        </div>
+        {showFooter && (
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );

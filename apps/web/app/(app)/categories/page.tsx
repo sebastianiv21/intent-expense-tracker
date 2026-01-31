@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Loader2, Tag, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { Plus, Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { toast } from "sonner";
 import { type CreateCategory, type AllocationBucket } from "@repo/shared";
 
@@ -13,17 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { api, ApiError } from "@/lib/api-client";
 import { CategoryForm } from "@/components/categories/category-form";
 import { CategoryItem } from "@/components/categories/category-item";
+import { ResponsiveModal, ResponsiveModalClose } from "@/components/ui/responsive-modal";
 
 export interface Category {
   id: string;
@@ -38,6 +31,7 @@ export interface Category {
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const fetchCategories = async () => {
@@ -67,6 +61,7 @@ export default function CategoriesPage() {
   };
 
   const handleCreateCategory = async (values: CreateCategory) => {
+    setIsSubmitting(true);
     try {
       await api.post("/categories", values);
       toast.success("Category created successfully");
@@ -75,6 +70,8 @@ export default function CategoriesPage() {
     } catch (err: unknown) {
       const message = err instanceof ApiError ? err.message : "Failed to create category";
       toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -117,23 +114,43 @@ export default function CategoriesPage() {
             Manage your spending and income categories.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Category
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Category</DialogTitle>
-              <DialogDescription>
-                Add a new category to track your finances.
-              </DialogDescription>
-            </DialogHeader>
-            <CategoryForm onSubmit={handleCreateCategory} onCancel={() => setIsDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Category
+        </Button>
+        <ResponsiveModal
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          title="Create Category"
+          description="Add a new category to track your finances."
+          footer={
+            <>
+              <ResponsiveModalClose>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  Cancel
+                </Button>
+              </ResponsiveModalClose>
+              <Button
+                type="submit"
+                form="create-category-form"
+                className="w-full sm:w-auto"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Save Category
+              </Button>
+            </>
+          }
+        >
+          <CategoryForm
+            id="create-category-form"
+            showFooter={false}
+            onSubmit={handleCreateCategory}
+            onCancel={() => setIsDialogOpen(false)}
+          />
+        </ResponsiveModal>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

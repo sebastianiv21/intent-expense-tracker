@@ -30,6 +30,8 @@ interface BudgetFormProps {
   onCancel: () => void;
   categories: Category[];
   initialValues?: Partial<CreateBudget>;
+  showFooter?: boolean;
+  id?: string;
 }
 
 export function BudgetForm({
@@ -37,6 +39,8 @@ export function BudgetForm({
   onCancel,
   categories,
   initialValues,
+  showFooter = true,
+  id,
 }: BudgetFormProps) {
   const expenseCategories = categories.filter((c) => c.type === "expense");
 
@@ -53,7 +57,11 @@ export function BudgetForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        id={id}
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-4"
+      >
         <FormField
           control={form.control}
           name="categoryId"
@@ -134,17 +142,19 @@ export function BudgetForm({
           )}
         />
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            Save Budget
-          </Button>
-        </div>
+        {showFooter && (
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save Budget
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );

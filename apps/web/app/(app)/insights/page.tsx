@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, TrendingUp, TrendingDown, Info } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -126,7 +126,7 @@ export default function InsightsPage() {
         <Card className="md:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">50/30/20 Breakdown</CardTitle>
-            <CardDescription>How you're splitting your target income</CardDescription>
+            <CardDescription>How you&apos;re splitting your target income</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
             <div>
@@ -185,7 +185,7 @@ export default function InsightsPage() {
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: any) => `$${Number(value).toFixed(2)}`}
+                    formatter={(value: unknown) => `$${Number(value).toFixed(2)}`}
                   />
                   <Legend />
                 </PieChart>
@@ -205,7 +205,7 @@ export default function InsightsPage() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value: any) => `$${Number(value).toFixed(2)}`} />
+                <Tooltip formatter={(value: unknown) => `$${Number(value).toFixed(2)}`} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {allocationData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
