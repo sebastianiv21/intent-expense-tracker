@@ -3,19 +3,19 @@ import { z } from "zod";
 export const transactionTypeEnum = z.enum(["expense", "income"]);
 
 export const createTransactionSchema = z.object({
-  categoryId: z.uuidv4().nullable().optional(),
+  categoryId: z.string().uuid().nullable().optional(),
   amount: z.number().positive("Amount must be positive"),
   type: transactionTypeEnum,
   description: z.string().max(255).optional(),
-  date: z.iso.date(),
+  date: z.string(),
 });
 
 export const updateTransactionSchema = z.object({
-  categoryId: z.uuidv4().nullable().optional(),
+  categoryId: z.string().uuid().nullable().optional(),
   amount: z.number().positive().optional(),
   type: transactionTypeEnum.optional(),
   description: z.string().max(255).optional(),
-  date: z.iso.date().optional(),
+  date: z.string().optional(),
 });
 
 export type CreateTransaction = z.infer<typeof createTransactionSchema>;

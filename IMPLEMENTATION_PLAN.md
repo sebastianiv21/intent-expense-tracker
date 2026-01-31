@@ -47,52 +47,53 @@
 
 ### ❌ Not Yet Implemented
 
-#### Frontend (Web App)
+### ✅ Completed (Web App)
 
-**Status:** Only default Next.js boilerplate exists. No custom implementation yet.
+- [x] **shadcn/ui Setup**
+  - [x] Initialize shadcn/ui with Tailwind v4
+  - [x] Install all core components
+  - [x] Configure theme (CSS variables)
 
-- [ ] **shadcn/ui Setup**
-  - Initialize shadcn/ui
-  - Install required components (Button, Card, Sheet, Dialog, Form, Input, Select, etc.)
-  - Configure theme (CSS variables)
+- [x] **Authentication UI**
+  - [x] Login page (`/login`)
+  - [x] Register page (`/register`)
+  - [x] Better Auth client integration
+  - [x] Protected route middleware
 
-- [ ] **Authentication UI**
-  - Login page (`/login`)
-  - Register page (`/register`)
-  - Better Auth client integration
-  - Protected route middleware
+- [x] **Core Layout**
+  - [x] App layout with navigation (Bottom nav for mobile, Sidebar for desktop)
+  - [x] Responsive breakpoints (mobile-first)
 
-- [ ] **Core Layout**
-  - App layout with navigation (Bottom nav for mobile, Sidebar for desktop)
-  - Responsive breakpoints (mobile-first)
+- [x] **Financial Profile Setup**
+  - [x] Onboarding flow for new users
+  - [x] Form to set monthly income target & 50/30/20 percentages
+  - [x] Financial Profile Guard (mandatory onboarding)
 
-- [ ] **Financial Profile Setup**
-  - Onboarding flow for new users
-  - Form to set monthly income target & 50/30/20 percentages
+- [x] **Categories Management**
+  - [x] Categories list, Create/Edit/Delete dialogs
+  - [x] Category type and bucket grouping
 
-- [ ] **Categories Management**
-  - Categories list, Create/Edit/Delete dialogs
-  - Category icon picker
+- [x] **Transactions**
+  - [x] Transactions list page
+  - [x] Add/Edit transaction sheets
+  - [x] Better date handling and formatting
 
-- [ ] **Transactions**
-  - Transactions list page with date grouping
-  - Add/Edit transaction sheets
-  - Transaction filters (date range, type, category)
+- [x] **Budgets Management**
+  - [x] Budgets list page
+  - [x] Create/Edit/Delete budget dialogs
+  - [x] Budget progress visualization
 
-- [ ] **Budgets Management**
-  - Budgets list page
-  - Create/Edit/Delete budget dialogs
-  - Budget progress visualization
+- [x] **Insights Dashboard**
+  - [x] 50/30/20 allocation summary cards
+  - [x] Budget status progress bars
+  - [x] Spending by category chart (recharts)
 
-- [ ] **Insights Dashboard**
-  - 50/30/20 allocation summary cards
-  - Budget status progress bars
-  - Spending by category chart (recharts)
+- [x] **API Integration**
+  - [x] HTTP client setup (fetch wrapper with ApiError)
+  - [x] Loading states & Skeleton components
+  - [x] Toast notifications (sonner)
 
-- [ ] **API Integration**
-  - HTTP client setup (fetch wrapper)
-  - Loading states & Skeleton components
-  - Toast notifications (shadcn/ui toast)
+### ❌ Not Yet Implemented
 
 #### Deployment & DevOps
 

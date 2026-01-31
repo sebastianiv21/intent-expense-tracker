@@ -3,16 +3,16 @@ import { z } from "zod";
 export const budgetPeriodEnum = z.enum(["monthly", "weekly"]);
 
 export const createBudgetSchema = z.object({
-  categoryId: z.uuidv4(),
+  categoryId: z.string().uuid(),
   amount: z.number().positive("Budget amount must be positive"),
   period: budgetPeriodEnum.default("monthly"),
-  startDate: z.iso.date(),
+  startDate: z.string(),
 });
 
 export const updateBudgetSchema = z.object({
   amount: z.number().positive().optional(),
   period: budgetPeriodEnum.optional(),
-  startDate: z.iso.date().optional(),
+  startDate: z.string().optional(),
 });
 
 export type CreateBudget = z.infer<typeof createBudgetSchema>;
