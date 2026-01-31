@@ -183,7 +183,7 @@ export function TransactionForm({
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-80 p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={new Date(field.value)}
@@ -191,7 +191,8 @@ export function TransactionForm({
                     disabled={(date) =>
                       date > new Date() || date < new Date("1900-01-01")
                     }
-                    initialFocus
+                    className="rounded-lg border w-auto"
+                    autoFocus
                   />
                 </PopoverContent>
               </Popover>
