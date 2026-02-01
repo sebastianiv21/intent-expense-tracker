@@ -9,10 +9,10 @@ export default function AppLayout({
 }) {
   return (
     <FinancialProfileGuard>
-      <div className="flex min-h-screen flex-col md:flex-row">
+      <div className="flex min-h-screen flex-col md:flex-row bg-[#16110a]">
         <DesktopSidebar />
-        <main className="flex-1 pb-16 md:pb-0">
-          <div className="container mx-auto p-4 md:p-8">
+        <main className="flex-1 pb-24 md:pb-0">
+          <div className="max-w-7xl mx-auto px-6 pt-8 md:pt-8 md:px-8">
             {children}
           </div>
         </main>

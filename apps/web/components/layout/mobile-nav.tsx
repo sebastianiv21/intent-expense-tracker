@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, Loader2 } from "lucide-react";
+import { Home, List, BarChart3, User, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { type CreateTransaction } from "@repo/shared";
 
 import { cn } from "@/lib/utils";
-import { bottomNavItems } from "@/config/nav";
 import { Button } from "@/components/ui/button";
 import {
   ResponsiveModal,
@@ -17,6 +16,13 @@ import {
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { api, ApiError } from "@/lib/api-client";
 import { type Category } from "@/app/(app)/categories/page";
+
+const mobileNavItems = [
+  { label: "Home", href: "/", icon: Home },
+  { label: "Activity", href: "/transactions", icon: List },
+  { label: "Stats", href: "/insights", icon: BarChart3 },
+  { label: "Profile", href: "/profile", icon: User },
+] as const;
 
 export function MobileNav() {
   const pathname = usePathname();
@@ -49,7 +55,6 @@ export function MobileNav() {
       await api.post("/transactions", values);
       toast.success("Transaction recorded");
       setIsModalOpen(false);
-      // Refresh the page if we are on dashboard or transactions
       if (pathname === "/" || pathname === "/transactions") {
         window.location.reload();
       }
@@ -62,103 +67,85 @@ export function MobileNav() {
     }
   };
 
-  // Split items to put Add button in the middle
-  const half = Math.ceil(bottomNavItems.length / 2);
-  const leftItems = bottomNavItems.slice(0, half);
-  const rightItems = bottomNavItems.slice(half);
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background pb-safe md:hidden">
-      <div className="flex h-16 items-center justify-between px-2">
-        <div className="flex flex-1 justify-around">
-          {leftItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
+    <>
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#16110a]/90 backdrop-blur-lg border-t border-[#1f1815] flex items-center justify-around px-4 z-50">
+        {mobileNavItems.slice(0, 2).map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 px-2 py-1 text-xs transition-colors",
-                  isActive
-                    ? "text-primary font-semibold"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "h-5 w-5",
-                    isActive ? "stroke-[2.5px]" : "stroke-2",
-                  )}
-                />
-                <span className="text-[10px]">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center gap-1 transition-colors",
+                isActive ? "text-[#c97a5a]" : "text-[#a89580]",
+              )}
+            >
+              <Icon className="h-6 w-6" />
+              <span className="text-[10px] font-medium uppercase">{item.label}</span>
+            </Link>
+          );
+        })}
 
-        <div className="flex flex-col items-center justify-center px-2 relative">
-          <Button
-            size="icon"
-            className="h-12 w-12 rounded-full shadow-lg"
+        {/* Floating Action Button */}
+        <div className="relative -top-6">
+          <button
             onClick={() => setIsModalOpen(true)}
+            className="w-14 h-14 rounded-full warm-gradient shadow-xl shadow-[#c97a5a44] flex items-center justify-center text-white float-animation"
           >
-            <Plus className="h-6 w-6" />
-          </Button>
+            <Plus className="h-7 w-7" />
+          </button>
         </div>
 
-        <div className="flex flex-1 justify-around">
-          {rightItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
+        {mobileNavItems.slice(2).map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 px-2 py-1 text-xs transition-colors",
-                  isActive
-                    ? "text-primary font-semibold"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "h-5 w-5",
-                    isActive ? "stroke-[2.5px]" : "stroke-2",
-                  )}
-                />
-                <span className="text-[10px]">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center gap-1 transition-colors",
+                isActive ? "text-[#c97a5a]" : "text-[#a89580]",
+              )}
+            >
+              <Icon className="h-6 w-6" />
+              <span className="text-[10px] font-medium uppercase">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
+      {/* Add Transaction Modal */}
       <ResponsiveModal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
-        title="Add Transaction"
-        description="Enter the details of your new income or expense."
+        title="New Awareness"
+        description="Log your intentional spend."
         footer={
           <>
             <ResponsiveModalClose>
-              <Button variant="outline" className="w-full sm:w-auto">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto border-[#2d2420] bg-transparent text-[#a89580] hover:bg-[#1f1815] hover:text-[#f5f2ed]"
+              >
                 Cancel
               </Button>
             </ResponsiveModalClose>
             <Button
               type="submit"
               form="mobile-nav-transaction-form"
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto warm-gradient text-white"
               disabled={isSubmitting || isLoadingCats}
             >
               {isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Record Transaction
+              Log Intentional Spend
             </Button>
           </>
         }
@@ -166,7 +153,7 @@ export function MobileNav() {
         <div className="py-2">
           {isLoadingCats ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#c97a5a]" />
             </div>
           ) : (
             <TransactionForm
@@ -179,6 +166,6 @@ export function MobileNav() {
           )}
         </div>
       </ResponsiveModal>
-    </nav>
+    </>
   );
 }
