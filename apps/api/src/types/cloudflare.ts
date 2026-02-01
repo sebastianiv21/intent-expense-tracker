@@ -3,4 +3,6 @@ export interface Env {
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   ENVIRONMENT?: string;
+  GENERAL_RATE_LIMITER: RateLimit;
+  AUTH_RATE_LIMITER: RateLimit;
 }

@@ -5,6 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import { cors } from "hono/cors";
 
 import { v1Routes } from "./routes/v1";
+import { generalRateLimiter } from "./lib/middleware/rate-limiter";
 
 const app = new Hono();
 
@@ -17,6 +18,7 @@ app.use(
     },
   }),
 );
+app.use(generalRateLimiter);
 
 // CORS configuration
 app.use(
