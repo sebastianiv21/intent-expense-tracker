@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Dark background circle matching app theme -->
+  <rect width="32" height="32" rx="8" fill="#16110a"/>
+  <!-- Stylized "I" for Intent with terracotta primary color -->
+  <path 
+    d="M12 8h8v2h-3v12h3v2H12v-2h3V10h-3V8z" 
+    fill="#c97a5a"
+  />
+  <!-- Dot above the I representing mindfulness/intent -->
+  <circle cx="16" cy="6" r="2" fill="#a89562"/>
+</svg>
