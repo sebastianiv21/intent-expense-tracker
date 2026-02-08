@@ -32,11 +32,19 @@ app.use(
         process.env.FRONTEND_URL, // Production frontend URL
       ].filter(Boolean);
 
-      return allowedOrigins.includes(origin || "") ? origin : allowedOrigins[0];
+      // Allow exact matches
+      if (allowedOrigins.includes(origin || "")) {
+        return origin;
+      }
+
+      // Default to first allowed origin for requests without origin
+      return allowedOrigins[0];
     },
     credentials: true,
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    exposeHeaders: ["Set-Cookie"],
+    maxAge: 86400,
   }),
 );
 
