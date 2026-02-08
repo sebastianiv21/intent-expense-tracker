@@ -27,25 +27,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
-
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Install dependencies
         run: pnpm install
-
       - name: Run database migrations
         working-directory: apps/api
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: pnpm db:migrate
-
       - name: Deploy API to Cloudflare workers
         uses: cloudflare/wrangler-action@v3
         with:
@@ -54,18 +47,17 @@ jobs:
           workingDirectory: apps/api
           command: deploy --env production
           secrets: |
-              DATABASE_URL
-              BETTER_AUTH_SECRET
-              BETTER_AUTH_URL
+            DATABASE_URL
+            BETTER_AUTH_SECRET
+            BETTER_AUTH_URL
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
-
       - name: Smoke test
         run: |
-            sleep 10
-            curl -f https://intent-expense-tracker-production.sebastianiv21.workers.dev/health || exit 1
+          sleep 10
+          curl -f https://intent-expense-tracker-production.sebastianiv21.workers.dev/health || exit 1
 
   notify:
     needs: deploy-api
