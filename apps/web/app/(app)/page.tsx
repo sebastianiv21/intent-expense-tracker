@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Settings2,
   TrendingUp,
   Loader2,
   Home,
@@ -51,15 +50,15 @@ export default function DashboardPage() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-interface TransactionsResponse {
-  data: Transaction[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-}
+  interface TransactionsResponse {
+    data: Transaction[];
+    pagination: {
+      total: number;
+      limit: number;
+      offset: number;
+      hasMore: boolean;
+    };
+  }
 
   const fetchData = async () => {
     try {
@@ -84,6 +83,7 @@ interface TransactionsResponse {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMonth]);
 
   const handleCreateTransaction = async (values: CreateTransaction) => {

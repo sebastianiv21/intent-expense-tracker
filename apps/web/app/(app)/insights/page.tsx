@@ -26,7 +26,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api-client";
-import { Progress } from "@/components/ui/progress";
 
 export interface AllocationSummary {
   income: number;
@@ -50,7 +49,14 @@ export interface SpendingResult {
   total: string | null;
 }
 
-const COLORS = ["#c97a5a", "#8b9a7e", "#a89562", "#9fb89f", "#d4a574", "#c45c4a"];
+const COLORS = [
+  "#c97a5a",
+  "#8b9a7e",
+  "#a89562",
+  "#9fb89f",
+  "#d4a574",
+  "#c45c4a",
+];
 
 export default function InsightsPage() {
   const [allocation, setAllocation] = useState<AllocationSummary | null>(null);
@@ -63,13 +69,16 @@ export default function InsightsPage() {
     const fetchData = async () => {
       try {
         const [allocData, spendingData] = await Promise.all([
-          api.get<AllocationSummary>(`/insights/allocation-summary?month=${currentMonth}`),
+          api.get<AllocationSummary>(
+            `/insights/allocation-summary?month=${currentMonth}`,
+          ),
           api.get<SpendingResult[]>(`/insights/spending?type=expense`),
         ]);
         setAllocation(allocData);
         setSpending(spendingData);
       } catch (err: unknown) {
-        const message = err instanceof ApiError ? err.message : "Failed to fetch insights";
+        const message =
+          err instanceof ApiError ? err.message : "Failed to fetch insights";
         toast.error(message);
       } finally {
         setIsLoading(false);
@@ -89,10 +98,12 @@ export default function InsightsPage() {
 
   if (!allocation) return null;
 
-  const chartData = spending.map((s) => ({
-    name: s.categoryName,
-    value: parseFloat(s.total || "0"),
-  })).filter(d => d.value > 0);
+  const chartData = spending
+    .map((s) => ({
+      name: s.categoryName,
+      value: parseFloat(s.total || "0"),
+    }))
+    .filter((d) => d.value > 0);
 
   const allocationData = [
     { name: "Needs", value: allocation.actual.needs, color: "#8b9a7e" },
@@ -103,7 +114,9 @@ export default function InsightsPage() {
   return (
     <div className="space-y-6 pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#f5f2ed]">Insights</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-[#f5f2ed]">
+          Insights
+        </h1>
         <p className="text-[#a89580]">
           Analyze your spending patterns and 50/30/20 compliance.
         </p>
@@ -112,8 +125,12 @@ export default function InsightsPage() {
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="bg-[#1f1815] border-[#2d2420]">
           <CardHeader className="pb-2">
-            <CardDescription className="text-[#a89580]">Target Income</CardDescription>
-            <CardTitle className="text-2xl text-[#f5f2ed]">${allocation.profile.monthlyIncomeTarget.toFixed(2)}</CardTitle>
+            <CardDescription className="text-[#a89580]">
+              Target Income
+            </CardDescription>
+            <CardTitle className="text-2xl text-[#f5f2ed]">
+              ${allocation.profile.monthlyIncomeTarget.toFixed(2)}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xs text-[#a89580] flex items-center gap-1">
@@ -125,48 +142,70 @@ export default function InsightsPage() {
 
         <Card className="md:col-span-2 bg-[#1f1815] border-[#2d2420]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-[#f5f2ed]">50/30/20 Breakdown</CardTitle>
-            <CardDescription className="text-[#a89580]">How you&apos;re splitting your target income</CardDescription>
+            <CardTitle className="text-lg text-[#f5f2ed]">
+              50/30/20 Breakdown
+            </CardTitle>
+            <CardDescription className="text-[#a89580]">
+              How you&apos;re splitting your target income
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
             <div>
               <div className="flex justify-between text-sm mb-1 text-[#f5f2ed]">
                 <span>Needs ({allocation.profile.needsPercentage}%)</span>
-                <span className="font-semibold">${allocation.actual.needs.toFixed(0)}</span>
+                <span className="font-semibold">
+                  ${allocation.actual.needs.toFixed(0)}
+                </span>
               </div>
               <div className="h-2 w-full bg-[#16110a] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#8b9a7e] rounded-full transition-all"
-                  style={{ width: `${Math.min(100, (allocation.actual.needs / allocation.targets.needs) * 100)}%` }}
+                  style={{
+                    width: `${Math.min(100, (allocation.actual.needs / allocation.targets.needs) * 100)}%`,
+                  }}
                 />
               </div>
-              <p className="text-[10px] text-[#a89580] mt-1">Target: ${allocation.targets.needs.toFixed(0)}</p>
+              <p className="text-[10px] text-[#a89580] mt-1">
+                Target: ${allocation.targets.needs.toFixed(0)}
+              </p>
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1 text-[#f5f2ed]">
                 <span>Wants ({allocation.profile.wantsPercentage}%)</span>
-                <span className="font-semibold">${allocation.actual.wants.toFixed(0)}</span>
+                <span className="font-semibold">
+                  ${allocation.actual.wants.toFixed(0)}
+                </span>
               </div>
               <div className="h-2 w-full bg-[#16110a] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#c97a5a] rounded-full transition-all"
-                  style={{ width: `${Math.min(100, (allocation.actual.wants / allocation.targets.wants) * 100)}%` }}
+                  style={{
+                    width: `${Math.min(100, (allocation.actual.wants / allocation.targets.wants) * 100)}%`,
+                  }}
                 />
               </div>
-              <p className="text-[10px] text-[#a89580] mt-1">Target: ${allocation.targets.wants.toFixed(0)}</p>
+              <p className="text-[10px] text-[#a89580] mt-1">
+                Target: ${allocation.targets.wants.toFixed(0)}
+              </p>
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1 text-[#f5f2ed]">
                 <span>Future ({allocation.profile.futurePercentage}%)</span>
-                <span className="font-semibold">${allocation.actual.future.toFixed(0)}</span>
+                <span className="font-semibold">
+                  ${allocation.actual.future.toFixed(0)}
+                </span>
               </div>
               <div className="h-2 w-full bg-[#16110a] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#a89562] rounded-full transition-all"
-                  style={{ width: `${Math.min(100, (allocation.actual.future / allocation.targets.future) * 100)}%` }}
+                  style={{
+                    width: `${Math.min(100, (allocation.actual.future / allocation.targets.future) * 100)}%`,
+                  }}
                 />
               </div>
-              <p className="text-[10px] text-[#a89580] mt-1">Target: ${allocation.targets.future.toFixed(0)}</p>
+              <p className="text-[10px] text-[#a89580] mt-1">
+                Target: ${allocation.targets.future.toFixed(0)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -175,8 +214,12 @@ export default function InsightsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="flex flex-col bg-[#1f1815] border-[#2d2420]">
           <CardHeader>
-            <CardTitle className="text-[#f5f2ed]">Spending by Category</CardTitle>
-            <CardDescription className="text-[#a89580]">Total expenses grouped by category</CardDescription>
+            <CardTitle className="text-[#f5f2ed]">
+              Spending by Category
+            </CardTitle>
+            <CardDescription className="text-[#a89580]">
+              Total expenses grouped by category
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 min-h-[300px]">
             {chartData.length === 0 ? (
@@ -196,7 +239,10 @@ export default function InsightsPage() {
                     dataKey="value"
                   >
                     {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip
@@ -206,11 +252,16 @@ export default function InsightsPage() {
                       borderRadius: "12px",
                       color: "#f5f2ed",
                     }}
-                    formatter={(value: unknown) => [`$${Number(value).toFixed(2)}`, "Amount"]}
+                    formatter={(value: unknown) => [
+                      `$${Number(value).toFixed(2)}`,
+                      "Amount",
+                    ]}
                   />
                   <Legend
                     wrapperStyle={{ color: "#a89580" }}
-                    formatter={(value) => <span style={{ color: "#a89580" }}>{value}</span>}
+                    formatter={(value) => (
+                      <span style={{ color: "#a89580" }}>{value}</span>
+                    )}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -220,14 +271,29 @@ export default function InsightsPage() {
 
         <Card className="flex flex-col bg-[#1f1815] border-[#2d2420]">
           <CardHeader>
-            <CardTitle className="text-[#f5f2ed]">Allocation Performance</CardTitle>
-            <CardDescription className="text-[#a89580]">Actual spending vs target allocation</CardDescription>
+            <CardTitle className="text-[#f5f2ed]">
+              Allocation Performance
+            </CardTitle>
+            <CardDescription className="text-[#a89580]">
+              Actual spending vs target allocation
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 min-h-[300px]">
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={allocationData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#2d2420" />
-                <XAxis dataKey="name" stroke="#a89580" tick={{ fill: "#a89580" }} />
+              <BarChart
+                data={allocationData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#2d2420"
+                />
+                <XAxis
+                  dataKey="name"
+                  stroke="#a89580"
+                  tick={{ fill: "#a89580" }}
+                />
                 <YAxis stroke="#a89580" tick={{ fill: "#a89580" }} />
                 <Tooltip
                   contentStyle={{
@@ -236,7 +302,10 @@ export default function InsightsPage() {
                     borderRadius: "12px",
                     color: "#f5f2ed",
                   }}
-                  formatter={(value: unknown) => [`$${Number(value).toFixed(2)}`, "Amount"]}
+                  formatter={(value: unknown) => [
+                    `$${Number(value).toFixed(2)}`,
+                    "Amount",
+                  ]}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {allocationData.map((entry, index) => (

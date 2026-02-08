@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   ArrowLeftRight,
   PieChart,
-  Tag,
   BarChart3,
   User,
   Repeat,

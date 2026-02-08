@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Plus, Loader2, Download, Filter } from "lucide-react";
+import { Plus, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { type CreateTransaction } from "@repo/shared";
 
@@ -98,7 +98,8 @@ function TransactionsPageContent() {
 
       if (newFilters.search) params.set("search", newFilters.search);
       if (newFilters.type) params.set("type", newFilters.type);
-      if (newFilters.categoryId) params.set("categoryId", newFilters.categoryId);
+      if (newFilters.categoryId)
+        params.set("categoryId", newFilters.categoryId);
       if (newFilters.startDate) params.set("startDate", newFilters.startDate);
       if (newFilters.endDate) params.set("endDate", newFilters.endDate);
       if (newFilters.minAmount !== undefined)
@@ -111,7 +112,7 @@ function TransactionsPageContent() {
       const query = params.toString();
       router.replace(`${pathname}${query ? `?${query}` : ""}`);
     },
-    [router, pathname]
+    [router, pathname],
   );
 
   const fetchData = useCallback(async () => {
@@ -197,7 +198,8 @@ function TransactionsPageContent() {
       setIsSheetOpen(false);
       fetchData();
     } catch (err: unknown) {
-      const message = err instanceof ApiError ? err.message : "Failed to create transaction";
+      const message =
+        err instanceof ApiError ? err.message : "Failed to create transaction";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -214,7 +216,8 @@ function TransactionsPageContent() {
       setEditingTransaction(null);
       fetchData();
     } catch (err: unknown) {
-      const message = err instanceof ApiError ? err.message : "Failed to update transaction";
+      const message =
+        err instanceof ApiError ? err.message : "Failed to update transaction";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -227,7 +230,8 @@ function TransactionsPageContent() {
       toast.success("Transaction deleted");
       fetchData();
     } catch (err: unknown) {
-      const message = err instanceof ApiError ? err.message : "Failed to delete transaction";
+      const message =
+        err instanceof ApiError ? err.message : "Failed to delete transaction";
       toast.error(message);
     }
   };
@@ -336,7 +340,9 @@ function TransactionsPageContent() {
               <Plus className="h-8 w-8 text-[#a89580]" />
             </div>
             <h3 className="text-xl font-semibold text-[#f5f2ed]">
-              {hasActiveFilters ? "No matching transactions" : "No transactions yet"}
+              {hasActiveFilters
+                ? "No matching transactions"
+                : "No transactions yet"}
             </h3>
             <p className="text-[#a89580] max-w-xs mx-auto mt-2">
               {hasActiveFilters

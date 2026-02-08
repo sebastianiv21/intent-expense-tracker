@@ -6,7 +6,10 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
-import { RecurringItem, type RecurringTransaction } from "@/components/recurring/recurring-item";
+import {
+  RecurringItem,
+  type RecurringTransaction,
+} from "@/components/recurring/recurring-item";
 
 interface PlannedOutflowProps {
   limit?: number;
@@ -22,11 +25,17 @@ export function PlannedOutflowCard({
 
   const fetchRecurrences = async () => {
     try {
-      const data = await api.get<RecurringTransaction[]>("/recurring-transactions");
+      const data = await api.get<RecurringTransaction[]>(
+        "/recurring-transactions",
+      );
       // Filter only active and upcoming, then sort by nextDueDate
       const active = data
         .filter((r) => r.isActive && new Date(r.nextDueDate) >= new Date())
-        .sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime())
+        .sort(
+          (a, b) =>
+            new Date(a.nextDueDate).getTime() -
+            new Date(b.nextDueDate).getTime(),
+        )
         .slice(0, limit);
       setRecurrences(active);
     } catch (err: unknown) {
@@ -40,11 +49,12 @@ export function PlannedOutflowCard({
 
   useEffect(() => {
     fetchRecurrences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (isLoading) {
     return (
-      <div className="bg-[#1f1815] p-6 rounded-[32px] border border-[#2d2420]">
+      <div className="bg-[#1f1815] p-6 rounded-4xl border border-[#2d2420]">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold text-[#f5f2ed]">Planned Outflow</h3>
           <Calendar className="h-5 w-5 text-[#a89580]" />
@@ -57,7 +67,7 @@ export function PlannedOutflowCard({
   }
 
   return (
-    <div className="bg-[#1f1815] p-6 rounded-[32px] border border-[#2d2420]">
+    <div className="bg-[#1f1815] p-6 rounded-4xl border border-[#2d2420]">
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-bold text-[#f5f2ed]">Planned Outflow</h3>
         <Calendar className="h-5 w-5 text-[#a89580]" />

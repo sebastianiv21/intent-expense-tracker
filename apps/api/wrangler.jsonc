@@ -4,7 +4,7 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "expense-tracker-api",
+  "name": "intent-expense-tracker-api",
   "main": "src/index.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2025-09-27",
@@ -14,20 +14,20 @@
       "namespace_id": "1001",
       "simple": {
         "limit": 100,
-        "period": 60,
-      },
+        "period": 60
+      }
     },
     {
       "name": "AUTH_RATE_LIMITER",
       "namespace_id": "1002",
       "simple": {
         "limit": 5,
-        "period": 60,
-      },
-    },
+        "period": 60
+      }
+    }
   ],
   "observability": {
-    "enabled": true,
+    "enabled": true
   },
   /**
    * Environment Variables
@@ -35,6 +35,7 @@
    */
   "vars": {
     "ENVIRONMENT": "development",
+    "FRONTEND_URL": "http://localhost:3000"
   },
   /**
    * Secrets Configuration
@@ -51,20 +52,29 @@
    *   wrangler secret put BETTER_AUTH_URL
    */
   "env": {
-    "dev": {
-      "vars": {
-        "ENVIRONMENT": "development",
-      },
-    },
-    "preview": {
-      "vars": {
-        "ENVIRONMENT": "preview",
-      },
-    },
     "production": {
       "vars": {
         "ENVIRONMENT": "production",
+        "FRONTEND_URL": "https://intent.luisibarra.dev"
       },
-    },
-  },
+      "ratelimits": [
+        {
+          "name": "GENERAL_RATE_LIMITER",
+          "namespace_id": "1001",
+          "simple": {
+            "limit": 100,
+            "period": 60
+          }
+        },
+        {
+          "name": "AUTH_RATE_LIMITER",
+          "namespace_id": "1002",
+          "simple": {
+            "limit": 5,
+            "period": 60
+          }
+        }
+      ]
+    }
+  }
 }

@@ -3,9 +3,11 @@ import { pinoLogger } from "hono-pino";
 import { requestId } from "hono/request-id";
 import { HTTPException } from "hono/http-exception";
 import { cors } from "hono/cors";
+import { sql } from 'drizzle-orm'
 
 import { v1Routes } from "./routes/v1";
 import { generalRateLimiter } from "./lib/middleware/rate-limiter";
+import { getDb } from "./db";
 
 const app = new Hono();
 
@@ -39,8 +41,30 @@ app.use(
 );
 
 // Health check
-app.get("/health", (c) => {
-  return c.json({ status: "ok" });
+app.get("/health", async (c) => {
+  try {
+    // Test DB connection
+    const db = getDb();
+    await db.execute(sql`SELECT 1`);
+
+    return c.json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      version: process.env.GIT_SHA || "unknown",
+      checks: {
+        database: "ok"
+      }
+    });
+  } catch (error) {
+    return c.json({
+      status: "unhealthy",
+      timestamp: new Date().toISOString(),
+      version: process.env.GIT_SHA || "unknown",
+      checks: {
+        database: "ok"
+      }
+    }, 503);
+  }
 });
 
 // Routes
