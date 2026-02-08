@@ -3,12 +3,8 @@ import { getAuth } from "../../lib/auth";
 
 export const authRoutes = new Hono();
 
-// Better Auth handler
-authRoutes.on(["POST", "GET"], "/*", async (c) => {
+// Better Auth handler - return directly to preserve CORS headers
+authRoutes.on(["POST", "GET"], "/*", (c) => {
   const auth = getAuth();
-  const res = await auth.handler(c.req.raw);
-  return new Response(res.body, {
-    status: res.status,
-    headers: res.headers,
-  });
+  return auth.handler(c.req.raw);
 });
