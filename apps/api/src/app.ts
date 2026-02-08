@@ -22,10 +22,12 @@ app.use(
         process.env.FRONTEND_URL,
       ].filter(Boolean) as string[];
 
-      if (!origin || allowedOrigins.includes(origin)) {
-        return origin || allowedOrigins[0] || "*";
+      // Return the origin if it's in the allowed list
+      if (allowedOrigins.includes(origin)) {
+        return origin;
       }
 
+      // Default to first allowed origin for requests without origin or non-matching origins
       return allowedOrigins[0] || "*";
     },
     credentials: true,
@@ -95,10 +97,11 @@ const addCorsHeaders = (c: any, response: Response): Response => {
     process.env.FRONTEND_URL,
   ].filter(Boolean) as string[];
 
-  const allowedOrigin =
-    !origin || allowedOrigins.includes(origin)
-      ? origin || allowedOrigins[0] || "*"
-      : allowedOrigins[0] || "*";
+  // Return the origin if it's allowed, otherwise return the first allowed origin
+  // This ensures CORS headers match the requesting origin
+  const allowedOrigin = allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0] || "*";
 
   const newHeaders = new Headers(response.headers);
   newHeaders.set("Access-Control-Allow-Origin", allowedOrigin);
