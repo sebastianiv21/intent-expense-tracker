@@ -24,10 +24,19 @@ export const getAuth = () => {
     baseURL: process.env.BETTER_AUTH_URL || "http://localhost:8787",
     basePath: "/api/v1/auth",
     trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:3000"],
-    defaultCookieAttributes: {
-      sameSite: "none",
-      secure: true,
-      httpOnly: true,
+    advanced: {
+      useSecureCookies: true,
+      cookiePrefix: "__Secure-better-auth",
+    },
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 60 * 5,
+      },
+      cookieAttributes: {
+        sameSite: "none",
+        secure: true,
+      },
     },
   });
 };
