@@ -138,10 +138,10 @@
 
 ### Implementation for User Story 5
 
-- [ ] T048 [P] [US5] Create Zod validation schemas for budgets (create: categoryId, amount>0, period, startDate required; update: partial) in `lib/validations/budgets.ts`
-- [ ] T049 [P] [US5] Implement `getBudgetsWithSpending()` query that joins budgets with transaction sum for a given month per category, includes category relation, scoped by userId in `lib/queries/budgets.ts`
-- [ ] T050 [US5] Implement `createBudget()`, `updateBudget()`, `deleteBudget()` Server Actions with Zod validation, auth check, revalidation of `/budgets` and `/` in `lib/actions/budgets.ts`
-- [ ] T051 [US5] Build budgets page with month selector (dropdown with left/right arrows), overall summary card (total budgeted/spent/remaining), budget list grouped by allocation bucket (Needs/Wants/Future collapsible sections), budget cards with progress bar and amount text, add/edit budget bottom sheet (category dropdown, amount, period), overspend visual indicator (red), empty state, and skeleton loading in `app/(app)/budgets/page.tsx`
+- [X] T048 [P] [US5] Create Zod validation schemas for budgets (create: categoryId, amount>0, period, startDate required; update: partial) in `lib/validations/budgets.ts`
+- [X] T049 [P] [US5] Implement `getBudgetsWithSpending()` query that joins budgets with transaction sum for a given month per category, includes category relation, scoped by userId in `lib/queries/budgets.ts`
+- [X] T050 [US5] Implement `createBudget()`, `updateBudget()`, `deleteBudget()` Server Actions with Zod validation, auth check, revalidation of `/budgets` and `/` in `lib/actions/budgets.ts`
+- [X] T051 [US5] Build budgets page with month selector (dropdown with left/right arrows), overall summary card (total budgeted/spent/remaining), budget list grouped by allocation bucket (Needs/Wants/Future collapsible sections), budget cards with progress bar and amount text, add/edit budget bottom sheet (category dropdown, amount, period), overspend visual indicator (red), empty state, and skeleton loading in `app/(app)/budgets/page.tsx`
 
 **Checkpoint**: Budget tracking works. Users see spending vs. budget per category grouped by bucket.
 
