@@ -123,8 +123,8 @@
 
 ### Implementation for User Story 4
 
-- [ ] T046 [US4] Implement `createCategory()`, `updateCategory()`, `deleteCategory()` Server Actions with Zod validation, auth check, revalidation of `/categories`, `/transactions`, `/budgets` in `lib/actions/categories.ts`
-- [ ] T047 [US4] Build categories page with Income/Expense segmented control, bucket tabs for expenses (Needs/Wants/Future with color dots and counts), category list with emoji icon and name, swipe-left for edit/delete, add category bottom sheet (emoji picker, name input, type toggle, bucket radio for expenses), and skeleton loading in `app/(app)/categories/page.tsx`
+- [X] T046 [US4] Implement `createCategory()`, `updateCategory()`, `deleteCategory()` Server Actions with Zod validation, auth check, revalidation of `/categories`, `/transactions`, `/budgets` in `lib/actions/categories.ts`
+- [X] T047 [US4] Build categories page with Income/Expense segmented control, bucket tabs for expenses (Needs/Wants/Future with color dots and counts), category list with emoji icon and name, swipe-left for edit/delete, add category bottom sheet (emoji picker, name input, type toggle, bucket radio for expenses), and skeleton loading in `app/(app)/categories/page.tsx`
 
 **Checkpoint**: Full category CRUD. Default categories visible, custom categories addable with bucket assignment.
 
