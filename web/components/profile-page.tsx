@@ -114,6 +114,7 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
               variant="ghost"
               className="justify-start"
               onClick={() => router.push("/categories")}
+              aria-label="Go to categories"
             >
               <Tag className="h-4 w-4" />
               Categories
@@ -122,6 +123,7 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
               variant="ghost"
               className="justify-start"
               onClick={() => router.push("/insights")}
+              aria-label="Go to insights"
             >
               <Settings className="h-4 w-4" />
               Insights

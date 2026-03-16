@@ -52,6 +52,7 @@ const PERIODS = [
 
 export function InsightsPage({ insights, allocation }: InsightsPageProps) {
   const [period, setPeriod] = useState<(typeof PERIODS)[number]["value"]>("month");
+  const isPeriodLocked = true;
 
   const bucketData = useMemo(() => {
     return (Object.keys(allocation.actual) as AllocationBucket[]).map((bucket) => ({
@@ -96,6 +97,7 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
             size="sm"
             className="min-h-[44px]"
             onClick={() => setPeriod(option.value)}
+            disabled={isPeriodLocked}
           >
             {option.label}
           </Button>

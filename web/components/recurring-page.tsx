@@ -232,6 +232,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                     size="sm"
                     className="min-h-[44px]"
                     onClick={() => openEdit(item)}
+                    aria-label={`Edit ${item.description || "recurring item"}`}
                   >
                     Edit
                   </Button>
@@ -243,6 +244,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                       item.isActive ? "text-muted-foreground" : "text-accent"
                     )}
                     onClick={() => handleToggle(item)}
+                    aria-label={item.isActive ? "Pause recurring" : "Resume recurring"}
                   >
                     {item.isActive ? (
                       <>
@@ -261,6 +263,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                     size="sm"
                     className="min-h-[44px] text-destructive hover:text-destructive"
                     onClick={() => handleDelete(item)}
+                    aria-label={`Delete ${item.description || "recurring item"}`}
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete

@@ -184,6 +184,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                 variant="outline"
                 className="w-full justify-between"
                 onClick={() => setStep("category")}
+                aria-label="Choose category"
               >
                 <span className="flex items-center gap-2">
                   {selectedCategory?.icon ? (
@@ -261,7 +262,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   {type === "expense" ? "Spending bucket" : "Income source"}
                 </p>
               </div>
-              <Button variant="ghost" onClick={() => setStep("main")}>
+              <Button variant="ghost" onClick={() => setStep("main")} aria-label="Close category picker">
                 Done
               </Button>
             </div>
@@ -283,13 +284,14 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                 </div>
               ) : (
                 filteredCategories.map((cat) => (
-                  <button
+                    <button
                     key={cat.id}
                     type="button"
                     onClick={() => {
                       setCategoryId(cat.id);
                       setStep("main");
                     }}
+                      aria-label={`Select ${cat.name}`}
                     className={cn(
                       "w-full rounded-lg border border-border p-3 text-left transition hover:bg-muted flex items-center justify-between",
                       categoryId === cat.id && "border-accent"

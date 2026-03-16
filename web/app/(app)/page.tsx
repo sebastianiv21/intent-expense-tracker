@@ -1,20 +1,27 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { getDashboardData } from "@/lib/queries/dashboard";
+import { getCategories } from "@/lib/queries/categories";
 import { getBucketColor, formatCurrencyCompact, formatCurrency } from "@/lib/finance-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { TransactionItem } from "@/components/transaction-item";
 import { PageHeader } from "@/components/page-header";
+import { TransactionSheetProvider } from "@/components/transaction-sheet-context";
+import { TransactionSheet } from "@/components/transaction-sheet";
 
 export default async function DashboardPage() {
-  const data = await getDashboardData();
+  const [data, categories] = await Promise.all([
+    getDashboardData(),
+    getCategories(),
+  ]);
   const now = new Date();
   const dateLabel = format(now, "EEEE, MMM d");
 
   return (
-    <div className="space-y-6">
+    <TransactionSheetProvider>
+      <div className="space-y-6">
       <PageHeader
         title="Dashboard"
         description={`Today is ${dateLabel}`}
@@ -166,6 +173,9 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+
+      <TransactionSheet categories={categories} />
+    </TransactionSheetProvider>
   );
 }

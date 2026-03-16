@@ -198,14 +198,14 @@
 
 **Purpose**: Responsive refinement, accessibility, performance, and final validation
 
-- [ ] T060 [P] Add skeleton loading components for all pages (dashboard, transactions, budgets, categories, recurring, insights) in `components/ui/skeleton.tsx` patterns per page
-- [ ] T061 [P] Implement responsive breakpoint behavior: bottom tabs on mobile (<1024px), sidebar on desktop (>=1024px), max-width containers for tablet (720px) and large desktop (1200px) across all layouts
-- [ ] T062 [P] Audit all interactive elements for 44px minimum touch targets, ARIA labels on icon-only buttons, focus management in bottom sheets, and `prefers-reduced-motion` respect
-- [ ] T063 [P] Audit color contrast ratios across all text/background combinations against WCAG 2.1 AA (4.5:1 minimum)
-- [ ] T064 Verify all Server Actions check auth via `getAuthenticatedUser()` and all queries scope by userId — security audit pass
-- [ ] T065 Run `pnpm lint` and fix all linting errors
-- [ ] T066 Run `pnpm build` and fix all type errors and build failures
-- [ ] T067 Run quickstart.md validation checklist end-to-end
+- [X] T060 [P] Add skeleton loading components for all pages (dashboard, transactions, budgets, categories, recurring, insights) in `components/ui/skeleton.tsx` patterns per page
+- [X] T061 [P] Implement responsive breakpoint behavior: bottom tabs on mobile (<1024px), sidebar on desktop (>=1024px), max-width containers for tablet (720px) and large desktop (1200px) across all layouts
+- [X] T062 [P] Audit all interactive elements for 44px minimum touch targets, ARIA labels on icon-only buttons, focus management in bottom sheets, and `prefers-reduced-motion` respect
+- [X] T063 [P] Audit color contrast ratios across all text/background combinations against WCAG 2.1 AA (4.5:1 minimum)
+- [X] T064 Verify all Server Actions check auth via `getAuthenticatedUser()` and all queries scope by userId — security audit pass
+- [X] T065 Run `pnpm lint` and fix all linting errors
+- [X] T066 Run `pnpm build` and fix all type errors and build failures
+- [X] T067 Run quickstart.md validation checklist end-to-end
 
 ---
 

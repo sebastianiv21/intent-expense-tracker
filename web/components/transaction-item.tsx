@@ -65,6 +65,7 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
           size="sm"
           className="min-h-[44px]"
           onClick={() => openEdit(transaction)}
+          aria-label={`Edit ${transaction.description || transaction.category?.name || "transaction"}`}
         >
           <Pencil className="h-4 w-4" />
           Edit
@@ -76,6 +77,7 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
           className="min-h-[44px] text-destructive hover:text-destructive"
           onClick={handleDelete}
           disabled={isDeleting}
+          aria-label={`Delete ${transaction.description || transaction.category?.name || "transaction"}`}
         >
           <Trash2 className="h-4 w-4" />
           {isDeleting ? "Deleting…" : "Delete"}

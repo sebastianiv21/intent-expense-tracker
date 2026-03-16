@@ -181,6 +181,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 key={option.value}
                 type="button"
                 onClick={() => setBucket(option.value)}
+                aria-label={`Filter ${option.label} categories`}
                 className={cn(
                   "min-h-[44px] px-3 rounded-full border text-sm flex items-center gap-2 transition",
                   bucket === option.value
@@ -329,6 +330,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                           allocationBucket: option.value,
                         }))
                       }
+                      aria-label={`Select ${option.label} bucket`}
                       className={cn(
                         "min-h-[44px] rounded-lg border text-sm font-medium transition",
                         formState.allocationBucket === option.value
