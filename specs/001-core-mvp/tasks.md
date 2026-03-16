@@ -155,10 +155,10 @@
 
 ### Implementation for User Story 6
 
-- [ ] T052 [P] [US6] Create Zod validation schemas for recurring transactions (create: amount>0, type, frequency, startDate required; update: partial including isActive toggle) in `lib/validations/recurring.ts`
-- [ ] T053 [P] [US6] Implement `getRecurringTransactions()` query with category relation, ordered by createdAt, scoped by userId in `lib/queries/recurring.ts`
-- [ ] T054 [US6] Implement `createRecurring()`, `updateRecurring()`, `deleteRecurring()`, and `processRecurringTransactions()` Server Actions. Process action: find active items where nextDueDate<=today, generate transactions, advance nextDueDate per frequency, handle end dates. Revalidate `/recurring`, `/transactions`, `/` in `lib/actions/recurring.ts`
-- [ ] T055 [US6] Build recurring transactions page with Active/Paused segmented control with count badges, list grouped by type (Income/Expense), recurring item component (icon, description, amount, frequency + next due date, active/paused toggle), swipe-left for edit/delete, add/edit recurring bottom sheet (description, amount, type, category, frequency picker, start/end date), and skeleton loading in `app/(app)/recurring/page.tsx`
+- [X] T052 [P] [US6] Create Zod validation schemas for recurring transactions (create: amount>0, type, frequency, startDate required; update: partial including isActive toggle) in `lib/validations/recurring.ts`
+- [X] T053 [P] [US6] Implement `getRecurringTransactions()` query with category relation, ordered by createdAt, scoped by userId in `lib/queries/recurring.ts`
+- [X] T054 [US6] Implement `createRecurring()`, `updateRecurring()`, `deleteRecurring()`, and `processRecurringTransactions()` Server Actions. Process action: find active items where nextDueDate<=today, generate transactions, advance nextDueDate per frequency, handle end dates. Revalidate `/recurring`, `/transactions`, `/` in `lib/actions/recurring.ts`
+- [X] T055 [US6] Build recurring transactions page with Active/Paused segmented control with count badges, list grouped by type (Income/Expense), recurring item component (icon, description, amount, frequency + next due date, active/paused toggle), swipe-left for edit/delete, add/edit recurring bottom sheet (description, amount, type, category, frequency picker, start/end date), and skeleton loading in `app/(app)/recurring/page.tsx`
 
 **Checkpoint**: Recurring transactions fully functional. Auto-generation triggered on app load via layout.
 

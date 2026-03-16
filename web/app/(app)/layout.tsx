@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { financialProfile } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { processRecurringTransactions } from "@/lib/actions/recurring";
 
 export default async function AppLayout({
   children,
@@ -28,6 +29,8 @@ export default async function AppLayout({
   if (!profile[0]) {
     redirect("/onboarding");
   }
+
+  await processRecurringTransactions();
 
   return <AppShell>{children}</AppShell>;
 }
