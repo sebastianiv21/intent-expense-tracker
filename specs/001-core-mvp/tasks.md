@@ -17,13 +17,13 @@
 
 **Purpose**: Project initialization, dependencies, and base configuration
 
-- [ ] T001 Initialize Next.js 16 project with pnpm, install all dependencies (next, react, drizzle-orm, @neondatabase/serverless, better-auth, zod, tailwindcss, recharts, date-fns, lucide-react, class-variance-authority, clsx, tailwind-merge) in `package.json`
-- [ ] T002 [P] Configure TypeScript strict mode in `tsconfig.json`
-- [ ] T003 [P] Configure ESLint with eslint-config-next in `eslint.config.mjs`
-- [ ] T004 [P] Configure Tailwind CSS 4 with dark theme design tokens (colors, typography, spacing) in `app/globals.css`
-- [ ] T005 [P] Configure PostCSS in `postcss.config.mjs`
-- [ ] T006 [P] Create `lib/utils.ts` with `cn()` utility (clsx + tailwind-merge)
-- [ ] T007 [P] Configure shadcn/ui in `components.json` and install base primitives (button, input, label, sheet, dialog, tabs, separator, avatar, dropdown-menu, toggle, skeleton, card, badge, progress, select, popover, calendar) in `components/ui/`
+- [X] T001 Initialize Next.js 16 project with pnpm, install all dependencies (next, react, drizzle-orm, @neondatabase/serverless, better-auth, zod, tailwindcss, recharts, date-fns, lucide-react, class-variance-authority, clsx, tailwind-merge) in `package.json`
+- [X] T002 [P] Configure TypeScript strict mode in `tsconfig.json`
+- [X] T003 [P] Configure ESLint with eslint-config-next in `eslint.config.mjs`
+- [X] T004 [P] Configure Tailwind CSS 4 with dark theme design tokens (colors, typography, spacing) in `app/globals.css`
+- [X] T005 [P] Configure PostCSS in `postcss.config.mjs`
+- [X] T006 [P] Create `lib/utils.ts` with `cn()` utility (clsx + tailwind-merge)
+- [X] T007 [P] Configure shadcn/ui in `components.json` and install base primitives (button, input, label, sheet, dialog, tabs, separator, avatar, dropdown-menu, toggle, skeleton, card, badge, progress, select, popover, calendar) in `components/ui/`
 
 ---
 
@@ -33,25 +33,25 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T008 Define Drizzle ORM schema with all enums (transaction_type, budget_period, allocation_bucket, recurrence_frequency) and all tables (user, session, account, verification, financial_profile, categories, transactions, budgets, recurring_transactions) with relations in `lib/schema.ts`
-- [ ] T009 Configure Neon Serverless database connection in `lib/db.ts`
-- [ ] T010 Configure Drizzle Kit in `drizzle.config.ts` and add db scripts (db:generate, db:push, db:migrate, db:studio) to `package.json`
-- [ ] T011 Generate and push initial database migration via `pnpm db:generate && pnpm db:push`
-- [ ] T012 Configure Better Auth server with Drizzle adapter, email/password + Google OAuth providers, account linking, and category seeding database hook in `lib/auth.ts`
-- [ ] T013 [P] Create Better Auth client helpers in `lib/auth-client.ts`
-- [ ] T014 [P] Create Better Auth catch-all route handler in `app/api/auth/[...all]/route.ts`
-- [ ] T015 [P] Define default category seed data (6 Needs, 5 Wants, 4 Future, 3 Income with emoji icons) in `lib/seed-data.ts`
-- [ ] T016 [P] Define shared TypeScript interfaces (Transaction, Category, Budget, RecurringTransaction, FinancialProfile, ActionResult, and "with relation" variants) in `types/index.ts`
-- [ ] T017 [P] Create `getAuthenticatedUser()` helper that checks session via `auth.api.getSession()` and redirects to `/login` if unauthenticated in `lib/queries/auth.ts`
-- [ ] T018 [P] Define finance utility functions (bucket definitions, color mappings, currency formatter, percentage calculator) in `lib/finance-utils.ts`
-- [ ] T019 Create root layout with Plus Jakarta Sans + Geist Mono fonts, dark theme `<body>` class, and metadata in `app/layout.tsx`
-- [ ] T020 Create `(auth)` route group layout (minimal, no app nav) in `app/(auth)/layout.tsx`
-- [ ] T021 Create `(app)` route group layout with auth guard (redirect to `/login` if unauthenticated), onboarding guard (redirect to `/onboarding` if no financial profile), recurring transaction processing on load, and app shell wrapper in `app/(app)/layout.tsx`
-- [ ] T022 [P] Create bottom tab navigation component (Home, Activity, FAB, Stats, Profile) with active/inactive states and 44px touch targets in `components/bottom-nav.tsx`
-- [ ] T023 [P] Create desktop sidebar navigation component with same routes in `components/side-nav.tsx`
-- [ ] T024 Create app shell component that renders bottom-nav on mobile (<1024px) and side-nav on desktop (>=1024px) in `components/app-shell.tsx`
-- [ ] T025 [P] Create reusable page header component in `components/page-header.tsx`
-- [ ] T026 [P] Create custom icon components in `components/icons.tsx`
+- [X] T008 Define Drizzle ORM schema with all enums (transaction_type, budget_period, allocation_bucket, recurrence_frequency) and all tables (user, session, account, verification, financial_profile, categories, transactions, budgets, recurring_transactions) with relations in `lib/schema.ts`
+- [X] T009 Configure Neon Serverless database connection in `lib/db.ts`
+- [X] T010 Configure Drizzle Kit in `drizzle.config.ts` and add db scripts (db:generate, db:push, db:migrate, db:studio) to `package.json`
+- [X] T011 Generate and push initial database migration via `pnpm db:generate && pnpm db:push`
+- [X] T012 Configure Better Auth server with Drizzle adapter, email/password + Google OAuth providers, account linking, and category seeding database hook in `lib/auth.ts`
+- [X] T013 [P] Create Better Auth client helpers in `lib/auth-client.ts`
+- [X] T014 [P] Create Better Auth catch-all route handler in `app/api/auth/[...all]/route.ts`
+- [X] T015 [P] Define default category seed data (6 Needs, 5 Wants, 4 Future, 3 Income with emoji icons) in `lib/seed-data.ts`
+- [X] T016 [P] Define shared TypeScript interfaces (Transaction, Category, Budget, RecurringTransaction, FinancialProfile, ActionResult, and "with relation" variants) in `types/index.ts`
+- [X] T017 [P] Create `getAuthenticatedUser()` helper that checks session via `auth.api.getSession()` and redirects to `/login` if unauthenticated in `lib/queries/auth.ts`
+- [X] T018 [P] Define finance utility functions (bucket definitions, color mappings, currency formatter, percentage calculator) in `lib/finance-utils.ts`
+- [X] T019 Create root layout with Plus Jakarta Sans + Geist Mono fonts, dark theme `<body>` class, and metadata in `app/layout.tsx`
+- [X] T020 Create `(auth)` route group layout (minimal, no app nav) in `app/(auth)/layout.tsx`
+- [X] T021 Create `(app)` route group layout with auth guard (redirect to `/login` if unauthenticated), onboarding guard (redirect to `/onboarding` if no financial profile), recurring transaction processing on load, and app shell wrapper in `app/(app)/layout.tsx`
+- [X] T022 [P] Create bottom tab navigation component (Home, Activity, FAB, Stats, Profile) with active/inactive states and 44px touch targets in `components/bottom-nav.tsx`
+- [X] T023 [P] Create desktop sidebar navigation component with same routes in `components/side-nav.tsx`
+- [X] T024 Create app shell component that renders bottom-nav on mobile (<1024px) and side-nav on desktop (>=1024px) in `components/app-shell.tsx`
+- [X] T025 [P] Create reusable page header component in `components/page-header.tsx`
+- [X] T026 [P] Create custom icon components in `components/icons.tsx`
 
 **Checkpoint**: Foundation ready — auth, database, shared types, app shell all functional. User story implementation can begin.
 
@@ -65,13 +65,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T027 [P] [US1] Create Zod validation schemas for financial profile (create: monthlyIncomeTarget required, percentages default 50/30/20, sum=100 check; update: partial with conditional sum check) in `lib/validations/financial-profile.ts`
-- [ ] T028 [P] [US1] Implement `getFinancialProfile()` query (returns profile or null, scoped by userId) in `lib/queries/financial-profile.ts`
-- [ ] T029 [US1] Implement `createFinancialProfile()` and `updateFinancialProfile()` Server Actions with Zod validation, auth check, 409 if exists, revalidation of `/`, `/budgets`, `/insights` in `lib/actions/financial-profile.ts`
-- [ ] T030 [US1] Build login page with email/password form, Google OAuth button, "Create account" link, keyboard handling, error states, and loading states in `app/(auth)/login/page.tsx`
-- [ ] T031 [US1] Build registration page with name/email/password form, Google OAuth button, "Already have an account?" link, password visibility toggle in `app/(auth)/register/page.tsx`
-- [ ] T032 [US1] Build onboarding page with monthly income input (large numeric, currency prefix), allocation percentage sliders (Needs/Wants/Future with real-time validation that sum=100), pie chart preview, and "Complete Setup" button that calls `createFinancialProfile()` action in `app/(auth)/onboarding/page.tsx`
-- [ ] T033 [US1] Create placeholder dashboard page at `app/(app)/page.tsx` that displays "Welcome" message (full dashboard built in US3)
+- [X] T027 [P] [US1] Create Zod validation schemas for financial profile (create: monthlyIncomeTarget required, percentages default 50/30/20, sum=100 check; update: partial with conditional sum check) in `lib/validations/financial-profile.ts`
+- [X] T028 [P] [US1] Implement `getFinancialProfile()` query (returns profile or null, scoped by userId) in `lib/queries/financial-profile.ts`
+- [X] T029 [US1] Implement `createFinancialProfile()` and `updateFinancialProfile()` Server Actions with Zod validation, auth check, 409 if exists, revalidation of `/`, `/budgets`, `/insights` in `lib/actions/financial-profile.ts`
+- [X] T030 [US1] Build login page with email/password form, Google OAuth button, "Create account" link, keyboard handling, error states, and loading states in `app/(auth)/login/page.tsx`
+- [X] T031 [US1] Build registration page with name/email/password form, Google OAuth button, "Already have an account?" link, password visibility toggle in `app/(auth)/register/page.tsx`
+- [X] T032 [US1] Build onboarding page with monthly income input (large numeric, currency prefix), allocation percentage sliders (Needs/Wants/Future with real-time validation that sum=100), pie chart preview, and "Complete Setup" button that calls `createFinancialProfile()` action in `app/(auth)/onboarding/page.tsx`
+- [X] T033 [US1] Create placeholder dashboard page at `app/(app)/page.tsx` that displays "Welcome" message (full dashboard built in US3)
 
 **Checkpoint**: Users can register, complete onboarding, and land on a placeholder dashboard. Auth guard and onboarding guard work correctly.
 
