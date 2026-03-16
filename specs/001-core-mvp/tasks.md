@@ -187,8 +187,8 @@
 
 ### Implementation
 
-- [ ] T058 [US8] Build financial profile edit bottom sheet with income input, allocation sliders (reuse onboarding pattern), save via `updateFinancialProfile()` action in `components/financial-profile-sheet.tsx`
-- [ ] T059 [US8] Build profile page with user info card (avatar, name, email, member since), navigation menu (Categories, Insights), financial profile section with edit button triggering profile sheet, logout button with confirmation dialog, app version footer in `app/(app)/profile/page.tsx`
+- [X] T058 [US8] Build financial profile edit bottom sheet with income input, allocation sliders (reuse onboarding pattern), save via `updateFinancialProfile()` action in `components/financial-profile-sheet.tsx`
+- [X] T059 [US8] Build profile page with user info card (avatar, name, email, member since), navigation menu (Categories, Insights), financial profile section with edit button triggering profile sheet, logout button with confirmation dialog, app version footer in `app/(app)/profile/page.tsx`
 
 **Checkpoint**: Profile page complete. Users can update financial profile and log out.
 
