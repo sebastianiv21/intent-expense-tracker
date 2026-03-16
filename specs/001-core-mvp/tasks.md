@@ -85,16 +85,16 @@
 
 ### Implementation for User Story 2
 
-- [ ] T034 [P] [US2] Create Zod validation schemas for transactions (create: amount>0 required, type required, date required, categoryId optional; update: all optional) in `lib/validations/transactions.ts`
-- [ ] T035 [P] [US2] Create Zod validation schemas for categories (create: name 1-100 required, type required, icon optional, allocationBucket required if expense; update: partial) in `lib/validations/categories.ts`
-- [ ] T036 [P] [US2] Implement `getTransactions()` query with filtering (type, categoryId, search via ILIKE), pagination (limit/offset), sorting (date/amount asc/desc), and category relation join in `lib/queries/transactions.ts`
-- [ ] T037 [P] [US2] Implement `getCategories()` query with optional type filter, ordered by name, scoped by userId in `lib/queries/categories.ts`
-- [ ] T038 [US2] Implement `createTransaction()`, `updateTransaction()`, `deleteTransaction()` Server Actions with Zod validation, auth check, userId scoping, revalidation of `/transactions` and `/` in `lib/actions/transactions.ts`
-- [ ] T039 [US2] Create transaction sheet context provider (open/close state, edit mode with transaction data) in `components/transaction-sheet-context.tsx`
-- [ ] T040 [US2] Build add/edit transaction bottom sheet with amount input (numeric keyboard), type toggle (Income/Expense segmented control), category picker (as nested sheet), date picker, description field, save/cancel actions in `components/transaction-sheet.tsx`
-- [ ] T041 [US2] Build swipeable transaction list item component with category icon, description, amount (colored by type), date, and swipe-left to reveal Edit/Delete actions in `components/transaction-item.tsx`
-- [ ] T042 [US2] Create floating action button component (56px circle, accent color, centered above tab bar, triggers transaction sheet) in `components/floating-action-button.tsx`
-- [ ] T043 [US2] Build transactions page with sticky search bar, horizontal filter chips (All/Income/Expense), grouped-by-date transaction list with infinite scroll (Intersection Observer), empty state, and skeleton loading in `app/(app)/transactions/page.tsx`
+- [X] T034 [P] [US2] Create Zod validation schemas for transactions (create: amount>0 required, type required, date required, categoryId optional; update: all optional) in `lib/validations/transactions.ts`
+- [X] T035 [P] [US2] Create Zod validation schemas for categories (create: name 1-100 required, type required, icon optional, allocationBucket required if expense; update: partial) in `lib/validations/categories.ts`
+- [X] T036 [P] [US2] Implement `getTransactions()` query with filtering (type, categoryId, search via ILIKE), pagination (limit/offset), sorting (date/amount asc/desc), and category relation join in `lib/queries/transactions.ts`
+- [X] T037 [P] [US2] Implement `getCategories()` query with optional type filter, ordered by name, scoped by userId in `lib/queries/categories.ts`
+- [X] T038 [US2] Implement `createTransaction()`, `updateTransaction()`, `deleteTransaction()` Server Actions with Zod validation, auth check, userId scoping, revalidation of `/transactions` and `/` in `lib/actions/transactions.ts`
+- [X] T039 [US2] Create transaction sheet context provider (open/close state, edit mode with transaction data) in `components/transaction-sheet-context.tsx`
+- [X] T040 [US2] Build add/edit transaction bottom sheet with amount input (numeric keyboard), type toggle (Income/Expense segmented control), category picker (as nested sheet), date picker, description field, save/cancel actions in `components/transaction-sheet.tsx`
+- [X] T041 [US2] Build swipeable transaction list item component with category icon, description, amount (colored by type), date, and swipe-left to reveal Edit/Delete actions in `components/transaction-item.tsx`
+- [X] T042 [US2] Create floating action button component (56px circle, accent color, centered above tab bar, triggers transaction sheet) in `components/floating-action-button.tsx`
+- [X] T043 [US2] Build transactions page with sticky search bar, horizontal filter chips (All/Income/Expense), grouped-by-date transaction list with infinite scroll (Intersection Observer), empty state, and skeleton loading in `app/(app)/transactions/page.tsx`
 
 **Checkpoint**: Full transaction CRUD works. Users can add/edit/delete transactions, search, filter, and scroll through the list.
 
