@@ -108,8 +108,8 @@
 
 ### Implementation for User Story 3
 
-- [ ] T044 [P] [US3] Implement `getDashboardData()` query that returns balance (income - expenses for current month), per-bucket spending vs targets, last 5 transactions with category, next 3 upcoming recurring items, and quick stats (daily avg, safe to spend, days remaining) in `lib/queries/dashboard.ts`
-- [ ] T045 [US3] Build dashboard page as Server Component with: greeting header with date, balance summary card with month totals, horizontal-scroll 50/30/20 harmony cards (each showing spent/target/progress bar with bucket color), quick stats row (daily avg, safe to spend, days left), recent transactions widget (last 5 with "View all" link), upcoming recurring widget (next 3 items), and empty state for new users in `app/(app)/page.tsx`
+- [X] T044 [P] [US3] Implement `getDashboardData()` query that returns balance (income - expenses for current month), per-bucket spending vs targets, last 5 transactions with category, next 3 upcoming recurring items, and quick stats (daily avg, safe to spend, days remaining) in `lib/queries/dashboard.ts`
+- [X] T045 [US3] Build dashboard page as Server Component with: greeting header with date, balance summary card with month totals, horizontal-scroll 50/30/20 harmony cards (each showing spent/target/progress bar with bucket color), quick stats row (daily avg, safe to spend, days left), recent transactions widget (last 5 with "View all" link), upcoming recurring widget (next 3 items), and empty state for new users in `app/(app)/page.tsx`
 
 **Checkpoint**: Dashboard is the functional landing page showing all financial data at a glance.
 
