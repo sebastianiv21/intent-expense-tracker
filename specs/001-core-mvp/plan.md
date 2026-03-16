@@ -19,7 +19,7 @@ PostgreSQL via Neon, Drizzle ORM, and shadcn/ui components.
 
 **Language/Version**: TypeScript 5.x (strict mode), Node.js 24
 **Primary Dependencies**: Next.js 16.1.6, React 19.2.3, Better Auth
-1.4.18, Drizzle ORM 0.45.1, Zod 4.3.6, shadcn/ui 3.8.4, Radix UI,
+1.4.18, Drizzle ORM 0.45.1, Zod 4.3.6, shadcn/ui 3.8.4,
 Tailwind CSS 4, Recharts 3.7.0, date-fns 4.1.0, Lucide React
 **Storage**: PostgreSQL (Neon Serverless) via `@neondatabase/serverless`
 **Testing**: ESLint (eslint-config-next) for linting; `pnpm build`
