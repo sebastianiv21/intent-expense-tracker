@@ -172,8 +172,8 @@
 
 ### Implementation for User Story 7
 
-- [ ] T056 [P] [US7] Implement `getInsights()` query (totalExpenses, totalIncome, balance, spendingByCategory with bucket, transactionCount for a given period) and `getAllocationSummary()` query (income, targets, actual per bucket for a given month) in `lib/queries/insights.ts`
-- [ ] T057 [US7] Build insights page with date range chips (This Month, 3 Months, 6 Months, Year), 50/30/20 compliance donut chart (PieChart from Recharts, lazy loaded via next/dynamic) with compliance score, spending by category horizontal bar chart (BarChart, color-coded by bucket), allocation performance cards (Needs/Wants/Future with progress bars and actual vs target + variance), summary stats (total income, expenses, balance, transaction count), and skeleton loading in `app/(app)/insights/page.tsx`
+- [X] T056 [P] [US7] Implement `getInsights()` query (totalExpenses, totalIncome, balance, spendingByCategory with bucket, transactionCount for a given period) and `getAllocationSummary()` query (income, targets, actual per bucket for a given month) in `lib/queries/insights.ts`
+- [X] T057 [US7] Build insights page with date range chips (This Month, 3 Months, 6 Months, Year), 50/30/20 compliance donut chart (PieChart from Recharts, lazy loaded via next/dynamic) with compliance score, spending by category horizontal bar chart (BarChart, color-coded by bucket), allocation performance cards (Needs/Wants/Future with progress bars and actual vs target + variance), summary stats (total income, expenses, balance, transaction count), and skeleton loading in `app/(app)/insights/page.tsx`
 
 **Checkpoint**: Full insights page with interactive charts and date range filtering.
 
