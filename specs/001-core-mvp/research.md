@@ -45,23 +45,45 @@ suitable for serverless environments.
   already configured.
 - Raw SQL: Prohibited by constitution (Type Safety principle).
 
-### 3. API Layer Pattern
+### 3. Data Access Pattern: Server Actions + Server Components
 
-**Decision**: REST API under `/api/v1/` using Next.js App Router
-route handlers. `withAuth()` middleware for session validation.
-`withAuthAndValidation()` for routes needing Zod body validation.
-Typed API client in `lib/api-client.ts` for frontend consumption.
+**Decision**: Use Next.js Server Actions for all mutations
+(create/update/delete) and Server Components with direct Drizzle
+queries for all reads. No REST API layer.
 
-**Rationale**: Route handlers co-locate API logic with the Next.js
-app. The middleware pattern centralizes auth and validation, reducing
-boilerplate. The typed client provides autocompletion and type safety
-for frontend API calls.
+**Rationale**: The only consumer of the backend is the Next.js
+frontend itself. Building a full REST API (18 endpoints + typed API
+client + auth middleware) adds unnecessary indirection, boilerplate,
+and an extra network hop. Server Actions and Server Components
+eliminate this:
+- **Reads**: Server Components call query functions in `lib/queries/`
+  that use Drizzle directly. Data is fetched server-side and
+  streamed to the client — no client-side fetch calls needed.
+- **Mutations**: Server Actions in `lib/actions/` validate input
+  with Zod, check auth via `auth.api.getSession()`, and execute
+  Drizzle mutations. Called from client components via form actions
+  or `useTransition`.
+- **Auth**: Each action/query checks the session inline instead of
+  middleware. A shared `getAuthenticatedUser()` helper centralizes
+  this.
+- **Revalidation**: After mutations, `revalidatePath()` or
+  `revalidateTag()` refreshes the server-rendered data.
+
+**What this eliminates**:
+- All `app/api/v1/*` route handlers (12 files)
+- `lib/api-client.ts` (typed fetch client)
+- `lib/api-utils.ts` (withAuth/withAuthAndValidation middleware)
+
+**What remains**:
+- `app/api/auth/[...all]/route.ts` for Better Auth (required)
 
 **Alternatives considered**:
-- tRPC: Out of scope per constitution (API Pattern constraint).
-- Server Actions: Could be used for mutations but REST provides a
-  clearer contract boundary and is already documented in
-  API_SPECIFICATION.md.
+- Full REST API: Original design. Added ~12 route handler files plus
+  API client boilerplate with no external consumer to justify it.
+- tRPC: Out of scope per constitution; also more complex than Server
+  Actions for this use case.
+- Hybrid (REST reads + Server Actions mutations): Would keep some
+  route handlers but Server Components make REST reads redundant.
 
 ### 4. UI Component Strategy
 
@@ -98,7 +120,8 @@ Lazy loading via `next/dynamic` to avoid impacting initial bundle.
 ### 6. Recurring Transaction Processing
 
 **Decision**: Client-triggered check on app load. When the user
-visits the app, the system checks for recurring transactions with
+visits the app, the authenticated layout's Server Component calls a
+query that checks for recurring transactions with
 `nextDueDate <= today` and `isActive = true`, generates the
 corresponding transactions, and advances `nextDueDate`.
 
@@ -115,10 +138,10 @@ reflected as soon as they check.
 
 ### 7. Infinite Scroll Implementation
 
-**Decision**: Offset-based pagination with `limit` and `offset`
-query parameters on `GET /api/v1/transactions`. Frontend uses
-Intersection Observer to trigger loading the next page when the user
-scrolls near the bottom.
+**Decision**: Offset-based pagination via query function parameters.
+The initial page is server-rendered; subsequent pages are loaded
+client-side via a Server Action that returns the next batch.
+Frontend uses Intersection Observer to trigger loading.
 
 **Rationale**: Offset pagination is simple to implement and
 sufficient for the expected data volume (personal finance, hundreds
@@ -133,8 +156,8 @@ needed at higher scale but adds complexity.
 ### 8. Search Implementation
 
 **Decision**: Server-side search via SQL `ILIKE` on transaction
-description and category name. Search query passed as a query
-parameter to the transactions list endpoint.
+description and category name. Search query passed as a URL search
+param, triggering a server-side re-fetch in the Server Component.
 
 **Rationale**: Simple and effective for the expected data volume.
 Full-text search (tsvector) or external search services are

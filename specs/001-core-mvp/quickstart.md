@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- Node.js 18+ installed
+- Node.js 24+ installed
 - pnpm installed (`npm install -g pnpm`)
 - PostgreSQL database (Neon Serverless account)
 - Google OAuth credentials (for social login)
@@ -51,6 +51,18 @@ pnpm dev
 ```
 
 App available at `http://localhost:3000`.
+
+## Architecture Overview
+
+This app uses **Server Actions + Server Components** (no REST API):
+
+- **Reads**: Server Components in `app/(app)/*.tsx` call query
+  functions from `lib/queries/` which use Drizzle ORM directly.
+- **Mutations**: Client components call Server Actions from
+  `lib/actions/` for create/update/delete operations.
+- **Auth**: Every query and action checks the session via
+  `getAuthenticatedUser()` in `lib/queries/auth.ts`.
+- **Only API route**: `/api/auth/*` for Better Auth.
 
 ## User Flow Verification
 
@@ -105,8 +117,9 @@ App available at `http://localhost:3000`.
 | `app/(app)/page.tsx` | Dashboard (home) |
 | `lib/schema.ts` | Database schema (source of truth) |
 | `lib/auth.ts` | Better Auth server config |
-| `lib/api-client.ts` | Typed API client |
-| `lib/api-utils.ts` | Auth/validation middleware |
+| `lib/actions/` | Server Actions (all mutations) |
+| `lib/queries/` | Data-fetching functions (for RSC) |
+| `lib/validations/` | Zod schemas (shared) |
 
 ## Validation Checklist
 

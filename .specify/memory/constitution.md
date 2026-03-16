@@ -1,23 +1,23 @@
 <!--
   === Sync Impact Report ===
-  Version change: N/A (template) → 1.0.0 (initial adoption)
-  Modified principles: N/A (first fill)
-  Added sections:
-    - Core Principles (5): Mobile-First Design, Type Safety & Validation,
-      Security by Default, Accessibility, Simplicity & Intentionality
-    - Technology Constraints
-    - Development Workflow
-    - Governance
+  Version change: 1.0.0 → 1.1.0 (MINOR)
+  Modified principles:
+    - II. Type Safety & Validation: updated "API request and response
+      payloads" → "Server Action inputs" to reflect new architecture
+    - III. Security by Default: replaced REST middleware language with
+      Server Actions + query functions auth pattern
+  Added sections: None
   Removed sections: None
+  Changed constraints:
+    - Technology Constraints > API Pattern: REST → Server Actions + RSC
+  Changed workflow:
+    - Development Workflow: removed API client sync rule, added Server
+      Actions and queries convention
   Templates requiring updates:
-    - .specify/templates/plan-template.md ✅ aligned (Constitution Check
-      section references gates from constitution — no update needed,
-      gates are filled at plan time)
-    - .specify/templates/spec-template.md ✅ aligned (no constitution-
-      specific sections to update)
-    - .specify/templates/tasks-template.md ✅ aligned (task phases and
-      categories are generic; no principle-driven task types to add)
-    - .specify/templates/commands/*.md — directory does not exist; N/A
+    - .specify/templates/plan-template.md ✅ aligned
+    - .specify/templates/spec-template.md ✅ aligned
+    - .specify/templates/tasks-template.md ✅ aligned
+    - .specify/templates/commands/*.md — N/A (does not exist)
   Follow-up TODOs: None
   ===========================
 -->
@@ -44,23 +44,24 @@ optimized for the most common usage context.
 ### II. Type Safety & Validation
 
 TypeScript strict mode MUST be enabled across the entire codebase.
-All API request and response payloads MUST be validated at runtime
-using Zod schemas. Database queries MUST use Drizzle ORM's type-safe
-query builder — raw SQL is prohibited unless explicitly justified.
-Shared types MUST be defined in `types/index.ts` and inferred from
-Drizzle schemas or Zod schemas where possible to avoid duplication.
+All Server Action inputs MUST be validated at runtime using Zod
+schemas defined in `lib/validations/`. Database queries MUST use
+Drizzle ORM's type-safe query builder — raw SQL is prohibited unless
+explicitly justified. Shared types MUST be defined in `types/index.ts`
+and inferred from Drizzle schemas or Zod schemas where possible to
+avoid duplication.
 
-**Rationale**: Runtime validation at API boundaries catches malformed
-data before it reaches business logic. End-to-end type inference
-from database schema to API response eliminates an entire class of
-bugs.
+**Rationale**: Runtime validation at mutation boundaries catches
+malformed data before it reaches business logic. End-to-end type
+inference from database schema to component props eliminates an
+entire class of bugs.
 
 ### III. Security by Default
 
-Every API route under `/api/v1/` MUST use the `withAuth()` or
-`withAuthAndValidation()` middleware — no unauthenticated data
-endpoints are permitted. All database queries MUST scope data by
-`userId` to prevent cross-user data access. Sensitive values
+Every Server Action in `lib/actions/` and every query function in
+`lib/queries/` MUST call `getAuthenticatedUser()` to verify the
+session before accessing data. All database queries MUST scope data
+by `userId` to prevent cross-user data access. Sensitive values
 (database URLs, OAuth secrets, session tokens) MUST NOT appear in
 client-side code, logs, or version control. Environment variables
 containing secrets MUST NOT use the `NEXT_PUBLIC_` prefix. CSRF
@@ -102,6 +103,7 @@ complexity, and using the YAGNI principle.
 
 - **Framework**: Next.js 16 with App Router — Pages Router is
   prohibited
+- **Runtime**: Node.js 24
 - **Styling**: Tailwind CSS 4 with design tokens in `globals.css` —
   CSS modules and CSS-in-JS libraries are prohibited
 - **Components**: shadcn/ui (Radix UI + Tailwind) as the component
@@ -113,8 +115,10 @@ complexity, and using the YAGNI principle.
   implementations are prohibited
 - **Validation**: Zod 4 for all runtime schema validation
 - **Package Manager**: pnpm exclusively — npm and yarn are prohibited
-- **API Pattern**: REST under `/api/v1/` with Next.js route handlers —
-  GraphQL and tRPC are out of scope for v1
+- **Data Access Pattern**: Server Actions for mutations + Server
+  Components with direct Drizzle queries for reads. No REST API
+  layer — the only API route is `/api/auth/*` for Better Auth.
+  GraphQL and tRPC are out of scope.
 
 ## Development Workflow
 
@@ -124,8 +128,14 @@ complexity, and using the YAGNI principle.
 - **Linting**: `pnpm lint` MUST pass before any code is committed
 - **Build verification**: `pnpm build` MUST succeed before merging
   to `main`
-- **API client sync**: When API endpoints change, `lib/api-client.ts`
-  MUST be updated to reflect the new contract
+- **Server Actions**: Mutations MUST be implemented as Server Actions
+  in `lib/actions/`. Each action MUST validate input with Zod and
+  check auth via `getAuthenticatedUser()`
+- **Query functions**: Data fetching MUST be implemented as async
+  functions in `lib/queries/` and called from Server Components.
+  Each query MUST check auth and scope by userId
+- **Validation schemas**: Zod schemas MUST be defined in
+  `lib/validations/` and shared between actions and client forms
 - **Component conventions**: New UI components MUST be placed in
   `components/` (shared) or colocated with their route. shadcn/ui
   primitives go in `components/ui/`
@@ -156,4 +166,4 @@ semantic versioning rules:
 "Constitution Check" section in the plan template MUST reference
 applicable principles from this document as gates.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-15 | **Last Amended**: 2026-03-15
+**Version**: 1.1.0 | **Ratified**: 2026-03-15 | **Last Amended**: 2026-03-16
