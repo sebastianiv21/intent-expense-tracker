@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Chrome } from "lucide-react";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -20,15 +22,13 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const result = await signIn.email({
-      email,
-      password,
-      callbackURL: "/",
-    });
+    const result = await signIn.email({ email, password });
 
     if (result.error) {
       setError(result.error.message ?? "Invalid credentials");
       setLoading(false);
+    } else {
+      router.push("/");
     }
   }
 

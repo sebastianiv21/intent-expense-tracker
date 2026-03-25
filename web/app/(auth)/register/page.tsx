@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signIn, signUp } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Chrome } from "lucide-react";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,16 +23,13 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
 
-    const result = await signUp.email({
-      name,
-      email,
-      password,
-      callbackURL: "/onboarding",
-    });
+    const result = await signUp.email({ name, email, password });
 
     if (result.error) {
       setError(result.error.message ?? "Registration failed");
       setLoading(false);
+    } else {
+      router.push("/onboarding");
     }
   }
 
