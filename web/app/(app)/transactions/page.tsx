@@ -1,10 +1,6 @@
 import { getTransactions } from "@/lib/queries/transactions";
-import { getCategories } from "@/lib/queries/categories";
 import { PageHeader } from "@/components/page-header";
-import { TransactionSheetProvider } from "@/components/transaction-sheet-context";
-import { TransactionSheet } from "@/components/transaction-sheet";
 import { TransactionItem } from "@/components/transaction-item";
-import { FloatingActionButton } from "@/components/floating-action-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { TransactionType } from "@/types";
@@ -27,19 +23,15 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
   const typeParam = resolvedParams?.type;
   const searchQuery = resolvedParams?.query ?? "";
 
-  const [transactions, categories] = await Promise.all([
-    getTransactions({
-      type: typeParam,
-      search: searchQuery,
-      orderBy: "date_desc",
-      limit: 50,
-    }),
-    getCategories(),
-  ]);
+  const transactions = await getTransactions({
+    type: typeParam,
+    search: searchQuery,
+    orderBy: "date_desc",
+    limit: 50,
+  });
 
   return (
-    <TransactionSheetProvider>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <PageHeader
           title="Transactions"
           description="Track income and expenses"
@@ -100,11 +92,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
             ))
           )}
         </div>
-      </div>
-
-      <TransactionSheet categories={categories} />
-      <FloatingActionButton />
-    </TransactionSheetProvider>
+    </div>
   );
 }
 

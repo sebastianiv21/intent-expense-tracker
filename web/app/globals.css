@@ -4,34 +4,34 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --card: #111111;
-  --card-foreground: #ededed;
-  --popover: #111111;
-  --popover-foreground: #ededed;
-  --primary: #ededed;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #ededed;
-  --muted: #1a1a1a;
-  --muted-foreground: #888888;
-  --accent: #6366f1;
+  --background: #171210;
+  --foreground: #f5ede6;
+  --card: #211916;
+  --card-foreground: #f5ede6;
+  --popover: #211916;
+  --popover-foreground: #f5ede6;
+  --primary: #f5ede6;
+  --primary-foreground: #171210;
+  --secondary: #2c2018;
+  --secondary-foreground: #f5ede6;
+  --muted: #2c2018;
+  --muted-foreground: #9e8a7e;
+  --accent: #c4714a;
   --accent-foreground: #ffffff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #2a2a2a;
-  --input: #1a1a1a;
-  --ring: #6366f1;
+  --border: #3a2820;
+  --input: #2c2018;
+  --ring: #c4714a;
   --radius: 0.75rem;
 
   /* 50/30/20 bucket colors */
   --bucket-needs: #8b9a7e;
-  --bucket-wants: #c97a5a;
+  --bucket-wants: #c4714a;
   --bucket-future: #a89562;
 
   /* Income / Expense */
-  --income: #6aaa6a;
+  --income: #7aaa7a;
   --expense: #e05252;
 
   /* Typography */

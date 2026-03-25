@@ -2,43 +2,61 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, List, BarChart2, User } from "lucide-react";
+import { Home, List, BarChart2, User, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTransactionSheet } from "@/components/transaction-sheet-context";
 
-const NAV_ITEMS = [
+const LEFT_ITEMS = [
   { href: "/", label: "Home", icon: Home },
   { href: "/transactions", label: "Activity", icon: List },
+];
+
+const RIGHT_ITEMS = [
   { href: "/insights", label: "Stats", icon: BarChart2 },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { openCreate } = useTransactionSheet();
+
+  function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
+    const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+    return (
+      <Link
+        href={href}
+        className={cn(
+          "flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] rounded-lg transition-colors",
+          isActive ? "text-accent" : "text-muted-foreground"
+        )}
+        aria-label={label}
+        aria-current={isActive ? "page" : undefined}
+      >
+        <Icon className="h-5 w-5" />
+        <span className="text-[10px] font-medium">{label}</span>
+      </Link>
+    );
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border lg:hidden">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
-        {NAV_ITEMS.map((item) => {
-          const isActive =
-            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          const Icon = item.icon;
+        {LEFT_ITEMS.map((item) => (
+          <NavItem key={item.href} {...item} />
+        ))}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] rounded-lg transition-colors",
-                isActive ? "text-accent" : "text-muted-foreground"
-              )}
-              aria-label={item.label}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
+        <button
+          type="button"
+          onClick={openCreate}
+          className="flex items-center justify-center h-14 w-14 rounded-full bg-accent text-accent-foreground shadow-lg -mt-6 transition-opacity hover:opacity-90"
+          aria-label="Add transaction"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+
+        {RIGHT_ITEMS.map((item) => (
+          <NavItem key={item.href} {...item} />
+        ))}
       </div>
     </nav>
   );

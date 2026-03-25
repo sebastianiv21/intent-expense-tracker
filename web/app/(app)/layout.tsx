@@ -6,6 +6,7 @@ import { financialProfile } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { processRecurringTransactions } from "@/lib/actions/recurring";
+import { getCategories } from "@/lib/queries/categories";
 
 export default async function AppLayout({
   children,
@@ -32,5 +33,7 @@ export default async function AppLayout({
 
   await processRecurringTransactions();
 
-  return <AppShell>{children}</AppShell>;
+  const categories = await getCategories();
+
+  return <AppShell categories={categories}>{children}</AppShell>;
 }
