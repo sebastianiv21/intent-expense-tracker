@@ -29,9 +29,9 @@
 
 **⚠️ CRITICAL**: Phases 3–5 cannot begin until T002 and T003 are complete.
 
-- [ ] T002 Add `selectedBucket: AllocationBucket` state (default `"needs"`) to `web/components/transaction-sheet.tsx`; update `syncStateFromProps` to derive `selectedBucket` from `transaction.category.allocationBucket` in edit mode and auto-set `categoryId` to the first matching category in the active bucket on open
+- [x] T002 Add `selectedBucket: AllocationBucket` state (default `"needs"`) to `web/components/transaction-sheet.tsx`; update `syncStateFromProps` to derive `selectedBucket` from `transaction.category.allocationBucket` in edit mode and auto-set `categoryId` to the first matching category in the active bucket on open
 
-- [ ] T003 Update `filteredCategories` useMemo in `web/components/transaction-sheet.tsx` to filter expense categories by `cat.type === "expense" && cat.allocationBucket === selectedBucket`, and income categories by `cat.type === "income"` only (replacing the current `cat.type === type` filter)
+- [x] T003 Update `filteredCategories` useMemo in `web/components/transaction-sheet.tsx` to filter expense categories by `cat.type === "expense" && cat.allocationBucket === selectedBucket`, and income categories by `cat.type === "income"` only (replacing the current `cat.type === type` filter)
 
 **Checkpoint**: State shape is correct — `filteredCategories` now updates when `selectedBucket` or `type` changes; pre-selection works in both create and edit modes.
 
@@ -43,15 +43,15 @@
 
 **Independent Test**: Open the sheet, verify all five input areas are visible without scrolling, select a bucket, watch the category list update, tap a pill, enter an amount, and tap "Add" to confirm a transaction is saved.
 
-- [ ] T004 [US1] Redesign the amount input section in `web/components/transaction-sheet.tsx` — apply `text-4xl font-bold text-center` to the `<Input>`, keep the absolutely-positioned `$` prefix `<span>`, and use `inputMode="decimal"` for mobile keyboard; render a helper text element below the input (e.g., `<p className="text-xs text-muted-foreground text-center">Enter an amount to continue</p>`) when `amount` is empty or zero to provide visible feedback (FR-008, SC-003)
+- [x] T004 [US1] Redesign the amount input section in `web/components/transaction-sheet.tsx` — apply `text-4xl font-bold text-center` to the `<Input>`, keep the absolutely-positioned `$` prefix `<span>`, and use `inputMode="decimal"` for mobile keyboard; render a helper text element below the input (e.g., `<p className="text-xs text-muted-foreground text-center">Enter an amount to continue</p>`) when `amount` is empty or zero to provide visible feedback (FR-008, SC-003)
 
-- [ ] T005 [P] [US1] Add the intent bucket selector section in `web/components/transaction-sheet.tsx` — render three `<button>` elements for Needs/Wants/Future using `Home`, `Coffee`, `PiggyBank` icons from `lucide-react` (icon above, text label below); each button MUST have `min-h-[44px] min-w-[44px]` to satisfy the 44px touch target requirement (Constitution §I); apply active state styling (border highlight using `--accent`) on the selected bucket; clicking a button sets `selectedBucket` and resets `categoryId` to the first category in the new bucket; add `aria-pressed={bucket === selectedBucket}` and `aria-label` to each button
+- [x] T005 [P] [US1] Add the intent bucket selector section in `web/components/transaction-sheet.tsx` — render three `<button>` elements for Needs/Wants/Future using `Home`, `Coffee`, `PiggyBank` icons from `lucide-react` (icon above, text label below); each button MUST have `min-h-[44px] min-w-[44px]` to satisfy the 44px touch target requirement (Constitution §I); apply active state styling (border highlight using `--accent`) on the selected bucket; clicking a button sets `selectedBucket` and resets `categoryId` to the first category in the new bucket; add `aria-pressed={bucket === selectedBucket}` and `aria-label` to each button
 
-- [ ] T006 [P] [US1] Replace the "Choose category" `<Button>` trigger with an inline horizontal-scroll pill row in `web/components/transaction-sheet.tsx` — use `<div className="flex overflow-x-auto gap-2 pb-1 [&::-webkit-scrollbar]:hidden">` containing one `<button>` per category showing `cat.icon` and `cat.name`; each pill MUST have `min-h-[44px]` to satisfy the 44px touch target requirement (Constitution §I); apply active state styling when `cat.id === categoryId`; clicking a pill sets `categoryId`; add `aria-pressed` and `aria-label="Select {cat.name}"` to each pill; add a `<Label>` element reading "CATEGORY" above the pill row; when `filteredCategories.length === 0`, render a placeholder message (e.g., "No categories for this bucket") instead of an empty row
+- [x] T006 [P] [US1] Replace the "Choose category" `<Button>` trigger with an inline horizontal-scroll pill row in `web/components/transaction-sheet.tsx` — use `<div className="flex overflow-x-auto gap-2 pb-1 [&::-webkit-scrollbar]:hidden">` containing one `<button>` per category showing `cat.icon` and `cat.name`; each pill MUST have `min-h-[44px]` to satisfy the 44px touch target requirement (Constitution §I); apply active state styling when `cat.id === categoryId`; clicking a pill sets `categoryId`; add `aria-pressed` and `aria-label="Select {cat.name}"` to each pill; add a `<Label>` element reading "CATEGORY" above the pill row; when `filteredCategories.length === 0`, render a placeholder message (e.g., "No categories for this bucket") instead of an empty row
 
-- [ ] T007 [US1] Remove the two-step flow from `web/components/transaction-sheet.tsx` — delete the `step` state, remove the `step === "category"` JSX branch entirely (search input, vertical scrollable category list, "Done" button), and remove the `setCategorySearch` / `categorySearch` state; consolidate everything into the single-step layout
+- [x] T007 [US1] Remove the two-step flow from `web/components/transaction-sheet.tsx` — delete the `step` state, remove the `step === "category"` JSX branch entirely (search input, vertical scrollable category list, "Done" button), and remove the `setCategorySearch` / `categorySearch` state; consolidate everything into the single-step layout
 
-- [ ] T008 [US1] Replace the dual "Cancel"/"Save" footer in `web/components/transaction-sheet.tsx` with a single full-width "Add" button; use text-only loading state ("Saving…") — do NOT use a spinner or `Loader` icon (Constitution §I); the button MUST be disabled when `amount` is empty/zero OR when `filteredCategories.length === 0` (empty bucket edge case); the Radix `SheetContent` X button already handles dismissal so no separate Cancel is needed
+- [x] T008 [US1] Replace the dual "Cancel"/"Save" footer in `web/components/transaction-sheet.tsx` with a single full-width "Add" button; use text-only loading state ("Saving…") — do NOT use a spinner or `Loader` icon (Constitution §I); the button MUST be disabled when `amount` is empty/zero OR when `filteredCategories.length === 0` (empty bucket edge case); the Radix `SheetContent` X button already handles dismissal so no separate Cancel is needed
 
 **Checkpoint**: User Story 1 is fully functional — single-step expense entry with bucket picker and category pills works end-to-end.
 
@@ -63,7 +63,7 @@
 
 **Independent Test**: Open the sheet, tap "Income", verify the bucket selector disappears and the pill row shows income-type categories. Submit and confirm a transaction is saved with `type = "income"`. Tap "Expense" and confirm the bucket selector reappears.
 
-- [ ] T009 [US2] In `web/components/transaction-sheet.tsx`, conditionally render the intent bucket selector only when `type === "expense"` (wrap in `{type === "expense" && (...)}` or apply `hidden`); when the type toggle switches back to `"expense"`, reset `selectedBucket` to `"needs"` and `categoryId` to the first Needs category; when switching to `"income"`, reset `categoryId` to the first income category
+- [x] T009 [US2] In `web/components/transaction-sheet.tsx`, conditionally render the intent bucket selector only when `type === "expense"` (wrap in `{type === "expense" && (...)}` or apply `hidden`); when the type toggle switches back to `"expense"`, reset `selectedBucket` to `"needs"` and `categoryId` to the first Needs category; when switching to `"income"`, reset `categoryId` to the first income category
 
 **Checkpoint**: User Stories 1 and 2 both work independently — switching between expense and income modes behaves correctly with no bucket row shown for income.
 
@@ -75,7 +75,7 @@
 
 **Independent Test**: Open the sheet, verify the label reads "Notes" and the placeholder reads "Add a note about this transaction...". Enter a note, submit, and confirm it is saved with the transaction.
 
-- [ ] T010 [US3] In `web/components/transaction-sheet.tsx`, rename the `<Label>` from "Description" to "Notes"; replace the single-line `<Input>` with a plain HTML `<textarea>` styled with `cn("w-full rounded-md border border-input bg-input px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none", ...)` (no new shadcn component required); set `rows={3}` and placeholder to `"Add a note about this transaction..."`; update the `description` state setter to use `event.target.value`
+- [x] T010 [US3] In `web/components/transaction-sheet.tsx`, rename the `<Label>` from "Description" to "Notes"; replace the single-line `<Input>` with a plain HTML `<textarea>` styled with `cn("w-full rounded-md border border-input bg-input px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none", ...)` (no new shadcn component required); set `rows={3}` and placeholder to `"Add a note about this transaction..."`; update the `description` state setter to use `event.target.value`
 
 **Checkpoint**: All three user stories are fully functional and independently testable.
 
@@ -85,13 +85,13 @@
 
 **Purpose**: Accessibility compliance, linting, build verification, and manual QA.
 
-- [ ] T011 [P] Audit `web/components/transaction-sheet.tsx` for WCAG 2.1 AA compliance — confirm every bucket button has `aria-pressed` + `aria-label`, every category pill has `aria-pressed` + `aria-label="Select {name}"`, the error `<p>` has `role="alert"`, and the amount `<Input>` has `id="amount"` linked to its `<label htmlFor="amount">`
+- [x] T011 [P] Audit `web/components/transaction-sheet.tsx` for WCAG 2.1 AA compliance — confirm every bucket button has `aria-pressed` + `aria-label`, every category pill has `aria-pressed` + `aria-label="Select {name}"`, the error `<p>` has `role="alert"`, and the amount `<Input>` has `id="amount"` linked to its `<label htmlFor="amount">`
 
-- [ ] T012 Run `pnpm lint` in `web/` and resolve all ESLint errors before committing
+- [x] T012 Run `pnpm lint` in `web/` and resolve all ESLint errors before committing
 
-- [ ] T013 Run `pnpm build` in `web/` and resolve any TypeScript type errors or Next.js build failures
+- [x] T013 Run `pnpm build` in `web/` and resolve any TypeScript type errors or Next.js build failures
 
-- [ ] T014 Manually validate all test scenarios from `specs/002-transaction-sheet-redesign/quickstart.md`: expense happy path, income mode, amount validation, and edit mode with correct bucket pre-selection
+- [x] T014 Manually validate all test scenarios from `specs/002-transaction-sheet-redesign/quickstart.md`: expense happy path, income mode, amount validation, and edit mode with correct bucket pre-selection
 
 ---
 

@@ -4,93 +4,93 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #171210;
-  --foreground: #f5ede6;
-  --card: #211916;
-  --card-foreground: #f5ede6;
-  --popover: #211916;
-  --popover-foreground: #f5ede6;
-  --primary: #f5ede6;
-  --primary-foreground: #171210;
-  --secondary: #2c2018;
-  --secondary-foreground: #f5ede6;
-  --muted: #2c2018;
-  --muted-foreground: #9e8a7e;
-  --accent: #c4714a;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #3a2820;
-  --input: #2c2018;
-  --ring: #c4714a;
-  --radius: 0.75rem;
+    --background: #171210;
+    --foreground: #f5ede6;
+    --card: #211916;
+    --card-foreground: #f5ede6;
+    --popover: #211916;
+    --popover-foreground: #f5ede6;
+    --primary: #c4714a;
+    --primary-foreground: #171210;
+    --secondary: #2c2018;
+    --secondary-foreground: #f5ede6;
+    --muted: #2c2018;
+    --muted-foreground: #9e8a7e;
+    --accent: #c4714a;
+    --accent-foreground: #ffffff;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #3a2820;
+    --input: #2c2018;
+    --ring: #c4714a;
+    --radius: 0.75rem;
 
-  /* 50/30/20 bucket colors */
-  --bucket-needs: #8b9a7e;
-  --bucket-wants: #c4714a;
-  --bucket-future: #a89562;
+    /* 50/30/20 bucket colors */
+    --bucket-needs: #8b9a7e;
+    --bucket-wants: #c4714a;
+    --bucket-future: #a89562;
 
-  /* Income / Expense */
-  --income: #7aaa7a;
-  --expense: #e05252;
+    /* Income / Expense */
+    --income: #7aaa7a;
+    --expense: #e05252;
 
-  /* Typography */
-  --font-sans: var(--font-plus-jakarta);
-  --font-mono: var(--font-geist-mono);
+    /* Typography */
+    --font-sans: var(--font-plus-jakarta);
+    --font-mono: var(--font-geist-mono);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-bucket-needs: var(--bucket-needs);
-  --color-bucket-wants: var(--bucket-wants);
-  --color-bucket-future: var(--bucket-future);
-  --color-income: var(--income);
-  --color-expense: var(--expense);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-plus-jakarta);
-  --font-mono: var(--font-geist-mono);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-bucket-needs: var(--bucket-needs);
+    --color-bucket-wants: var(--bucket-wants);
+    --color-bucket-future: var(--bucket-future);
+    --color-income: var(--income);
+    --color-expense: var(--expense);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --font-sans: var(--font-plus-jakarta);
+    --font-mono: var(--font-geist-mono);
 }
 
 * {
-  border-color: var(--border);
+    border-color: var(--border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
