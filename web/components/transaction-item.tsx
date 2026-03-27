@@ -1,33 +1,25 @@
 "use client";
 
-import { useState } from "react";
 import { format } from "date-fns";
-import { Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatCurrency, getTransactionColor } from "@/lib/finance-utils";
-import { deleteTransaction } from "@/lib/actions/transactions";
 import { useTransactionSheet } from "@/components/transaction-sheet-context";
 import type { TransactionWithCategory } from "@/types";
 
 type TransactionItemProps = {
   transaction: TransactionWithCategory;
+  onDelete?: (transaction: TransactionWithCategory) => void;
 };
 
-export function TransactionItem({ transaction }: TransactionItemProps) {
+export function TransactionItem({ transaction, onDelete }: TransactionItemProps) {
   const { openEdit } = useTransactionSheet();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleDelete() {
-    setIsDeleting(true);
-    setError("");
-    const result = await deleteTransaction(transaction.id);
-    if (!result.success) {
-      setError(result.error);
-      setIsDeleting(false);
-      return;
-    }
-  }
 
   const amountColor = getTransactionColor(transaction.type);
 
@@ -47,48 +39,36 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
             </p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm font-semibold" style={{ color: amountColor }}>
-            {transaction.type === "expense" ? "-" : "+"}
-            {formatCurrency(transaction.amount)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {format(new Date(transaction.date), "yyyy")}
-          </p>
+        <div className="flex items-start gap-2">
+          <div className="text-right">
+            <p className="text-sm font-semibold" style={{ color: amountColor }}>
+              {transaction.type === "expense" ? "-" : "+"}
+              {formatCurrency(transaction.amount)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(transaction.date), "yyyy")}
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px] -mr-2 shrink-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openEdit(transaction)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete?.(transaction)}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-
-      <div className="mt-3 flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="min-h-[44px]"
-          onClick={() => openEdit(transaction)}
-          aria-label={`Edit ${transaction.description || transaction.category?.name || "transaction"}`}
-        >
-          <Pencil className="h-4 w-4" />
-          Edit
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="min-h-[44px] text-destructive hover:text-destructive"
-          onClick={handleDelete}
-          disabled={isDeleting}
-          aria-label={`Delete ${transaction.description || transaction.category?.name || "transaction"}`}
-        >
-          <Trash2 className="h-4 w-4" />
-          {isDeleting ? "Deleting…" : "Delete"}
-        </Button>
-      </div>
-
-      {error && (
-        <p className="mt-2 text-xs text-destructive" role="alert">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

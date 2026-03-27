@@ -2,7 +2,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, transactions } from "@/lib/schema";
 import { getAuthenticatedUser } from "@/lib/queries/auth";
-import type { Category, Transaction, TransactionType, TransactionWithCategory } from "@/types";
+import type { Category, Transaction, TransactionTotals, TransactionType, TransactionWithCategory } from "@/types";
 
 type OrderBy = "date_desc" | "date_asc" | "amount_desc" | "amount_asc";
 
@@ -65,4 +65,40 @@ export async function getTransactions(params: {
     ...(transaction as Transaction),
     category: (category as Category) ?? null,
   }));
+}
+
+export async function getTransactionTotals(params: {
+  type?: TransactionType;
+  search?: string;
+}): Promise<TransactionTotals> {
+  const { userId } = await getAuthenticatedUser();
+  const { type, search } = params;
+
+  const conditions = [eq(transactions.userId, userId)];
+
+  if (type) {
+    conditions.push(eq(transactions.type, type));
+  }
+
+  if (search && search.trim().length > 0) {
+    const term = `%${search.trim()}%`;
+    const searchCondition = sql`${transactions.description} ILIKE ${term} OR ${categories.name} ILIKE ${term}`;
+    conditions.push(searchCondition);
+  }
+
+  const result = await db
+    .select({
+      count: sql<number>`COUNT(*)::int`,
+      totalIncome: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' THEN ${transactions.amount}::numeric ELSE 0 END), 0)`,
+      totalExpenses: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' THEN ${transactions.amount}::numeric ELSE 0 END), 0)`,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(and(...conditions));
+
+  return {
+    count: result[0]?.count ?? 0,
+    totalIncome: Number(result[0]?.totalIncome ?? 0),
+    totalExpenses: Number(result[0]?.totalExpenses ?? 0),
+  };
 }

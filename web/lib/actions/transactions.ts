@@ -5,11 +5,12 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { transactions } from "@/lib/schema";
 import { getAuthenticatedUser } from "@/lib/queries/auth";
+import { getTransactions } from "@/lib/queries/transactions";
 import {
   createTransactionSchema,
   updateTransactionSchema,
 } from "@/lib/validations/transactions";
-import type { ActionResult, Transaction } from "@/types";
+import type { ActionResult, FilterState, Transaction, TransactionBatch, TransactionType, TransactionWithCategory } from "@/types";
 
 export async function createTransaction(
   formData: unknown
@@ -112,4 +113,32 @@ export async function deleteTransaction(
   revalidatePath("/");
 
   return { success: true };
+}
+
+export async function loadMoreTransactions(params: {
+  limit: number;
+  offset: number;
+  type?: TransactionType;
+  search?: string;
+}): Promise<TransactionBatch> {
+  const rows = await getTransactions({
+    ...params,
+    limit: params.limit + 1,
+    orderBy: "date_desc",
+  });
+
+  return {
+    transactions: rows.slice(0, params.limit),
+    hasMore: rows.length > params.limit,
+  };
+}
+
+export async function exportTransactions(
+  params: FilterState
+): Promise<TransactionWithCategory[]> {
+  return getTransactions({
+    ...params,
+    limit: 10_000,
+    orderBy: "date_desc",
+  });
 }

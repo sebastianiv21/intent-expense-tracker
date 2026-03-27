@@ -97,3 +97,21 @@ export type RecurringTransactionWithCategory = RecurringTransaction & {
 export type ActionResult<T = void> =
   | { success: true; data?: T }
   | { success: false; error: string; issues?: ZodIssue[] };
+
+// ─── Transaction Batching & Filtering ─────────────────────────────────────────
+
+export type TransactionBatch = {
+  transactions: TransactionWithCategory[];
+  hasMore: boolean;
+};
+
+export type TransactionTotals = {
+  count: number;
+  totalIncome: number;
+  totalExpenses: number;
+};
+
+export type FilterState = {
+  type?: TransactionType;
+  search?: string;
+};
