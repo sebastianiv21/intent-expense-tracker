@@ -39,6 +39,7 @@ export async function getInsights(params: {
   const spendingByCategory = await db
     .select({
       name: categories.name,
+      icon: categories.icon,
       bucket: categories.allocationBucket,
       value: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
     })
@@ -52,7 +53,7 @@ export async function getInsights(params: {
         lte(transactions.date, endDate)
       )
     )
-    .groupBy(categories.name, categories.allocationBucket);
+    .groupBy(categories.name, categories.icon, categories.allocationBucket);
 
   return {
     totalExpenses: Number(totals[0]?.totalExpenses ?? 0),
@@ -61,6 +62,7 @@ export async function getInsights(params: {
     transactionCount: Number(totals[0]?.count ?? 0),
     spendingByCategory: spendingByCategory.map((row) => ({
       name: row.name ?? "Uncategorized",
+      icon: row.icon ?? null,
       value: Number(row.value ?? 0),
       bucket: (row.bucket ?? "needs") as AllocationBucket,
     })),

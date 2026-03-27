@@ -24,8 +24,8 @@
 
 **Purpose**: Prepare typography and animation utilities for the redesign
 
-- [ ] T001 Add `tabular-nums` utility class to Tailwind configuration in `web/app/globals.css` for consistent number alignment
-- [ ] T002 Define animation timing constants (delays, durations, easing) in `web/components/insights-page.tsx` for staggered chart reveals
+- [x] T001 Add `tabular-nums` utility class to Tailwind configuration in `web/app/globals.css` for consistent number alignment
+- [x] T002 Define animation timing constants (delays, durations, easing) in `web/components/insights-page.tsx` for staggered chart reveals
 
 ---
 
@@ -35,10 +35,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Update grid layout patterns in `web/components/insights-page.tsx` from symmetric `lg:grid-cols-2` to asymmetric `lg:grid-cols-[1.5fr_1fr]`
-- [ ] T004 Add responsive height classes to chart containers in `web/components/insights-page.tsx` (`h-48 sm:h-56 md:h-64 lg:h-72`)
-- [ ] T005 Update typography hierarchy in `web/components/insights-page.tsx` - use weight contrast (Medium → Semibold → Bold) for visual hierarchy
-- [ ] T006 Add bucket icons (using Lucide React) to bucket labels for non-color distinction in `web/components/insights-page.tsx`
+- [x] T003 Update grid layout patterns in `web/components/insights-page.tsx` from symmetric `lg:grid-cols-2` to asymmetric `lg:grid-cols-[1.5fr_1fr]`
+- [x] T004 Add responsive height classes to chart containers in `web/components/insights-page.tsx` (`h-48 sm:h-56 md:h-64 lg:h-72`)
+- [x] T005 Update typography hierarchy in `web/components/insights-page.tsx` - use weight contrast (Medium → Semibold → Bold) for visual hierarchy
+- [x] T006 Add bucket icons (using Lucide React) to bucket labels for non-color distinction in `web/components/insights-page.tsx`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -52,11 +52,11 @@
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Redesign compliance score display in `web/components/insights-page.tsx` - make score larger and more prominent with refined typography
-- [ ] T008 [US1] Add animation props to Pie component in `web/components/insights-page.tsx` (`animationBegin={100}`, `animationDuration={800}`, `animationEasing="ease-out"`)
-- [ ] T009 [US1] Implement active shape hover effect for donut chart in `web/components/insights-page.tsx` - expand slice on hover with drop shadow
-- [ ] T010 [US1] Add empty state for compliance section when no expenses recorded OR zero income in `web/components/insights-page.tsx` - show N/A or guidance message per spec edge case
-- [ ] T011 [US1] Add bucket legend below donut chart with icons and amounts in `web/components/insights-page.tsx`
+- [x] T007 [US1] Redesign compliance score display in `web/components/insights-page.tsx` - make score larger and more prominent with refined typography
+- [x] T008 [US1] Add animation props to Pie component in `web/components/insights-page.tsx` (`animationBegin={100}`, `animationDuration={800}`, `animationEasing="ease-out"`)
+- [x] T009 [US1] Implement active shape hover effect for donut chart in `web/components/insights-page.tsx` - expand slice on hover with drop shadow (NOTE: Recharts 3 Pie component does not support activeShape, simplified to basic animation)
+- [x] T010 [US1] Add empty state for compliance section when no expenses recorded OR zero income in `web/components/insights-page.tsx` - show N/A or guidance message per spec edge case
+- [x] T011 [US1] Add bucket legend below donut chart with icons and amounts in `web/components/insights-page.tsx`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can see compliance status immediately
 
@@ -70,11 +70,11 @@
 
 ### Implementation for User Story 2
 
-- [ ] T012 [US2] Redesign bucket cards layout in `web/components/insights-page.tsx` - use responsive grid `grid gap-4 sm:grid-cols-3`
-- [ ] T013 [US2] Add variance visual emphasis for overspending in `web/components/insights-page.tsx` - distinct color/styling when variance is negative
-- [ ] T014 [US2] Update progress bars to show overage beyond 100% in `web/components/insights-page.tsx` - extend bar visually past target threshold
-- [ ] T015 [US2] Add bucket icons to each card header for non-color distinction in `web/components/insights-page.tsx`
-- [ ] T016 [US2] Add `tabular-nums` class to all currency values in bucket cards in `web/components/insights-page.tsx`
+- [x] T012 [US2] Redesign bucket cards layout in `web/components/insights-page.tsx` - use responsive grid `grid gap-4 sm:grid-cols-3`
+- [x] T013 [US2] Add variance visual emphasis for overspending in `web/components/insights-page.tsx` - distinct color/styling when variance is negative
+- [x] T014 [US2] Update progress bars to show overage beyond 100% in `web/components/insights-page.tsx` - extend bar visually past target threshold
+- [x] T015 [US2] Add bucket icons to each card header for non-color distinction in `web/components/insights-page.tsx`
+- [x] T016 [US2] Add `tabular-nums` class to all currency values in bucket cards in `web/components/insights-page.tsx`
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -88,11 +88,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T017 [US3] Redesign spending by category chart container in `web/components/insights-page.tsx` - asymmetric layout with generous negative space
-- [ ] T018 [US3] Add animation props to Bar component in `web/components/insights-page.tsx` (`animationBegin={300}`, `animationDuration={800}`)
-- [ ] T019 [US3] Update chart dimensions for mobile in `web/components/insights-page.tsx` - dynamic `barSize` based on viewport
-- [ ] T020 [US3] Improve tooltip styling in `web/components/insights-page.tsx` - match refined aesthetic with proper shadows
-- [ ] T021 [US3] Update empty state for spending section in `web/components/insights-page.tsx` - encourage categorization
+- [x] T017 [US3] Redesign spending by category chart container in `web/components/insights-page.tsx` - asymmetric layout with generous negative space
+- [x] T018 [US3] Add animation props to Bar component in `web/components/insights-page.tsx` (`animationBegin={300}`, `animationDuration={800}`)
+- [x] T019 [US3] Update chart dimensions for mobile in `web/components/insights-page.tsx` - dynamic `barSize` based on viewport
+- [x] T020 [US3] Improve tooltip styling in `web/components/insights-page.tsx` - match refined aesthetic with proper shadows
+- [x] T021 [US3] Update empty state for spending section in `web/components/insights-page.tsx` - encourage categorization
 
 **Checkpoint**: All three chart sections (compliance, bucket cards, spending) should now be functional
 
@@ -106,10 +106,10 @@
 
 ### Implementation for User Story 4
 
-- [ ] T022 [US4] Redesign summary section layout in `web/components/insights-page.tsx` - refine spacing and visual hierarchy
-- [ ] T023 [US4] Add visual treatment for negative balance in `web/components/insights-page.tsx` - distinct styling when expenses exceed income
-- [ ] T024 [US4] Add `tabular-nums` class to all summary metrics in `web/components/insights-page.tsx`
-- [ ] T025 [US4] Format transaction count with proper pluralization in `web/components/insights-page.tsx`
+- [x] T022 [US4] Redesign summary section layout in `web/components/insights-page.tsx` - refine spacing and visual hierarchy
+- [x] T023 [US4] Add visual treatment for negative balance in `web/components/insights-page.tsx` - distinct styling when expenses exceed income
+- [x] T024 [US4] Add `tabular-nums` class to all summary metrics in `web/components/insights-page.tsx`
+- [x] T025 [US4] Format transaction count with proper pluralization in `web/components/insights-page.tsx`
 
 **Checkpoint**: Summary section complete, full page content now available
 
@@ -123,11 +123,11 @@
 
 ### Implementation for User Story 5
 
-- [ ] T026 [US5] Create donut chart skeleton shape in `web/components/skeletons/insights-skeleton.tsx` - ring shape with center hole
-- [ ] T027 [US5] Create bar chart skeleton shape in `web/components/skeletons/insights-skeleton.tsx` - varying height bars
-- [ ] T028 [US5] Update bucket card skeletons in `web/components/skeletons/insights-skeleton.tsx` - match new card structure
-- [ ] T029 [US5] Update skeleton layout to match asymmetric grid in `web/components/skeletons/insights-skeleton.tsx`
-- [ ] T030 [US5] Ensure skeleton dimensions match final content to prevent layout shift in `web/components/skeletons/insights-skeleton.tsx`
+- [x] T026 [US5] Create donut chart skeleton shape in `web/components/skeletons/insights-skeleton.tsx` - ring shape with center hole
+- [x] T027 [US5] Create bar chart skeleton shape in `web/components/skeletons/insights-skeleton.tsx` - varying height bars
+- [x] T028 [US5] Update bucket card skeletons in `web/components/skeletons/insights-skeleton.tsx` - match new card structure
+- [x] T029 [US5] Update skeleton layout to match asymmetric grid in `web/components/skeletons/insights-skeleton.tsx`
+- [x] T030 [US5] Ensure skeleton dimensions match final content to prevent layout shift in `web/components/skeletons/insights-skeleton.tsx`
 
 **Checkpoint**: All user stories complete, page fully redesigned
 
@@ -137,13 +137,13 @@
 
 **Purpose**: Final refinements and verification
 
-- [ ] T031 Verify mobile-first responsive behavior at 375px, 640px, 768px, 1024px breakpoints in `web/components/insights-page.tsx`
-- [ ] T032 Verify WCAG 2.1 AA compliance - check contrast ratios and bucket distinguishability without color in `web/components/insights-page.tsx`
-- [ ] T033 Verify `prefers-reduced-motion` is respected - animations disabled when user prefers in `web/components/insights-page.tsx`
-- [ ] T033a Verify period selector and disabled state handling still function correctly in `web/components/insights-page.tsx` (FR-011 preservation)
-- [ ] T034 Run `pnpm lint` and fix any issues
-- [ ] T035 Run `pnpm build` and verify successful build
-- [ ] T036 Manual validation against quickstart.md success criteria
+- [x] T031 Verify mobile-first responsive behavior at 375px, 640px, 768px, 1024px breakpoints in `web/components/insights-page.tsx`
+- [x] T032 Verify WCAG 2.1 AA compliance - check contrast ratios and bucket distinguishability without color in `web/components/insights-page.tsx`
+- [x] T033 Verify `prefers-reduced-motion` is respected - animations disabled when user prefers in `web/components/insights-page.tsx`
+- [x] T033a Verify period selector and disabled state handling still function correctly in `web/components/insights-page.tsx` (FR-011 preservation)
+- [x] T034 Run `pnpm lint` and fix any issues
+- [x] T035 Run `pnpm build` and verify successful build
+- [x] T036 Manual validation against quickstart.md success criteria
 
 ---
 

@@ -98,3 +98,8 @@ body {
         scroll-behavior: auto !important;
     }
 }
+
+/* Utility for consistent number alignment in financial data */
+.tabular-nums {
+    font-variant-numeric: tabular-nums lining-nums;
+}
