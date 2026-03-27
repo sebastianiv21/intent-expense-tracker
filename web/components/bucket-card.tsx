@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, type LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrencyCompact } from "@/lib/finance-utils";
@@ -14,36 +14,28 @@ type BucketCardProps = {
   progress: number;
 };
 
-type BucketState = "on-track" | "nearing" | "over-budget";
+type StateConfig = {
+  Icon: LucideIcon;
+  textClass: string;
+};
 
-function getBucketState(spent: number, target: number): BucketState {
-  if (target <= 0) return "on-track";
-  if (spent >= target) return "over-budget";
-  if (spent / target >= 0.8) return "nearing";
-  return "on-track";
+const STATE_CONFIGS = {
+  "over-budget": { Icon: AlertCircle, textClass: "text-destructive" },
+  nearing:       { Icon: AlertTriangle, textClass: "text-warning" },
+  "on-track":    { Icon: CheckCircle2, textClass: "" },
+} satisfies Record<string, StateConfig>;
+
+function getState(spent: number, target: number): keyof typeof STATE_CONFIGS {
+  if (target <= 0 || spent < target * 0.8) return "on-track";
+  if (spent < target) return "nearing";
+  return "over-budget";
 }
 
 export function BucketCard({ label, color, spent, target, progress }: BucketCardProps) {
-  const state = getBucketState(spent, target);
-
-  const stateIcon =
-    state === "over-budget" ? (
-      <AlertCircle className="h-3.5 w-3.5 text-destructive" aria-hidden="true" />
-    ) : state === "nearing" ? (
-      <AlertTriangle className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
-    ) : (
-      <CheckCircle2 className="h-3.5 w-3.5" style={{ color }} aria-hidden="true" />
-    );
-
-  const stateTextClass =
-    state === "over-budget"
-      ? "text-destructive"
-      : state === "nearing"
-        ? "text-warning"
-        : undefined;
-
-  const displayRatio =
-    target > 0 ? Math.round((spent / target) * 100) : 0;
+  const state = getState(spent, target);
+  const { Icon, textClass } = STATE_CONFIGS[state];
+  const displayRatio = target > 0 ? Math.round((spent / target) * 100) : 0;
+  const bucketColorStyle = textClass ? undefined : { color };
 
   return (
     <Card>
@@ -54,20 +46,16 @@ export function BucketCard({ label, color, spent, target, progress }: BucketCard
             <p className="text-xs text-muted-foreground">Target {formatCurrencyCompact(target)}</p>
           </div>
           <div className="flex items-center gap-1">
-            {stateIcon}
-            <span className={cn("text-xs font-semibold", stateTextClass)} style={!stateTextClass ? { color } : undefined}>
+            <Icon className={cn("h-3.5 w-3.5", textClass)} style={bucketColorStyle} aria-hidden="true" />
+            <span className={cn("text-xs font-semibold", textClass)} style={bucketColorStyle}>
               {displayRatio}%
             </span>
           </div>
         </div>
-        <Progress
-          value={progress}
-          className="h-2"
-          style={{ backgroundColor: `${color}22` }}
-        />
+        <Progress value={progress} className="h-2" style={{ backgroundColor: `${color}22` }} />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Spent {formatCurrencyCompact(spent)}</span>
-          <span className={stateTextClass} style={!stateTextClass ? { color } : undefined}>{label}</span>
+          <span className={textClass} style={bucketColorStyle}>{label}</span>
         </div>
       </CardContent>
     </Card>

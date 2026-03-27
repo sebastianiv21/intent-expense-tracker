@@ -9,6 +9,15 @@ import { PageHeader } from "@/components/page-header";
 import { BucketCard } from "@/components/bucket-card";
 import { cn } from "@/lib/utils";
 
+function QuickStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
+    </div>
+  );
+}
+
 export default async function DashboardPage() {
   const data = await getDashboardData();
   const now = new Date();
@@ -40,18 +49,9 @@ export default async function DashboardPage() {
             </span>
           </div>
           <div className="flex items-center gap-6 border-t border-border pt-4">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs text-muted-foreground">Daily avg spend</span>
-              <span className="text-sm font-semibold text-foreground">{formatCurrencyCompact(data.quickStats.dailyAverage)}</span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs text-muted-foreground">Safe to spend</span>
-              <span className="text-sm font-semibold text-foreground">{formatCurrencyCompact(data.quickStats.safeToSpend)}</span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs text-muted-foreground">Days remaining</span>
-              <span className="text-sm font-semibold text-foreground">{data.quickStats.daysRemaining}</span>
-            </div>
+            <QuickStat label="Daily avg spend" value={formatCurrencyCompact(data.quickStats.dailyAverage)} />
+            <QuickStat label="Safe to spend" value={formatCurrencyCompact(data.quickStats.safeToSpend)} />
+            <QuickStat label="Days remaining" value={data.quickStats.daysRemaining} />
           </div>
         </CardContent>
       </Card>
@@ -130,6 +130,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      </div>
+    </div>
   );
 }
