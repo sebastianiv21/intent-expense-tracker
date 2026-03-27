@@ -21,7 +21,7 @@
 
 **⚠️ CRITICAL**: US2 bucket icon coloring (`text-warning`) depends on this token.
 
-- [ ] T001 Add `--warning: #f59e0b` to `:root` block and `--color-warning: var(--warning)` to `@theme inline` block in `web/app/globals.css`
+- [x] T001 Add `--warning: #f59e0b` to `:root` block and `--color-warning: var(--warning)` to `@theme inline` block in `web/app/globals.css`
 
 **Checkpoint**: Token available — US1 and US2 implementation can now begin
 
@@ -33,9 +33,9 @@
 
 **Independent Test**: Load the dashboard. Confirm the balance number is `text-4xl font-bold tracking-tight`, renders in `text-destructive` when negative, and the quick stats appear below the income/expenses line inside the same card — not as separate cards below.
 
-- [ ] T002 [US1] Increase balance figure typography from `text-3xl font-semibold` to `text-4xl font-bold tracking-tight` and apply `text-destructive` conditionally when `data.balance < 0` using `cn()` in `web/app/(app)/page.tsx`
-- [ ] T003 [US1] Add a `flex items-center divide-x divide-border mt-4 pt-4 border-t border-border` quick stats strip inside the balance `CardContent`, after the income/expenses line, with three inline stat groups (label `text-xs text-muted-foreground` + value `text-sm font-semibold`) in `web/app/(app)/page.tsx`
-- [ ] T004 [US1] Remove the three standalone quick-stat `<Card>` components (daily avg spend, safe to spend, days remaining) that currently render as a `grid gap-4 sm:grid-cols-3` section in `web/app/(app)/page.tsx`
+- [x] T002 [US1] Increase balance figure typography from `text-3xl font-semibold` to `text-4xl font-bold tracking-tight` and apply `text-destructive` conditionally when `data.balance < 0` using `cn()` in `web/app/(app)/page.tsx`
+- [x] T003 [US1] Add a `flex items-center divide-x divide-border mt-4 pt-4 border-t border-border` quick stats strip inside the balance `CardContent`, after the income/expenses line, with three inline stat groups (label `text-xs text-muted-foreground` + value `text-sm font-semibold`) in `web/app/(app)/page.tsx`
+- [x] T004 [US1] Remove the three standalone quick-stat `<Card>` components (daily avg spend, safe to spend, days remaining) that currently render as a `grid gap-4 sm:grid-cols-3` section in `web/app/(app)/page.tsx`
 
 **Checkpoint**: US1 complete — balance hero is prominent, quick stats inline, three peer stat cards gone
 
@@ -47,9 +47,9 @@
 
 **Independent Test**: With the bucket section visible on a ≥640px viewport, confirm: (1) no horizontal scroll bar, (2) each card shows an icon alongside the percentage, (3) a bucket with >80% spend shows `AlertTriangle`, a bucket with >100% spend shows `AlertCircle`, and an on-track bucket shows `CheckCircle2`.
 
-- [ ] T005 [P] [US2] Create `web/components/bucket-card.tsx` as a Server Component with props `{ bucket, label, color, spent, target, progress }` matching `BucketSummary`; derive state from `spent`/`target` thresholds (on-track < 80%, nearing limit 80–99%, over-budget ≥ 100%); render `CheckCircle2` / `AlertTriangle` / `AlertCircle` from lucide-react with appropriate color classes (`text-warning`, `text-destructive`, or inline bucket color); use shadcn `Progress` for the bar and `formatCurrencyCompact` for amounts
-- [ ] T006 [US2] Replace bucket container `flex gap-4 overflow-x-auto pb-2` with `grid grid-cols-1 sm:grid-cols-3 gap-3` and remove `min-w-[220px] flex-1` from inner cards in `web/app/(app)/page.tsx` (depends on T005)
-- [ ] T007 [US2] Replace inline bucket card JSX with `<BucketCard key={bucket.bucket} {...bucket} />` inside the new grid in `web/app/(app)/page.tsx` (depends on T006)
+- [x] T005 [P] [US2] Create `web/components/bucket-card.tsx` as a Server Component with props `{ bucket, label, color, spent, target, progress }` matching `BucketSummary`; derive state from `spent`/`target` thresholds (on-track < 80%, nearing limit 80–99%, over-budget ≥ 100%); render `CheckCircle2` / `AlertTriangle` / `AlertCircle` from lucide-react with appropriate color classes (`text-warning`, `text-destructive`, or inline bucket color); use shadcn `Progress` for the bar and `formatCurrencyCompact` for amounts
+- [x] T006 [US2] Replace bucket container `flex gap-4 overflow-x-auto pb-2` with `grid grid-cols-1 sm:grid-cols-3 gap-3` and remove `min-w-[220px] flex-1` from inner cards in `web/app/(app)/page.tsx` (depends on T005)
+- [x] T007 [US2] Replace inline bucket card JSX with `<BucketCard key={bucket.bucket} {...bucket} />` inside the new grid in `web/app/(app)/page.tsx` (depends on T006)
 
 **Checkpoint**: US2 complete — 3-column grid with icon+color state indicators, no horizontal scroll
 
@@ -61,8 +61,8 @@
 
 **Independent Test**: Hover over a `TransactionItem` — background visibly shifts. Hover over an upcoming recurring item row — same treatment applies. On touch devices, no stuck or broken hover state.
 
-- [ ] T008 [P] [US3] Add `motion-safe:transition-colors motion-safe:duration-150 hover:bg-muted/30` to the root `<div>` of `web/components/transaction-item.tsx` (the `rounded-xl border border-border bg-card p-4` div) — `motion-safe:` prefix ensures the transition is suppressed when the user has `prefers-reduced-motion: reduce` set
-- [ ] T009 [US3] Add `motion-safe:transition-colors motion-safe:duration-150 hover:bg-muted/30 cursor-default` to the recurring item `<div>` in the `upcomingRecurring.map()` block in `web/app/(app)/page.tsx` (depends on T007) — use `cursor-default` (not `cursor-pointer`) because recurring items have no click action; use `hover:bg-muted/30` (not `/50`) to match TransactionItem hover opacity per FR-006
+- [x] T008 [P] [US3] Add `motion-safe:transition-colors motion-safe:duration-150 hover:bg-muted/30` to the root `<div>` of `web/components/transaction-item.tsx` (the `rounded-xl border border-border bg-card p-4` div) — `motion-safe:` prefix ensures the transition is suppressed when the user has `prefers-reduced-motion: reduce` set
+- [x] T009 [US3] Add `motion-safe:transition-colors motion-safe:duration-150 hover:bg-muted/30 cursor-default` to the recurring item `<div>` in the `upcomingRecurring.map()` block in `web/app/(app)/page.tsx` (depends on T007) — use `cursor-default` (not `cursor-pointer`) because recurring items have no click action; use `hover:bg-muted/30` (not `/50`) to match TransactionItem hover opacity per FR-006
 
 **Checkpoint**: US3 complete — hover states consistent across transactions and recurring items
 
@@ -74,7 +74,7 @@
 
 **Independent Test**: Scan the dashboard and identify at least three visual text levels without reading content: (1) the `text-4xl` balance hero, (2) `text-xs uppercase tracking-wider` section labels, (3) `text-xs text-muted-foreground` supporting labels.
 
-- [ ] T010 [US4] Update the 50/30/20 section heading from `<h2 className="text-lg font-semibold text-foreground">50/30/20 harmony</h2>` to `text-xs font-semibold uppercase tracking-wider text-muted-foreground` and update the "This month" `<span>` label to match `text-xs text-muted-foreground` in `web/app/(app)/page.tsx` (depends on T009)
+- [x] T010 [US4] Update the 50/30/20 section heading from `<h2 className="text-lg font-semibold text-foreground">50/30/20 harmony</h2>` to `text-xs font-semibold uppercase tracking-wider text-muted-foreground` and update the "This month" `<span>` label to match `text-xs text-muted-foreground` in `web/app/(app)/page.tsx` (depends on T009)
 
 **Checkpoint**: US4 complete — three-level typographic hierarchy established
 
@@ -84,8 +84,8 @@
 
 **Purpose**: Lint, type-check, build verification, and manual checklist validation.
 
-- [ ] T011 Run `pnpm lint` from `web/` and fix any ESLint errors or warnings introduced by the redesign
-- [ ] T012 Run `pnpm build` from `web/` and fix any TypeScript type errors or build failures
+- [x] T011 Run `pnpm lint` from `web/` and fix any ESLint errors or warnings introduced by the redesign
+- [x] T012 Run `pnpm build` from `web/` and fix any TypeScript type errors or build failures
 - [ ] T013 [P] Manually verify the quickstart.md checklist at `specs/003-dashboard-redesign/quickstart.md` — confirm all 13 visual acceptance criteria pass at 360px, 768px, and 1280px viewport widths
 
 ---

@@ -3,10 +3,11 @@ import { format } from "date-fns";
 import { getDashboardData } from "@/lib/queries/dashboard";
 import { getBucketColor, formatCurrencyCompact, formatCurrency } from "@/lib/finance-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { TransactionItem } from "@/components/transaction-item";
 import { PageHeader } from "@/components/page-header";
+import { BucketCard } from "@/components/bucket-card";
+import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
@@ -31,12 +32,26 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-1">
-            <span className="text-3xl font-semibold text-foreground">
+            <span className={cn("text-4xl font-bold tracking-tight", data.balance < 0 ? "text-destructive" : "text-foreground")}>
               {formatCurrency(data.balance)}
             </span>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               Income {formatCurrencyCompact(data.monthIncome)} · Expenses {formatCurrencyCompact(data.monthExpenses)}
             </span>
+          </div>
+          <div className="flex items-center gap-6 border-t border-border pt-4">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted-foreground">Daily avg spend</span>
+              <span className="text-sm font-semibold text-foreground">{formatCurrencyCompact(data.quickStats.dailyAverage)}</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted-foreground">Safe to spend</span>
+              <span className="text-sm font-semibold text-foreground">{formatCurrencyCompact(data.quickStats.safeToSpend)}</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted-foreground">Days remaining</span>
+              <span className="text-sm font-semibold text-foreground">{data.quickStats.daysRemaining}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -44,67 +59,16 @@ export default async function DashboardPage() {
       {data.bucketSummaries.length > 0 ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">50/30/20 harmony</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">50/30/20 harmony</h2>
             <span className="text-xs text-muted-foreground">This month</span>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {data.bucketSummaries.map((bucket) => (
-              <Card key={bucket.bucket} className="min-w-[220px] flex-1">
-                <CardContent className="space-y-3 p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{bucket.label}</p>
-                      <p className="text-xs text-muted-foreground">Target {formatCurrencyCompact(bucket.target)}</p>
-                    </div>
-                    <span
-                      className="text-xs font-semibold"
-                      style={{ color: bucket.color }}
-                    >
-                      {bucket.progress}%
-                    </span>
-                  </div>
-                  <Progress
-                    value={bucket.progress}
-                    className="h-2"
-                    style={{ backgroundColor: `${bucket.color}22` }}
-                  />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Spent {formatCurrencyCompact(bucket.spent)}</span>
-                    <span style={{ color: bucket.color }}>{bucket.label}</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <BucketCard key={bucket.bucket} {...bucket} />
             ))}
           </div>
         </div>
       ) : null}
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Daily avg spend</p>
-            <p className="text-lg font-semibold text-foreground">
-              {formatCurrencyCompact(data.quickStats.dailyAverage)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Safe to spend</p>
-            <p className="text-lg font-semibold text-foreground">
-              {formatCurrencyCompact(data.quickStats.safeToSpend)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Days remaining</p>
-            <p className="text-lg font-semibold text-foreground">
-              {data.quickStats.daysRemaining}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <Card>
@@ -142,7 +106,7 @@ export default async function DashboardPage() {
               data.upcomingRecurring.map((recurring) => (
                 <div
                   key={recurring.id}
-                  className="flex items-center justify-between rounded-lg border border-border p-3"
+                  className="flex items-center justify-between rounded-lg border border-border p-3 motion-safe:transition-colors motion-safe:duration-150 hover:bg-muted/30 cursor-default"
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-lg">

@@ -32,7 +32,7 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
   const amountColor = getTransactionColor(transaction.type);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-xl border border-border bg-card p-4 motion-safe:transition-colors motion-safe:duration-150 hover:bg-muted/30">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-lg">

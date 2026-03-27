@@ -30,6 +30,9 @@
     --bucket-wants: #c4714a;
     --bucket-future: #a89562;
 
+    /* Semantic state colors */
+    --warning: #f59e0b;
+
     /* Income / Expense */
     --income: #7aaa7a;
     --expense: #e05252;
@@ -62,6 +65,7 @@
     --color-bucket-needs: var(--bucket-needs);
     --color-bucket-wants: var(--bucket-wants);
     --color-bucket-future: var(--bucket-future);
+    --color-warning: var(--warning);
     --color-income: var(--income);
     --color-expense: var(--expense);
     --radius-sm: calc(var(--radius) - 4px);
