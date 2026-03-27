@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { getDashboardData } from "@/lib/queries/dashboard";
+import { getAuthenticatedUser } from "@/lib/queries/auth";
 import { getBucketColor, formatCurrencyCompact, formatCurrency } from "@/lib/finance-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,15 +19,25 @@ function QuickStat({ label, value }: { label: string; value: string | number }) 
   );
 }
 
+function getGreeting(hour: number, name: string): string {
+  let salutation: string;
+  if (hour >= 5 && hour < 12) salutation = "Good morning";
+  else if (hour >= 12 && hour < 17) salutation = "Good afternoon";
+  else if (hour >= 17 && hour < 21) salutation = "Good evening";
+  else salutation = "Good night";
+  return name ? `${salutation}, ${name}` : salutation;
+}
+
 export default async function DashboardPage() {
-  const data = await getDashboardData();
+  const [data, { name }] = await Promise.all([getDashboardData(), getAuthenticatedUser()]);
   const now = new Date();
   const dateLabel = format(now, "EEEE, MMM d");
+  const greeting = getGreeting(now.getHours(), name);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard"
+        title={greeting}
         description={`Today is ${dateLabel}`}
         action={
           <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">

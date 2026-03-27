@@ -17,12 +17,13 @@ type BucketCardProps = {
 type StateConfig = {
   Icon: LucideIcon;
   textClass: string;
+  indicatorClass: string;
 };
 
 const STATE_CONFIGS = {
-  "over-budget": { Icon: AlertCircle, textClass: "text-destructive" },
-  nearing:       { Icon: AlertTriangle, textClass: "text-warning" },
-  "on-track":    { Icon: CheckCircle2, textClass: "" },
+  "over-budget": { Icon: AlertCircle, textClass: "text-destructive", indicatorClass: "bg-destructive" },
+  nearing:       { Icon: AlertTriangle, textClass: "text-warning",     indicatorClass: "bg-warning" },
+  "on-track":    { Icon: CheckCircle2, textClass: "",                  indicatorClass: "" },
 } satisfies Record<string, StateConfig>;
 
 function getState(spent: number, target: number): keyof typeof STATE_CONFIGS {
@@ -33,9 +34,11 @@ function getState(spent: number, target: number): keyof typeof STATE_CONFIGS {
 
 export function BucketCard({ label, color, spent, target, progress }: BucketCardProps) {
   const state = getState(spent, target);
-  const { Icon, textClass } = STATE_CONFIGS[state];
+  const { Icon, textClass, indicatorClass } = STATE_CONFIGS[state];
   const displayRatio = target > 0 ? Math.round((spent / target) * 100) : 0;
-  const bucketColorStyle = textClass ? undefined : { color };
+  const onTrack = state === "on-track";
+  const bucketColorStyle = onTrack ? { color } : undefined;
+  const indicatorStyle = onTrack ? { backgroundColor: color } : undefined;
 
   return (
     <Card>
@@ -52,7 +55,7 @@ export function BucketCard({ label, color, spent, target, progress }: BucketCard
             </span>
           </div>
         </div>
-        <Progress value={progress} className="h-2" style={{ backgroundColor: `${color}22` }} />
+        <Progress value={progress} className="h-2" style={{ backgroundColor: `${color}22` }} indicatorClassName={indicatorClass} indicatorStyle={indicatorStyle} />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Spent {formatCurrencyCompact(spent)}</span>
           <span className={textClass} style={bucketColorStyle}>{label}</span>

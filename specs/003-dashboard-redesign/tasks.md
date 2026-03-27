@@ -86,7 +86,7 @@
 
 - [x] T011 Run `pnpm lint` from `web/` and fix any ESLint errors or warnings introduced by the redesign
 - [x] T012 Run `pnpm build` from `web/` and fix any TypeScript type errors or build failures
-- [ ] T013 [P] Manually verify the quickstart.md checklist at `specs/003-dashboard-redesign/quickstart.md` — confirm all 13 visual acceptance criteria pass at 360px, 768px, and 1280px viewport widths
+- [x] T013 [P] Manually verify the quickstart.md checklist at `specs/003-dashboard-redesign/quickstart.md` — confirm all 13 visual acceptance criteria pass at 360px, 768px, and 1280px viewport widths
 
 ---
 
