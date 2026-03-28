@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { format, addMonths, subMonths } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { format, addMonths, parseISO, subMonths } from "date-fns";
+import { CalendarIcon, Check, CheckCircle, ChevronLeft, ChevronRight, Coffee, Home, MoreHorizontal, PiggyBank, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Sheet,
   SheetContent,
@@ -16,14 +20,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { formatCurrencyCompact, getBucketColor } from "@/lib/finance-utils";
+import { BUCKET_ORDER, calculatePercentage, formatCurrencyCompact, getBucketColor } from "@/lib/finance-utils";
+import { PageHeader } from "@/components/page-header";
 import {
   createBudget,
   deleteBudget,
@@ -44,7 +48,45 @@ type BudgetFormState = {
   startDate: string;
 };
 
-const BUCKETS: AllocationBucket[] = ["needs", "wants", "future"];
+const BUCKET_META: Record<
+  AllocationBucket,
+  {
+    label: string;
+    Icon: typeof Home;
+    color: string;
+    borderClass: string;
+    textClass: string;
+  }
+> = {
+  needs: {
+    label: "NEEDS",
+    Icon: Home,
+    color: "#8b9a7e",
+    borderClass: "border-bucket-needs",
+    textClass: "text-bucket-needs",
+  },
+  wants: {
+    label: "WANTS",
+    Icon: Coffee,
+    color: "#c4714a",
+    borderClass: "border-bucket-wants",
+    textClass: "text-bucket-wants",
+  },
+  future: {
+    label: "FUTURE",
+    Icon: PiggyBank,
+    color: "#a89562",
+    borderClass: "border-bucket-future",
+    textClass: "text-bucket-future",
+  },
+};
+
+function getAmountFontSize(len: number): string {
+  if (len <= 5) return "text-5xl";
+  if (len <= 7) return "text-4xl";
+  if (len <= 9) return "text-3xl";
+  return "text-2xl";
+}
 
 export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPageProps) {
   const [month, setMonth] = useState(initialMonth);
@@ -58,21 +100,41 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [filterBucket, setFilterBucket] = useState<AllocationBucket>("needs");
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null);
+
+  const confirmButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const deleteButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const prevConfirmingIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (confirmingDeleteId !== null) {
+      confirmButtonRefs.current[confirmingDeleteId]?.focus();
+    } else if (prevConfirmingIdRef.current !== null) {
+      deleteButtonRefs.current[prevConfirmingIdRef.current]?.focus();
+    }
+    prevConfirmingIdRef.current = confirmingDeleteId;
+  }, [confirmingDeleteId]);
 
   const monthDate = new Date(`${month}-01T00:00:00`);
 
   const summary = useMemo(() => {
     const totalBudgeted = budgets.reduce((sum, budget) => sum + Number(budget.amount), 0);
     const totalSpent = budgets.reduce((sum, budget) => sum + budget.spent, 0);
+    const overallProgress = calculatePercentage(totalSpent, totalBudgeted);
     return {
       totalBudgeted,
       totalSpent,
       remaining: totalBudgeted - totalSpent,
+      overallProgress,
     };
   }, [budgets]);
 
   const grouped = useMemo(() => {
-    return BUCKETS.map((bucket) => ({
+    return BUCKET_ORDER.map((bucket) => ({
       bucket,
       label: bucket[0].toUpperCase() + bucket.slice(1),
       budgets: budgets.filter(
@@ -86,7 +148,9 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
   );
 
   function openCreate() {
+    setConfirmingDeleteId(null);
     setEditing(null);
+    setFilterBucket("needs");
     setFormState({
       categoryId: "",
       amount: "",
@@ -94,11 +158,14 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
       startDate: `${month}-01`,
     });
     setError("");
+    setDatePickerOpen(false);
     setSheetOpen(true);
   }
 
   function openEdit(budget: BudgetWithSpending) {
+    setConfirmingDeleteId(null);
     setEditing(budget);
+    setFilterBucket(budget.category.allocationBucket ?? "needs");
     setFormState({
       categoryId: budget.categoryId,
       amount: Number(budget.amount).toString(),
@@ -106,7 +173,16 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
       startDate: budget.startDate,
     });
     setError("");
+    setDatePickerOpen(false);
     setSheetOpen(true);
+  }
+
+  function switchFilterBucket(bucket: AllocationBucket) {
+    setFilterBucket(bucket);
+    const currentCat = expenseCategories.find((c) => c.id === formState.categoryId);
+    if (currentCat?.allocationBucket !== bucket) {
+      setFormState((prev) => ({ ...prev, categoryId: "" }));
+    }
   }
 
   async function handleSave() {
@@ -134,11 +210,19 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
     setSheetOpen(false);
   }
 
-  async function handleDelete(budget: BudgetWithSpending) {
-    if (!window.confirm(`Delete ${budget.category.name} budget?`)) return;
+  function triggerDelete(budget: BudgetWithSpending) {
+    setConfirmingDeleteId(budget.id);
+    setDeleteError(null);
+  }
+
+  async function confirmDelete(budget: BudgetWithSpending) {
+    setConfirmingDeleteId(null);
+    setDeletingId(budget.id);
+    setDeleteError(null);
     const result = await deleteBudget(budget.id);
+    setDeletingId(null);
     if (!result.success) {
-      setError(result.error);
+      setDeleteError({ id: budget.id, message: result.error });
     }
   }
 
@@ -149,80 +233,77 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Budgets</h1>
-          <p className="text-sm text-muted-foreground">
-            Plan spending by category for the month ahead.
-          </p>
+      <PageHeader
+        title="Budgets"
+        description="Plan spending by category for the month ahead."
+        action={
+          <Button variant="outline" size="sm" onClick={openCreate} className="min-h-[44px]">
+            New budget
+          </Button>
+        }
+      />
+
+      {/* Month navigation + summary */}
+      <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMonth(format(subMonths(monthDate, 1), "yyyy-MM"))}
+            aria-label="Previous month"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-center">
+            <p className="text-sm font-medium text-foreground">
+              {format(monthDate, "MMMM yyyy")}
+            </p>
+            <p className="text-xs text-muted-foreground">Budget overview</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMonth(format(addMonths(monthDate, 1), "yyyy-MM"))}
+            aria-label="Next month"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
-        <Button onClick={openCreate} className="min-h-[44px]">
-          <Plus className="h-4 w-4" />
-          New budget
-        </Button>
+
+        <Progress
+          value={summary.overallProgress}
+          className="h-2"
+          indicatorClassName={summary.overallProgress >= 100 ? "bg-destructive" : "bg-primary"}
+        />
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Budgeted</p>
+            <p className="text-lg font-semibold text-foreground">
+              {formatCurrencyCompact(summary.totalBudgeted)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Spent</p>
+            <p className="text-lg font-semibold text-foreground">
+              {formatCurrencyCompact(summary.totalSpent)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Remaining</p>
+            <p
+              className={cn(
+                "text-lg font-semibold",
+                summary.remaining < 0 ? "text-destructive" : "text-foreground"
+              )}
+            >
+              {formatCurrencyCompact(summary.remaining)}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                const newDate = subMonths(monthDate, 1);
-                setMonth(format(newDate, "yyyy-MM"));
-              }}
-              aria-label="Previous month"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="text-center">
-              <p className="text-sm font-medium text-foreground">
-                {format(monthDate, "MMMM yyyy")}
-              </p>
-              <p className="text-xs text-muted-foreground">Budget overview</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                const newDate = addMonths(monthDate, 1);
-                setMonth(format(newDate, "yyyy-MM"));
-              }}
-              aria-label="Next month"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <p className="text-xs text-muted-foreground">Budgeted</p>
-              <p className="text-lg font-semibold text-foreground">
-                {formatCurrencyCompact(summary.totalBudgeted)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Spent</p>
-              <p className="text-lg font-semibold text-foreground">
-                {formatCurrencyCompact(summary.totalSpent)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Remaining</p>
-              <p
-                className={cn(
-                  "text-lg font-semibold",
-                  summary.remaining < 0 ? "text-destructive" : "text-foreground"
-                )}
-              >
-                {formatCurrencyCompact(summary.remaining)}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+      {/* Budget groups */}
       <div className="space-y-4">
         {grouped.map((group) => (
           <div key={group.bucket} className="space-y-3">
@@ -232,57 +313,126 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                 {group.budgets.length} budgets
               </span>
             </div>
+
             {group.budgets.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-                No budgets in this bucket yet.
+              <div className="rounded-2xl border border-border bg-card p-10 text-center space-y-4">
+                <div className="text-4xl">💸</div>
+                <p className="font-semibold text-foreground">No {group.label} budgets yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Add a budget to track your {group.label.toLowerCase()} spending.
+                </p>
+                <Button onClick={openCreate} variant="outline" className="min-h-[44px]">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add budget
+                </Button>
               </div>
             ) : (
               group.budgets.map((budget) => {
                 const spent = budget.spent;
                 const total = Number(budget.amount);
-                const progress = total > 0 ? Math.min(100, Math.round((spent / total) * 100)) : 0;
+                const progress = calculatePercentage(spent, total);
                 const overspent = spent > total;
+                const isConfirming = confirmingDeleteId === budget.id;
+                const isDeleting = deletingId === budget.id;
 
                 return (
-                  <Card key={budget.id}>
-                    <CardContent className="p-4 space-y-3">
+                  <div key={budget.id}>
+                    <div
+                      className="rounded-xl border border-border bg-card p-4 space-y-3"
+                      style={{ borderLeftWidth: "3px", borderLeftColor: getBucketColor(group.bucket) }}
+                    >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-foreground">{budget.category.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatCurrencyCompact(spent)} of {formatCurrencyCompact(total)}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="h-10 w-10 rounded-full flex items-center justify-center text-lg shrink-0"
+                            style={{ backgroundColor: getBucketColor(group.bucket) + "26" }}
+                          >
+                            {budget.category.icon ?? "•"}
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{budget.category.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatCurrencyCompact(spent)} of {formatCurrencyCompact(total)}
+                            </p>
+                          </div>
                         </div>
+
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="min-h-[44px]"
-                            onClick={() => openEdit(budget)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="min-h-[44px] text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(budget)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {isConfirming ? (
+                            <>
+                              <span className="text-sm text-muted-foreground">Delete?</span>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="min-h-[44px]"
+                                aria-label="Confirm delete"
+                                ref={(el) => { confirmButtonRefs.current[budget.id] = el; }}
+                                onClick={() => confirmDelete(budget)}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="min-h-[44px]"
+                                aria-label="Cancel delete"
+                                onClick={() => setConfirmingDeleteId(null)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="min-h-[44px] min-w-[44px] -mr-2 shrink-0"
+                                  aria-label={`Options for ${budget.category.name}`}
+                                  disabled={isDeleting}
+                                  ref={(el) => { deleteButtonRefs.current[budget.id] = el; }}
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEdit(budget)}>
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => triggerDelete(budget)}
+                                >
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
                       </div>
+
                       <Progress
                         value={progress}
                         className="h-2"
-                        style={{ backgroundColor: `${getBucketColor(group.bucket)}22` }}
+                        style={{ backgroundColor: getBucketColor(group.bucket) + "22" }}
+                        indicatorStyle={{ backgroundColor: getBucketColor(group.bucket) }}
                       />
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+
+                      <div className="flex items-center justify-between text-xs">
                         <span style={{ color: getBucketColor(group.bucket) }}>{group.label}</span>
                         {overspent && <span className="text-destructive">Over budget</span>}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+
+                    {deleteError?.id === budget.id && (
+                      <p className="text-xs text-destructive mt-2" role="alert">
+                        {deleteError.message}
+                      </p>
+                    )}
+                  </div>
                 );
               })
             )}
@@ -290,115 +440,203 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
         ))}
       </div>
 
+      {/* Create / Edit sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-6">
-          <SheetHeader className="text-left">
-            <SheetTitle>{editing ? "Edit budget" : "New budget"}</SheetTitle>
-            <SheetDescription>
-              {editing
-                ? "Update the budget limits below."
-                : "Set monthly targets per category."}
-            </SheetDescription>
-          </SheetHeader>
+        <SheetContent
+          side="bottom"
+          className="max-h-[90vh] rounded-t-3xl border border-border bg-card p-0 [&>button]:hidden"
+        >
+          <div className="flex max-h-[90vh] flex-col">
+            <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
+              <div className="flex items-center justify-between">
+                <SheetTitle className="text-2xl font-bold">
+                  {editing ? "Edit Budget" : "New Budget"}
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                  {editing ? "Update the budget limits below." : "Set monthly targets per category."}
+                </SheetDescription>
+                <button
+                  type="button"
+                  onClick={() => setSheetOpen(false)}
+                  aria-label="Close"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-border text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </SheetHeader>
 
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select
-                value={formState.categoryId}
-                onValueChange={(value) =>
-                  setFormState((prev) => ({ ...prev, categoryId: value }))
-                }
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {/* Amount */}
+              <div
+                className="relative rounded-2xl px-4 py-5 text-center"
+                style={{ background: "radial-gradient(ellipse at 50% 100%, #c97a5a18 0%, transparent 70%)" }}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {expenseCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.icon ? `${category.icon} ` : ""}
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="flex items-center justify-center">
+                  <span className={cn("mr-2 font-mono font-extrabold text-primary transition-all duration-200", getAmountFontSize(formState.amount.length))}>
+                    $
+                  </span>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    aria-label="Budget amount"
+                    className={cn(
+                      "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
+                      "placeholder:text-muted-foreground/20 focus-visible:ring-0",
+                      getAmountFontSize(formState.amount.length)
+                    )}
+                    value={formState.amount}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9.]/g, "");
+                      if ((val.match(/\./g) ?? []).length <= 1)
+                        setFormState((prev) => ({ ...prev, amount: val }));
+                    }}
+                  />
+                </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
-              <Input
-                id="amount"
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={formState.amount}
-                onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, amount: event.target.value }))
-                }
-                placeholder="500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Period</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {["monthly", "weekly"].map((option) => (
+              {/* Period toggle */}
+              <div className="relative flex rounded-2xl bg-border p-1">
+                <div
+                  className="absolute inset-y-1 w-[calc(50%-4px)] rounded-xl bg-primary transition-all duration-200"
+                  style={{ left: formState.period === "monthly" ? 4 : "calc(50%)" }}
+                />
+                {(["monthly", "weekly"] as const).map((option) => (
                   <button
                     key={option}
                     type="button"
-                    onClick={() =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        period: option as "monthly" | "weekly",
-                      }))
-                    }
+                    aria-pressed={formState.period === option}
+                    onClick={() => setFormState((prev) => ({ ...prev, period: option }))}
                     className={cn(
-                      "min-h-[44px] rounded-lg border text-sm font-medium transition",
-                      formState.period === option
-                        ? "border-accent text-accent bg-accent/10"
-                        : "border-border text-muted-foreground"
+                      "relative z-10 flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200",
+                      formState.period === option ? "text-white" : "text-foreground/25"
                     )}
                   >
                     {option === "monthly" ? "Monthly" : "Weekly"}
                   </button>
                 ))}
               </div>
+
+              {/* Bucket selector */}
+              <div className="grid grid-cols-3 gap-2">
+                {BUCKET_ORDER.map((bucket) => {
+                  const { label, Icon, borderClass, textClass, color } = BUCKET_META[bucket];
+                  const isActive = filterBucket === bucket;
+                  return (
+                    <button
+                      key={bucket}
+                      type="button"
+                      aria-pressed={isActive}
+                      aria-label={label}
+                      onClick={() => switchFilterBucket(bucket)}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 bg-background py-4 transition-all duration-200 active:scale-95",
+                        isActive
+                          ? `${borderClass} ${textClass}`
+                          : "border-transparent text-muted-foreground hover:border-border",
+                      )}
+                      style={isActive ? { boxShadow: `0 0 16px ${color}30` } : undefined}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Category chips */}
+              {expenseCategories.filter((c) => c.allocationBucket === filterBucket).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No categories in this bucket yet.</p>
+              ) : (
+                <div className="relative -mx-6">
+                  <div className="flex gap-2 overflow-x-auto px-6 pb-1 [&::-webkit-scrollbar]:hidden">
+                    {expenseCategories
+                      .filter((c) => c.allocationBucket === filterBucket)
+                      .map((category) => {
+                        const isActive = formState.categoryId === category.id;
+                        const color = getBucketColor(category.allocationBucket);
+                        return (
+                          <button
+                            key={category.id}
+                            type="button"
+                            aria-pressed={isActive}
+                            aria-label={`Select ${category.name}`}
+                            onClick={() =>
+                              setFormState((prev) => ({ ...prev, categoryId: isActive ? "" : category.id }))
+                            }
+                            className="min-h-[44px] shrink-0 whitespace-nowrap rounded-xl border px-3 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95"
+                            style={{
+                              borderColor: isActive ? color : "var(--border)",
+                              color: isActive ? color : "var(--muted-foreground)",
+                              backgroundColor: isActive ? `${color}18` : undefined,
+                            }}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              {category.icon && <span className="text-sm">{category.icon}</span>}
+                              {category.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent" />
+                </div>
+              )}
+
+              {/* Date picker */}
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
+                  >
+                    <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
+                    {formState.startDate ? (
+                      <span className="text-foreground">
+                        {format(parseISO(formState.startDate), "MMMM d, yyyy")}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Start date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formState.startDate ? parseISO(formState.startDate) : undefined}
+                    onSelect={(day) => {
+                      if (day) {
+                        setFormState((prev) => ({ ...prev, startDate: format(day, "yyyy-MM-dd") }));
+                        setDatePickerOpen(false);
+                      }
+                    }}
+                    className="w-full [--cell-size:2.25rem]"
+                    classNames={{ root: "w-full" }}
+                    autoFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {error && (
+                <p className="rounded-xl bg-destructive/10 p-3 text-center text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formState.startDate}
-                onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, startDate: event.target.value }))
-                }
-              />
-            </div>
-
-            {error && (
-              <p className="text-sm text-destructive" role="alert">
-                {error}
-              </p>
-            )}
-
-            <div className="flex gap-3">
+            <div className="border-t border-border bg-card px-6 pb-8 pt-4">
               <Button
                 type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setSheetOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="flex-1"
                 onClick={handleSave}
                 disabled={!canSave || loading}
+                className="flex w-full items-center justify-center gap-2 rounded-3xl py-6 text-base font-bold text-white shadow-xl active:scale-[0.98] transition-all duration-200 hover:opacity-90 disabled:opacity-40"
+                style={{ background: "linear-gradient(to right, #c97a5a, #a36248)" }}
               >
-                {loading ? "Saving…" : "Save"}
+                {loading ? "Saving…" : editing ? "Update" : "Save"}
+                <CheckCircle className="h-5 w-5" />
               </Button>
             </div>
           </div>
