@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { LogOut, Tag, TrendingUp, ChevronRight } from "lucide-react";
+import { LogOut, Tag, ChevronRight } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
 import { FinancialProfileSheet } from "@/components/financial-profile-sheet";
 import { PageHeader } from "@/components/page-header";
@@ -44,7 +44,7 @@ function AnimatedSection({
     <div
       className={cn(
         "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 fill-mode-both",
-        STAGGER[index]
+        STAGGER[index],
       )}
     >
       {children}
@@ -72,7 +72,10 @@ function NavRow({
         <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         {label}
       </span>
-      <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+      <ChevronRight
+        className="h-4 w-4 text-muted-foreground"
+        aria-hidden="true"
+      />
     </button>
   );
 }
@@ -81,10 +84,18 @@ const PCT_KEYS = {
   needs: "needsPercentage",
   wants: "wantsPercentage",
   future: "futurePercentage",
-} as const satisfies Record<keyof typeof BUCKET_DEFINITIONS, keyof FinancialProfile>;
+} as const satisfies Record<
+  keyof typeof BUCKET_DEFINITIONS,
+  keyof FinancialProfile
+>;
 
 type ProfilePageProps = {
-  user: { name: string; email: string; image?: string | null; createdAt?: string };
+  user: {
+    name: string;
+    email: string;
+    image?: string | null;
+    createdAt?: string;
+  };
   profile: FinancialProfile;
 };
 
@@ -119,8 +130,12 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <p className="text-xl font-bold text-foreground truncate">{user.name}</p>
-              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+              <p className="text-xl font-bold text-foreground truncate">
+                {user.name}
+              </p>
+              <p className="text-sm text-muted-foreground truncate">
+                {user.email}
+              </p>
               {user.createdAt && (
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Member since {format(new Date(user.createdAt), "MMM yyyy")}
@@ -136,10 +151,18 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-foreground">Financial profile</p>
-                <p className="text-xs text-muted-foreground">Income & 50/30/20 split</p>
+                <p className="text-sm font-medium text-foreground">
+                  Financial profile
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Income & 50/30/20 split
+                </p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setSheetOpen(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSheetOpen(true)}
+              >
                 Edit
               </Button>
             </div>
@@ -157,7 +180,10 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
                   return (
                     <div
                       key={bucket}
-                      style={{ width: `${percentage}%`, backgroundColor: color }}
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor: color,
+                      }}
                       title={`${BUCKET_DEFINITIONS[bucket].label}: ${percentage}%`}
                     />
                   );
@@ -176,7 +202,9 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
                         aria-hidden="true"
                       />
                       <span style={{ color }}>{label}</span>
-                      <span className="text-foreground tabular-nums font-medium">{percentage}%</span>
+                      <span className="text-foreground tabular-nums font-medium">
+                        {percentage}%
+                      </span>
                     </span>
                   );
                 })}
@@ -193,11 +221,6 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
               icon={Tag}
               label="Categories"
               onClick={() => router.push("/categories")}
-            />
-            <NavRow
-              icon={TrendingUp}
-              label="Insights"
-              onClick={() => router.push("/insights")}
             />
           </CardContent>
         </Card>
@@ -240,7 +263,11 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
             >
               Cancel
             </Button>
-            <Button variant="destructive" className="flex-1" onClick={handleLogout}>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleLogout}
+            >
               Log out
             </Button>
           </div>
