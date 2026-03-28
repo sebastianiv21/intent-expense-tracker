@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { ElementType } from "react";
 import { Check, CheckCircle, Coffee, Grid3X3, Home, MoreHorizontal, PiggyBank, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
 import { getBucketColor, getTransactionColor } from "@/lib/finance-utils";
 import {
   createCategory,
@@ -41,19 +42,23 @@ const BUCKET_OPTIONS: Array<{ label: string; value: AllocationBucket }> = [
   { label: "Future", value: "future" },
 ];
 
-const BUCKET_PILLS: Array<{ key: AllocationBucket; label: string; Icon: React.ElementType }> = [
+const BUCKET_PILLS: Array<{ key: AllocationBucket; label: string; Icon: ElementType }> = [
   { key: "needs", label: "Needs", Icon: Home },
   { key: "wants", label: "Wants", Icon: Coffee },
   { key: "future", label: "Future", Icon: PiggyBank },
 ];
 
 const CATEGORY_EMOJIS = [
-  "🍔", "☕", "🍺", "🛒", "🍕",
-  "🏠", "💡", "⚡", "🛜", "🔥",
-  "🚗", "⛽", "🚌", "🚲", "✈️",
-  "💊", "👕", "💇", "🧴", "🏋️",
-  "💰", "💵", "💳", "🏦", "📈",
-  "🎬", "🎮", "🎁", "🎵", "📚",
+  // Default seed icons (always present)
+  "🏠", "🛒", "💡", "🛡️", "🚗", "🏥",
+  "🍽️", "🎬", "🛍️", "📺", "🎨",
+  "💰", "📈", "🏦", "💳",
+  "💼", "💻", "💵",
+  // Additional options
+  "🏃", "☕", "🐾", "🍕", "⛽",
+  "🚌", "🚲", "✈️", "💊", "👕",
+  "🎮", "🎁", "🎵", "📚",
+  "🔧", "🧾", "🎓",
 ];
 
 type CategoryFormState = {
@@ -210,18 +215,15 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Categories</h1>
-          <p className="text-sm text-muted-foreground">
-            Organize income sources and spending buckets.
-          </p>
-        </div>
-        <Button onClick={openCreate} className="min-h-[44px] w-full sm:w-auto">
-          <Plus className="h-4 w-4" />
-          Add category
-        </Button>
-      </div>
+      <PageHeader
+        title="Categories"
+        description="Organize income sources and spending buckets."
+        action={
+          <Button variant="outline" size="sm" onClick={openCreate} className="min-h-[44px]">
+            Add category
+          </Button>
+        }
+      />
 
       <div className="space-y-4">
         <Tabs value={type} onValueChange={(v) => setType(v as TransactionType)}>
@@ -373,13 +375,11 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        {/* [&>button]:hidden suppresses the default Radix close button */}
         <SheetContent
           side="bottom"
           className="max-h-[90vh] rounded-t-3xl border border-border bg-card p-0 [&>button]:hidden"
         >
           <div className="flex max-h-[90vh] flex-col">
-            {/* Header */}
             <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <SheetTitle className="text-2xl font-bold">
@@ -398,9 +398,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
               </div>
             </SheetHeader>
 
-            {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-              {/* Visual Preview */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                   Preview
@@ -432,7 +430,6 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 </div>
               </div>
 
-              {/* Name Input */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                   Name
@@ -445,7 +442,6 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 />
               </div>
 
-              {/* Emoji Grid Picker */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Grid3X3 className="h-4 w-4 text-muted-foreground" />
@@ -453,7 +449,8 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                     Choose an Icon
                   </Label>
                 </div>
-                <div className="grid grid-cols-5 place-items-center gap-1 max-h-[180px] overflow-y-auto rounded-xl border border-border bg-background p-2">
+                <div className="max-h-[180px] overflow-y-auto rounded-xl border border-border bg-background p-2">
+                  <div className="grid grid-cols-5 place-items-center gap-1">
                   {CATEGORY_EMOJIS.map((emoji) => {
                     const isSelected = formState.icon === emoji;
                     return (
@@ -473,10 +470,10 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                       </button>
                     );
                   })}
+                  </div>
                 </div>
               </div>
 
-              {/* Type Tabs */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                   Type
@@ -501,7 +498,6 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 </Tabs>
               </div>
 
-              {/* Bucket Selection - Visual Pills (only for expenses) */}
               {formState.type === "expense" && (
                 <div className="space-y-3">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
@@ -541,7 +537,6 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 </div>
               )}
 
-              {/* Error */}
               {error && (
                 <p className="rounded-xl bg-destructive/10 p-3 text-center text-sm text-destructive" role="alert">
                   {error}
@@ -549,7 +544,6 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
               )}
             </div>
 
-            {/* Footer */}
             <div className="border-t border-border bg-card px-6 pb-8 pt-4">
               <Button
                 type="button"
