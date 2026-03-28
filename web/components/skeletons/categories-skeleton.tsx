@@ -10,7 +10,7 @@ export function CategoriesSkeleton() {
       <Skeleton className="h-12 w-full" />
       <div className="flex gap-2">
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-10 w-24" />
+          <Skeleton key={i} className="h-10 w-24 rounded-full" />
         ))}
       </div>
       <div className="space-y-3">
