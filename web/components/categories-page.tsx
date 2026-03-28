@@ -1,8 +1,9 @@
 "use client";
 
+import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, MoreHorizontal, Plus, X } from "lucide-react";
+import { Check, CheckCircle, Coffee, Grid3X3, Home, MoreHorizontal, PiggyBank, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -38,6 +39,21 @@ const BUCKET_OPTIONS: Array<{ label: string; value: AllocationBucket }> = [
   { label: "Needs", value: "needs" },
   { label: "Wants", value: "wants" },
   { label: "Future", value: "future" },
+];
+
+const BUCKET_PILLS: Array<{ key: AllocationBucket; label: string; Icon: React.ElementType }> = [
+  { key: "needs", label: "Needs", Icon: Home },
+  { key: "wants", label: "Wants", Icon: Coffee },
+  { key: "future", label: "Future", Icon: PiggyBank },
+];
+
+const CATEGORY_EMOJIS = [
+  "🍔", "☕", "🍺", "🛒", "🍕",
+  "🏠", "💡", "⚡", "🛜", "🔥",
+  "🚗", "⛽", "🚌", "🚲", "✈️",
+  "💊", "👕", "💇", "🧴", "🏋️",
+  "💰", "💵", "💳", "🏦", "📈",
+  "🎬", "🎮", "🎁", "🎵", "📚",
 ];
 
 type CategoryFormState = {
@@ -357,115 +373,193 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-6">
-          <SheetHeader className="text-left">
-            <SheetTitle>{editingCategory ? "Edit category" : "New category"}</SheetTitle>
-            <SheetDescription>
-              {editingCategory ? "Update the details below." : "Add a new way to track income or expenses."}
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={formState.name}
-                onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Groceries"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="icon">Emoji</Label>
-              <div className="flex justify-center">
-                <div
-                  className="h-16 w-16 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: getEmojiPreviewColor(formState) }}
+        {/* [&>button]:hidden suppresses the default Radix close button */}
+        <SheetContent
+          side="bottom"
+          className="max-h-[90vh] rounded-t-3xl border border-border bg-card p-0 [&>button]:hidden"
+        >
+          <div className="flex max-h-[90vh] flex-col">
+            {/* Header */}
+            <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
+              <div className="flex items-center justify-between">
+                <SheetTitle className="text-2xl font-bold">
+                  {editingCategory ? "Edit Category" : "New Category"}
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                  {editingCategory ? "Update the details below." : "Add a new way to track income or expenses."}
+                </SheetDescription>
+                <button
+                  onClick={() => setSheetOpen(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-border text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label="Close"
                 >
-                  <span className="text-4xl leading-none">{formState.icon || "•"}</span>
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </SheetHeader>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+              {/* Visual Preview */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Preview
+                </Label>
+                <div className="flex items-center gap-4 p-4 rounded-2xl bg-background border border-border">
+                  <div
+                    className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-3xl"
+                    style={{ backgroundColor: getEmojiPreviewColor(formState) }}
+                  >
+                    {formState.icon || "💡"}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground">
+                      {formState.name.trim() || "Category Name"}
+                    </div>
+                    {formState.type === "expense" && formState.allocationBucket ? (
+                      <div
+                        className="text-xs font-medium capitalize"
+                        style={{ color: getBucketColor(formState.allocationBucket as AllocationBucket) }}
+                      >
+                        {formState.allocationBucket}
+                      </div>
+                    ) : (
+                      <div className="text-xs font-medium" style={{ color: getTransactionColor("income") }}>
+                        Income
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <Input
-                id="icon"
-                value={formState.icon}
-                onChange={(e) => setFormState((prev) => ({ ...prev, icon: e.target.value }))}
-                placeholder="🥑"
-                maxLength={10}
-              />
-            </div>
 
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <Tabs
-                value={formState.type}
-                onValueChange={(v) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    type: v as TransactionType,
-                    allocationBucket: v === "income" ? "" : prev.allocationBucket || "needs",
-                  }))
-                }
-              >
-                <TabsList className="w-full">
-                  {TYPE_OPTIONS.map((option) => (
-                    <TabsTrigger key={option.value} value={option.value} className="flex-1">
-                      {option.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </div>
-
-            {formState.type === "expense" && (
+              {/* Name Input */}
               <div className="space-y-2">
-                <Label>Allocation bucket</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {BUCKET_OPTIONS.map((option) => {
-                    const isSelected = formState.allocationBucket === option.value;
-                    const color = getBucketColor(option.value);
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Name
+                </Label>
+                <Input
+                  value={formState.name}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Groceries, Salary, Rent..."
+                  className="h-14 rounded-2xl bg-background border-border"
+                />
+              </div>
+
+              {/* Emoji Grid Picker */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Grid3X3 className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                    Choose an Icon
+                  </Label>
+                </div>
+                <div className="grid grid-cols-5 place-items-center gap-1 max-h-[180px] overflow-y-auto rounded-xl border border-border bg-background p-2">
+                  {CATEGORY_EMOJIS.map((emoji) => {
+                    const isSelected = formState.icon === emoji;
                     return (
                       <button
-                        key={option.value}
+                        key={emoji}
                         type="button"
                         onClick={() =>
-                          setFormState((prev) => ({ ...prev, allocationBucket: option.value }))
+                          setFormState((prev) => ({ ...prev, icon: isSelected ? "" : emoji }))
                         }
-                        aria-label={`Select ${option.label} bucket`}
                         className={cn(
-                          "min-h-[44px] rounded-lg border text-sm font-medium transition",
-                          !isSelected && "border-border text-muted-foreground"
+                          "flex h-10 w-10 items-center justify-center rounded-lg text-xl transition-all hover:scale-105 active:scale-95",
+                          isSelected ? "ring-2 ring-primary bg-primary/10" : "hover:bg-border"
                         )}
-                        style={isSelected ? { borderColor: color, color, backgroundColor: color + "33" } : undefined}
+                        title={emoji}
                       >
-                        {option.label}
+                        {emoji}
                       </button>
                     );
                   })}
                 </div>
               </div>
-            )}
 
-            {error && (
-              <p className="text-sm text-destructive" role="alert">{error}</p>
-            )}
+              {/* Type Tabs */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Type
+                </Label>
+                <Tabs
+                  value={formState.type}
+                  onValueChange={(v) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      type: v as TransactionType,
+                      allocationBucket: v === "income" ? "" : prev.allocationBucket || "needs",
+                    }))
+                  }
+                >
+                  <TabsList className="w-full">
+                    {TYPE_OPTIONS.map((option) => (
+                      <TabsTrigger key={option.value} value={option.value} className="flex-1">
+                        {option.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
 
-            <div className="flex gap-3">
+              {/* Bucket Selection - Visual Pills (only for expenses) */}
+              {formState.type === "expense" && (
+                <div className="space-y-3">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                    Allocation Bucket
+                  </Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {BUCKET_PILLS.map(({ key, label, Icon }) => {
+                      const isSelected = formState.allocationBucket === key;
+                      const color = getBucketColor(key);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() =>
+                            setFormState((prev) => ({ ...prev, allocationBucket: key }))
+                          }
+                          aria-label={`Select ${label} bucket`}
+                          aria-pressed={isSelected}
+                          className={cn(
+                            "flex flex-col items-center gap-2 rounded-3xl border-2 bg-background p-4 transition-all hover:scale-[1.02]",
+                            !isSelected && "border-transparent text-muted-foreground"
+                          )}
+                          style={
+                            isSelected
+                              ? { borderColor: color, color, backgroundColor: color + "1a" }
+                              : undefined
+                          }
+                        >
+                          <Icon className="h-6 w-6" />
+                          <span className="text-[10px] font-bold uppercase tracking-tighter">
+                            {label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Error */}
+              {error && (
+                <p className="rounded-xl bg-destructive/10 p-3 text-center text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-border bg-card px-6 pb-8 pt-4">
               <Button
                 type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setSheetOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="flex-1"
                 onClick={handleSave}
                 disabled={!canSave || loading}
+                className="w-full rounded-3xl py-6 text-lg font-bold text-white shadow-xl flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: "linear-gradient(to right, #c97a5a, #a36248)" }}
               >
-                {loading ? "Saving…" : "Save"}
+                {loading ? "Saving…" : editingCategory ? "Update" : "Create"}
+                <CheckCircle className="h-5 w-5" />
               </Button>
             </div>
           </div>

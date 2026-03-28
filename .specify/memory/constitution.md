@@ -1,5 +1,25 @@
 <!--
   === Sync Impact Report ===
+  Version change: 1.1.0 → 1.2.0 (MINOR)
+  Modified principles:
+    - I. Mobile-First Design: added scoped exception for dense
+      interactive grid elements (emoji pickers, icon selectors)
+      permitting a 40×40px minimum touch target when a ≥4px gap
+      between elements is maintained and the grid is visually bounded.
+      This formalises the project-wide pattern already established in
+      transaction-sheet.tsx.
+  Added sections: None
+  Removed sections: None
+  Changed constraints: None
+  Changed workflow: None
+  Templates requiring updates: None
+  Follow-up TODOs:
+    - Audit transaction-sheet.tsx and categories-page.tsx to confirm
+      ≥4px inter-element gap is met for all dense grid elements.
+  ===========================
+-->
+<!--
+  === Sync Impact Report ===
   Version change: 1.0.0 → 1.1.0 (MINOR)
   Modified principles:
     - II. Type Safety & Validation: updated "API request and response
@@ -30,16 +50,22 @@
 
 All UI work MUST target mobile viewports (375px base) first and
 progressively enhance for larger screens. Every interactive element
-MUST meet a minimum touch target of 44x44px. Navigation MUST use
-bottom tabs on mobile and sidebar on desktop. Bottom sheets MUST be
-the primary modal pattern on mobile instead of centered dialogs.
-Skeleton screens MUST be used for loading states — spinners are
-prohibited. Animations MUST use `transform`/`opacity` properties
-and respect `prefers-reduced-motion`.
+MUST meet a minimum touch target of 44x44px. **Exception**: elements
+within a visually bounded dense interactive grid (e.g., emoji pickers,
+icon selectors) MAY use a minimum of 40x40px provided a gap of at
+least 4px is maintained between all adjacent elements in the grid.
+Navigation MUST use bottom tabs on mobile and sidebar on desktop.
+Bottom sheets MUST be the primary modal pattern on mobile instead of
+centered dialogs. Skeleton screens MUST be used for loading states —
+spinners are prohibited. Animations MUST use `transform`/`opacity`
+properties and respect `prefers-reduced-motion`.
 
 **Rationale**: The target audience primarily tracks expenses on mobile
 devices. A mobile-first approach ensures the core experience is
-optimized for the most common usage context.
+optimized for the most common usage context. The dense-grid exception
+acknowledges that tightly packed selection controls (emoji grids, icon
+palettes) provide sufficient combined tap area at 40px with adequate
+spacing, consistent with common mobile UI patterns.
 
 ### II. Type Safety & Validation
 
@@ -166,4 +192,4 @@ semantic versioning rules:
 "Constitution Check" section in the plan template MUST reference
 applicable principles from this document as gates.
 
-**Version**: 1.1.0 | **Ratified**: 2026-03-15 | **Last Amended**: 2026-03-16
+**Version**: 1.2.0 | **Ratified**: 2026-03-15 | **Last Amended**: 2026-03-27
