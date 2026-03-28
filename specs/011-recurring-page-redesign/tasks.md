@@ -26,9 +26,9 @@
 
 **Purpose**: Reference existing patterns and prepare workspace
 
-- [ ] T001 Review budgets-page.tsx design patterns in web/components/budgets-page.tsx
-- [ ] T002 Review categories-page.tsx design patterns in web/components/categories-page.tsx
-- [ ] T003 Review finance-utils.ts color utilities in web/lib/finance-utils.ts
+- [x] T001 Review budgets-page.tsx design patterns in web/components/budgets-page.tsx
+- [x] T002 Review categories-page.tsx design patterns in web/components/categories-page.tsx
+- [x] T003 Review finance-utils.ts color utilities in web/lib/finance-utils.ts
 
 **Checkpoint**: Familiar with existing patterns - ready to implement
 
@@ -42,10 +42,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] Add computed summary calculation in web/components/recurring-page.tsx (totalIncome, totalExpenses, netRecurring, activeCount, pausedCount)
-- [ ] T005 [US1] Add summary card UI component at top of page in web/components/recurring-page.tsx with grid layout (Budgeted/Spent/Remaining pattern from budgets page)
-- [ ] T006 [US1] Add progress bar to summary card using Progress component from web/components/ui/progress.tsx
-- [ ] T007 [US1] Style summary card with rounded-xl border and bg-card matching budgets page month header
+- [x] T004 [US1] Add computed summary calculation in web/components/recurring-page.tsx (totalIncome, totalExpenses, netRecurring, activeCount, pausedCount)
+- [x] T005 [US1] Add summary card UI component at top of page in web/components/recurring-page.tsx with grid layout (Budgeted/Spent/Remaining pattern from budgets page)
+- [x] T006 [US1] Add progress bar to summary card using Progress component from web/components/ui/progress.tsx
+- [x] T007 [US1] Style summary card with rounded-xl border and bg-card matching budgets page month header
 
 **Checkpoint**: User Story 1 complete - summary card displays correctly with accurate totals
 
@@ -59,12 +59,12 @@
 
 ### Implementation for User Story 2
 
-- [ ] T008 [US2] Update card container to add 3px left border with borderLeftWidth/borderLeftColor inline styles in web/components/recurring-page.tsx
-- [ ] T009 [US2] Import getTransactionColor from web/lib/finance-utils.ts for type-based coloring
-- [ ] T010 [US2] Update icon circle background to use type color with 26 opacity suffix (e.g., backgroundColor: color + "26")
-- [ ] T011 [US2] Increase amount font size and add font-semibold for prominence
-- [ ] T012 [US2] Add DropdownMenu for Edit/Delete actions using web/components/ui/dropdown-menu.tsx (replacing inline buttons)
-- [ ] T013 [US2] Update card layout to match budgets/categories pattern with icon, name/description, and amount sections
+- [x] T008 [US2] Update card container to add 3px left border with borderLeftWidth/borderLeftColor inline styles in web/components/recurring-page.tsx
+- [x] T009 [US2] Import getTransactionColor from web/lib/finance-utils.ts for type-based coloring
+- [x] T010 [US2] Update icon circle background to use type color with 26 opacity suffix (e.g., backgroundColor: color + "26")
+- [x] T011 [US2] Increase amount font size and add font-semibold for prominence
+- [x] T012 [US2] Add DropdownMenu for Edit/Delete actions using web/components/ui/dropdown-menu.tsx (replacing inline buttons)
+- [x] T013 [US2] Update card layout to match budgets/categories pattern with icon, name/description, and amount sections
 
 **Checkpoint**: User Story 2 complete - all cards display with type-colored design
 
@@ -78,13 +78,13 @@
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] Add confirmingDeleteId state with useState in web/components/recurring-page.tsx
-- [ ] T015 [US3] Add confirmButtonRefs and deleteButtonRefs using useRef for focus management in web/components/recurring-page.tsx
-- [ ] T016 [US3] Add useEffect for focus management when confirmingDeleteId changes in web/components/recurring-page.tsx
-- [ ] T017 [US3] Replace window.confirm with triggerDelete and confirmDelete functions in web/components/recurring-page.tsx
-- [ ] T018 [US3] Add inline Check/X button UI when confirmingDeleteId matches item id in web/components/recurring-page.tsx
-- [ ] T019 [US3] Add deleteError state for displaying deletion errors in web/components/recurring-page.tsx
-- [ ] T020 [US3] Ensure pause/resume buttons remain functional with existing handleToggle in web/components/recurring-page.tsx
+- [x] T014 [US3] Add confirmingDeleteId state with useState in web/components/recurring-page.tsx
+- [x] T015 [US3] Add confirmButtonRefs and deleteButtonRefs using useRef for focus management in web/components/recurring-page.tsx
+- [x] T016 [US3] Add useEffect for focus management when confirmingDeleteId changes in web/components/recurring-page.tsx
+- [x] T017 [US3] Replace window.confirm with triggerDelete and confirmDelete functions in web/components/recurring-page.tsx
+- [x] T018 [US3] Add inline Check/X button UI when confirmingDeleteId matches item id in web/components/recurring-page.tsx
+- [x] T019 [US3] Add deleteError state for displaying deletion errors in web/components/recurring-page.tsx
+- [x] T020 [US3] Ensure pause/resume buttons remain functional with existing handleToggle in web/components/recurring-page.tsx
 
 **Checkpoint**: User Story 3 complete - delete uses inline confirmation, pause/resume works
 
@@ -98,17 +98,17 @@
 
 ### Implementation for User Story 4
 
-- [ ] T021 [US4] Update SheetContent to use rounded-t-3xl, border, bg-card, and hide default close button ([&>button]:hidden) in web/components/recurring-page.tsx
-- [ ] T022 [US4] Add modern SheetHeader with text-2xl font-bold title and custom X close button in web/components/recurring-page.tsx
-- [ ] T023 [US4] Create centered amount input section with $ prefix and radial gradient background in web/components/recurring-page.tsx
-- [ ] T024 [US4] Add font size scaling function for long amounts (getAmountFontSize) in web/components/recurring-page.tsx
-- [ ] T025 [US4] Create animated type toggle (Expense/Income) with sliding indicator using inline left position transition in web/components/recurring-page.tsx
-- [ ] T026 [US4] Convert frequency Select to pill chips/segmented control with grid layout in web/components/recurring-page.tsx
-- [ ] T027 [US4] Convert category Select to horizontal scrolling chips with overflow-x-auto and gradient fade edge in web/components/recurring-page.tsx
-- [ ] T028 [US4] Filter category chips by formState.type (expense vs income) in web/components/recurring-page.tsx
-- [ ] T029 [US4] Update date inputs to use Calendar popover from web/components/ui/calendar.tsx via Popover component in web/components/recurring-page.tsx
-- [ ] T030 [US4] Update save button to large gradient style (linear-gradient to right #c97a5a, #a36248) with rounded-3xl and py-6 in web/components/recurring-page.tsx
-- [ ] T031 [US4] Wrap sheet content in flex column with overflow-y-auto for scrolling form in web/components/recurring-page.tsx
+- [x] T021 [US4] Update SheetContent to use rounded-t-3xl, border, bg-card, and hide default close button ([&>button]:hidden) in web/components/recurring-page.tsx
+- [x] T022 [US4] Add modern SheetHeader with text-2xl font-bold title and custom X close button in web/components/recurring-page.tsx
+- [x] T023 [US4] Create centered amount input section with $ prefix and radial gradient background in web/components/recurring-page.tsx
+- [x] T024 [US4] Add font size scaling function for long amounts (getAmountFontSize) in web/components/recurring-page.tsx
+- [x] T025 [US4] Create animated type toggle (Expense/Income) with sliding indicator using inline left position transition in web/components/recurring-page.tsx
+- [x] T026 [US4] Convert frequency Select to pill chips/segmented control with grid layout in web/components/recurring-page.tsx
+- [x] T027 [US4] Convert category Select to horizontal scrolling chips with overflow-x-auto and gradient fade edge in web/components/recurring-page.tsx
+- [x] T028 [US4] Filter category chips by formState.type (expense vs income) in web/components/recurring-page.tsx
+- [x] T029 [US4] Update date inputs to use Calendar popover from web/components/ui/calendar.tsx via Popover component in web/components/recurring-page.tsx
+- [x] T030 [US4] Update save button to large gradient style (linear-gradient to right #c97a5a, #a36248) with rounded-3xl and py-6 in web/components/recurring-page.tsx
+- [x] T031 [US4] Wrap sheet content in flex column with overflow-y-auto for scrolling form in web/components/recurring-page.tsx
 
 **Checkpoint**: User Story 4 complete - create/edit sheet matches budgets/categories design pattern
 
@@ -122,9 +122,9 @@
 
 ### Implementation for User Story 5
 
-- [ ] T032 [US5] Create empty state component with emoji icon (text-4xl), bold title, description, and action button in web/components/recurring-page.tsx
-- [ ] T033 [US5] Add different emoji/message for Active tab empty state vs Paused tab empty state in web/components/recurring-page.tsx
-- [ ] T034 [US5] Style empty state with rounded-2xl border, bg-card, centered text, and p-10 in web/components/recurring-page.tsx
+- [x] T032 [US5] Create empty state component with emoji icon (text-4xl), bold title, description, and action button in web/components/recurring-page.tsx
+- [x] T033 [US5] Add different emoji/message for Active tab empty state vs Paused tab empty state in web/components/recurring-page.tsx
+- [x] T034 [US5] Style empty state with rounded-2xl border, bg-card, centered text, and p-10 in web/components/recurring-page.tsx
 
 **Checkpoint**: User Story 5 complete - empty states guide users appropriately
 
@@ -134,11 +134,11 @@
 
 **Purpose**: Final verification and refinements
 
-- [ ] T035 Verify all touch targets meet 44px minimum (min-h-[44px] on buttons) in web/components/recurring-page.tsx
-- [ ] T036 [P] Update recurring skeleton in web/components/skeletons/recurring-skeleton.tsx to match new card design if needed
-- [ ] T037 Test keyboard navigation and focus management for delete confirmation flow
-- [ ] T038 Run pnpm lint and fix any issues
-- [ ] T039 Run pnpm build and verify no errors
+- [x] T035 Verify all touch targets meet 44px minimum (min-h-[44px] on buttons) in web/components/recurring-page.tsx
+- [x] T036 [P] Update recurring skeleton in web/components/skeletons/recurring-skeleton.tsx to match new card design if needed
+- [x] T037 Test keyboard navigation and focus management for delete confirmation flow
+- [x] T038 Run pnpm lint and fix any issues
+- [x] T039 Run pnpm build and verify no errors
 
 ---
 
