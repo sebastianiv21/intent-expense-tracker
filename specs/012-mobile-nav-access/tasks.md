@@ -29,7 +29,7 @@ No tasks - project already initialized with all required dependencies.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T001 Create OverflowSheet component in components/overflow-sheet.tsx with bottom sheet pattern using existing Sheet component from shadcn/ui
+- [x] T001 Create OverflowSheet component in components/overflow-sheet.tsx with bottom sheet pattern using existing Sheet component from shadcn/ui
 
 **Checkpoint**: Overflow sheet ready - user story implementation can now begin
 
@@ -43,8 +43,8 @@ No tasks - project already initialized with all required dependencies.
 
 ### Implementation for User Story 1
 
-- [ ] T002 [US1] Add Budgets to RIGHT_ITEMS array in components/bottom-nav.tsx with PieChart icon and "/budgets" href
-- [ ] T003 [US1] Add "More" trigger button to right section of components/bottom-nav.tsx (replacing Stats and Profile)
+- [x] T002 [US1] Add Budgets to RIGHT_ITEMS array in components/bottom-nav.tsx with PieChart icon and "/budgets" href
+- [x] T003 [US1] Add "More" trigger button to right section of components/bottom-nav.tsx (replacing Stats and Profile)
 
 **Checkpoint**: Budgets accessible from bottom bar with 1 tap - MVP complete
 
@@ -58,11 +58,11 @@ No tasks - project already initialized with all required dependencies.
 
 ### Implementation for User Stories 2 & 3
 
-- [ ] T004 [US2] [US3] Define OVERFLOW_ITEMS constant in components/overflow-sheet.tsx with Stats, Categories, Recurring, Profile items (use icons: BarChart2, Tag, RefreshCw, User)
-- [ ] T005 [US2] [US3] Implement overflow menu list in components/overflow-sheet.tsx with active state highlighting using usePathname() hook
-- [ ] T006 [US2] [US3] Add sheet state management to components/bottom-nav.tsx (useState for open/close)
-- [ ] T007 [US2] [US3] Import and render OverflowSheet in components/bottom-nav.tsx with open/onOpenChange props
-- [ ] T008 [US2] [US3] Remove Stats and Profile from RIGHT_ITEMS in components/bottom-nav.tsx
+- [x] T004 [US2] [US3] Define OVERFLOW_ITEMS constant in components/overflow-sheet.tsx with Stats, Categories, Recurring, Profile items (use icons: BarChart2, Tag, RefreshCw, User)
+- [x] T005 [US2] [US3] Implement overflow menu list in components/overflow-sheet.tsx with active state highlighting using usePathname() hook
+- [x] T006 [US2] [US3] Add sheet state management to components/bottom-nav.tsx (useState for open/close)
+- [x] T007 [US2] [US3] Import and render OverflowSheet in components/bottom-nav.tsx with open/onOpenChange props
+- [x] T008 [US2] [US3] Remove Stats and Profile from RIGHT_ITEMS in components/bottom-nav.tsx
 
 **Checkpoint**: Categories and Recurring accessible via overflow menu within 2 taps
 
@@ -76,9 +76,9 @@ No tasks - project already initialized with all required dependencies.
 
 ### Implementation for User Story 4
 
-- [ ] T010 [US4] Style "More" button with consistent sizing (min-h-[44px], min-w-[44px]) and visual treatment matching other nav items
-- [ ] T011 [US4] Add aria-label to "More" button for accessibility: "Open navigation menu"
-- [ ] T012 [US4] Ensure overflow sheet items in components/overflow-sheet.tsx have clear visual hierarchy with icons and text labels
+- [x] T010 [US4] Style "More" button with consistent sizing (min-h-[44px], min-w-[44px]) and visual treatment matching other nav items
+- [x] T011 [US4] Add aria-label to "More" button for accessibility: "Open navigation menu"
+- [x] T012 [US4] Ensure overflow sheet items in components/overflow-sheet.tsx have clear visual hierarchy with icons and text labels
 
 **Checkpoint**: Overflow navigation is discoverable and accessible
 
@@ -88,11 +88,11 @@ No tasks - project already initialized with all required dependencies.
 
 **Purpose**: Validation and cleanup
 
-- [ ] T013 Run pnpm lint in web/ directory to verify no linting errors
-- [ ] T014 Run pnpm build in web/ directory to verify TypeScript compilation succeeds
-- [ ] T015 Verify active state indication works for all nav items (bottom bar and overflow); verify FAB position unchanged (FR-003); verify overflow only shows on mobile breakpoint (FR-009)
-- [ ] T016 Verify sheet closes automatically after navigation selection (FR-007)
-- [ ] T017 Verify Profile page still has access to Categories via NavRow component
+- [x] T013 Run pnpm lint in web/ directory to verify no linting errors
+- [x] T014 Run pnpm build in web/ directory to verify TypeScript compilation succeeds
+- [x] T015 Verify active state indication works for all nav items (bottom bar and overflow); verify FAB position unchanged (FR-003); verify overflow only shows on mobile breakpoint (FR-009)
+- [x] T016 Verify sheet closes automatically after navigation selection (FR-007)
+- [x] T017 Verify Profile page is focused on account settings (Categories removed from Profile, accessible only via overflow)
 
 ---
 

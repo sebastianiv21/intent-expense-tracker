@@ -43,7 +43,6 @@ A mobile user wants to categorize their spending or manage category settings whi
 
 1. **Given** a user is on a mobile device, **When** they open the "More" overflow menu, **Then** they see "Categories" as an available option.
 2. **Given** a user taps "Categories" from the overflow menu, **When** the page loads, **Then** they see their categories list with icons, names, and bucket assignments.
-3. **Given** a user is on the Profile page, **When** they tap the Categories row, **Then** they navigate to the Categories page.
 
 ---
 
@@ -97,7 +96,7 @@ A new mobile user explores the app and needs to discover that additional pages e
 - **FR-007**: System MUST close the overflow menu after a navigation selection is made.
 - **FR-008**: System MUST indicate the active page in the overflow menu when Categories or Recurring is currently displayed.
 - **FR-009**: System MUST only display the overflow navigation pattern on screens where the desktop sidebar is hidden.
-- **FR-010**: System MUST provide access to Categories from both the overflow menu and the Profile page.
+- **FR-010**: System MUST provide access to Categories from the overflow menu.
 - **FR-011**: System MUST maintain the existing bottom navigation items (Home, Activity) on the left side while adding Budgets and a "More" overflow trigger on the right side.
 - **FR-012**: System MUST remove Stats and Profile from the bottom bar and provide access via the overflow menu.
 
@@ -125,6 +124,5 @@ A new mobile user explores the app and needs to discover that additional pages e
 - The "More" overflow trigger will use an ellipsis icon positioned on the right side of the bottom bar.
 - Stats, Categories, Recurring, and Profile will be accessible from the overflow menu.
 - Users are familiar with overflow menu patterns from other mobile applications.
-- Categories will remain accessible from the Profile page as an alternative entry point (when navigating to Profile via overflow).
 - No additional overflow items will be added in the immediate future beyond Stats, Categories, Recurring, and Profile.
 - The existing `SideNav` items list can inform the overflow menu content to maintain consistency between desktop and mobile navigation.

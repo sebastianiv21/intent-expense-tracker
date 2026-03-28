@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { LogOut, Tag, ChevronRight } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
 import { FinancialProfileSheet } from "@/components/financial-profile-sheet";
 import { PageHeader } from "@/components/page-header";
@@ -49,34 +49,6 @@ function AnimatedSection({
     >
       {children}
     </div>
-  );
-}
-
-function NavRow({
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  icon: React.ElementType;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Go to ${label}`}
-      className="flex w-full items-center justify-between min-h-[44px] px-1 py-2 rounded-lg text-sm text-foreground hover:bg-muted/50 motion-safe:transition-colors motion-safe:duration-150"
-    >
-      <span className="flex items-center gap-3">
-        <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        {label}
-      </span>
-      <ChevronRight
-        className="h-4 w-4 text-muted-foreground"
-        aria-hidden="true"
-      />
-    </button>
   );
 }
 
@@ -215,18 +187,6 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
       </AnimatedSection>
 
       <AnimatedSection index={2}>
-        <Card>
-          <CardContent className="p-2">
-            <NavRow
-              icon={Tag}
-              label="Categories"
-              onClick={() => router.push("/categories")}
-            />
-          </CardContent>
-        </Card>
-      </AnimatedSection>
-
-      <AnimatedSection index={3}>
         <div className="pt-4 border-t border-border">
           <Button
             variant="ghost"
