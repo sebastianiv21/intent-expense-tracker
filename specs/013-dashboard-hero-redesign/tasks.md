@@ -27,8 +27,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T001 [US1] Create HeroBalanceCard component in web/components/hero-balance-card.tsx
-- [ ] T002 [US1] Update dashboard page to use HeroBalanceCard and preserve "View all" link in web/app/(app)/page.tsx
+- [x] T001 [US1] Create HeroBalanceCard component in web/components/hero-balance-card.tsx
+- [x] T002 [US1] Update dashboard page to use HeroBalanceCard and preserve "View all" link in web/app/(app)/page.tsx
 
 **Checkpoint**: User Story 1 complete - hero card displays prominently on dashboard with all required elements
 
@@ -42,7 +42,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T003 [US2] Extract date grouping logic and add date-grouped transaction list to dashboard in web/app/(app)/page.tsx
+- [x] T003 [US2] Extract date grouping logic and add date-grouped transaction list to dashboard in web/app/(app)/page.tsx
 
 **Checkpoint**: User Story 2 complete - transactions display in date groups matching transactions page pattern
 
@@ -56,7 +56,7 @@
 
 ### Implementation for User Story 3
 
-- [ ] T004 [US3] Update recurring items section styling to use rounded-xl cards in web/app/(app)/page.tsx
+- [x] T004 [US3] Update recurring items section styling to use rounded-xl cards in web/app/(app)/page.tsx
 
 **Checkpoint**: User Story 3 complete - recurring items display with consistent styling across all list sections
 
@@ -66,9 +66,9 @@
 
 **Purpose**: Final verification and cleanup
 
-- [ ] T005 Run pnpm lint and fix any issues in web/
-- [ ] T006 Run pnpm build and verify success
-- [ ] T007 Visual verification: hero card prominence (vs previous), "View all" link presence, space utilization, mobile (375px) and desktop viewports
+- [x] T005 Run pnpm lint and fix any issues in web/
+- [x] T006 Run pnpm build and verify success
+- [x] T007 Visual verification: hero card prominence (vs previous), "View all" link presence, space utilization, mobile (375px) and desktop viewports
 
 ---
 
