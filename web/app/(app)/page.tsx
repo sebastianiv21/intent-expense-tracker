@@ -2,7 +2,7 @@ import Link from "next/link";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { getDashboardData } from "@/lib/queries/dashboard";
 import { getAuthenticatedUser } from "@/lib/queries/auth";
-import { getBucketColor, formatCurrencyCompact } from "@/lib/finance-utils";
+import { getBucketColor, formatCurrencyCompact, getTransactionColor } from "@/lib/finance-utils";
 import { Button } from "@/components/ui/button";
 import { TransactionItem } from "@/components/transaction-item";
 import { PageHeader } from "@/components/page-header";
@@ -156,7 +156,7 @@ export default async function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="text-right text-sm font-semibold" style={{ color: getBucketColor(recurring.category?.allocationBucket ?? null) }}>
+                  <div className="text-right text-sm font-semibold" style={{ color: recurring.category?.allocationBucket ? getBucketColor(recurring.category.allocationBucket) : getTransactionColor(recurring.type) }}>
                     {formatCurrencyCompact(recurring.amount)}
                   </div>
                 </div>

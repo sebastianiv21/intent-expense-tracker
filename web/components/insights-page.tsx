@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
-import { Home, Heart, PiggyBank, type LucideIcon } from "lucide-react";
+import { Home, Coffee, PiggyBank, type LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { formatCurrencyCompact, getBucketColor } from "@/lib/finance-utils";
+import { formatCurrencyCompact, getBucketColor, getTransactionColor } from "@/lib/finance-utils";
 import type { AllocationBucket } from "@/types";
 
 // Dynamic imports for Recharts (SSR disabled for charts)
@@ -55,7 +55,7 @@ const ANIMATION = {
 
 const BUCKET_ICONS: Record<AllocationBucket, LucideIcon> = {
   needs: Home,
-  wants: Heart,
+  wants: Coffee,
   future: PiggyBank,
 };
 
@@ -285,7 +285,7 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
                     animationEasing={ANIMATION.spendingChart.easing}
                   >
                     {insights.spendingByCategory.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={getBucketColor(entry.bucket)} />
+                      <Cell key={`cell-${index}`} fill={entry.bucket ? getBucketColor(entry.bucket) : getTransactionColor('expense')} />
                     ))}
                   </Bar>
                 </BarChart>

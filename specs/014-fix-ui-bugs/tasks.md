@@ -27,10 +27,10 @@
 
 **Purpose**: Verify development environment and understand existing code
 
-- [ ] T001 Verify dev server starts with `cd web && pnpm dev`
-- [ ] T002 [P] Review existing `getBucketColor` function in `web/lib/finance-utils.ts`
-- [ ] T003 [P] Review existing `getTransactionColor` function in `web/lib/finance-utils.ts`
-- [ ] T004 [P] Review `BUCKET_ICONS` definition in `web/components/insights-page.tsx`
+- [x] T001 Verify dev server starts with `cd web && pnpm dev`
+- [x] T002 [P] Review existing `getBucketColor` function in `web/lib/finance-utils.ts`
+- [x] T003 [P] Review existing `getTransactionColor` function in `web/lib/finance-utils.ts`
+- [x] T004 [P] Review `BUCKET_ICONS` definition in `web/components/insights-page.tsx`
 
 ---
 
@@ -42,9 +42,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] Import `getTransactionColor` in `web/components/insights-page.tsx` (add to existing imports from finance-utils)
-- [ ] T006 [US1] Update bar chart Cell fill logic to use `getTransactionColor('expense')` fallback when `entry.bucket` is null in `web/components/insights-page.tsx`
-- [ ] T007 [US1] Verify pie chart (compliance chart) already uses bucket colors correctly - no changes needed if data is bucket-aggregated
+- [x] T005 [US1] Import `getTransactionColor` in `web/components/insights-page.tsx` (add to existing imports from finance-utils)
+- [x] T006 [US1] Update bar chart Cell fill logic to use `getTransactionColor('expense')` fallback when `entry.bucket` is null in `web/components/insights-page.tsx`
+- [x] T007 [US1] Verify pie chart (compliance chart) already uses bucket colors correctly - no changes needed if data is bucket-aggregated
 
 **Checkpoint**: Insights page charts display meaningful colors for all data points
 
@@ -60,10 +60,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T008 [US2] Review `handleSave` function logic in `web/components/recurring-page.tsx` - verify `editing` state check routes to `updateRecurring`
-- [ ] T009 [US2] Review `openEdit` function in `web/components/recurring-page.tsx` - verify `setEditing(item)` is called correctly
-- [ ] T010 [US2] Review `updateRecurring` action in `web/lib/actions/recurring.ts` - verify it uses `.update()` with correct `where` clause
-- [ ] T011 [US2] CONTINGENCY: Only if bug confirmed after T008-T010, add debug logging to `handleSave` in `web/components/recurring-page.tsx` to trace `editing` state
+- [x] T008 [US2] Review `handleSave` function logic in `web/components/recurring-page.tsx` - verify `editing` state check routes to `updateRecurring`
+- [x] T009 [US2] Review `openEdit` function in `web/components/recurring-page.tsx` - verify `setEditing(item)` is called correctly
+- [x] T010 [US2] Review `updateRecurring` action in `web/lib/actions/recurring.ts` - verify it uses `.update()` with correct `where` clause
+- [x] T011 [US2] CONTINGENCY: Only if bug confirmed after T008-T010, add debug logging to `handleSave` in `web/components/recurring-page.tsx` to trace `editing` state (SKIPPED - code verified correct)
 - [ ] T012 [US2] Test edit flow manually: create recurring → edit → save → verify no duplicate created
 
 **Checkpoint**: Editing recurring transactions works correctly with no duplicates
@@ -78,12 +78,12 @@
 
 ### Implementation for User Story 3
 
-- [ ] T013 [US3] Update import in `web/components/insights-page.tsx`: replace `Heart` with `Coffee` from lucide-react
-- [ ] T014 [US3] Update `BUCKET_ICONS.wants` from `Heart` to `Coffee` in `web/components/insights-page.tsx`
-- [ ] T015 [P] [US3] Verify `web/components/transaction-sheet.tsx` already uses Coffee for wants (reference check only)
-- [ ] T016 [P] [US3] Verify `web/components/categories-page.tsx` already uses Coffee for wants (reference check only)
-- [ ] T017 [P] [US3] Verify `web/components/budgets-page.tsx` already uses Coffee for wants (reference check only)
-- [ ] T018 [P] [US3] Verify `web/components/recurring-page.tsx` already uses Coffee for wants (reference check only)
+- [x] T013 [US3] Update import in `web/components/insights-page.tsx`: replace `Heart` with `Coffee` from lucide-react
+- [x] T014 [US3] Update `BUCKET_ICONS.wants` from `Heart` to `Coffee` in `web/components/insights-page.tsx`
+- [x] T015 [P] [US3] Verify `web/components/transaction-sheet.tsx` already uses Coffee for wants (reference check only)
+- [x] T016 [P] [US3] Verify `web/components/categories-page.tsx` already uses Coffee for wants (reference check only)
+- [x] T017 [P] [US3] Verify `web/components/budgets-page.tsx` already uses Coffee for wants (reference check only)
+- [x] T018 [P] [US3] Verify `web/components/recurring-page.tsx` already uses Coffee for wants (reference check only)
 
 **Checkpoint**: Wants bucket shows Coffee icon on all pages
 
@@ -97,8 +97,8 @@
 
 ### Implementation for User Story 4
 
-- [ ] T019 [US4] Import `getTransactionColor` in `web/app/(app)/page.tsx` (add to existing imports from finance-utils)
-- [ ] T020 [US4] Update upcoming recurring amount color logic: use `getTransactionColor(recurring.type)` fallback when `allocationBucket` is null in `web/app/(app)/page.tsx`
+- [x] T019 [US4] Import `getTransactionColor` in `web/app/(app)/page.tsx` (add to existing imports from finance-utils)
+- [x] T020 [US4] Update upcoming recurring amount color logic: use `getTransactionColor(recurring.type)` fallback when `allocationBucket` is null in `web/app/(app)/page.tsx`
 
 **Checkpoint**: Upcoming recurring amounts display correct colors
 
@@ -108,8 +108,8 @@
 
 **Purpose**: Final validation and cleanup
 
-- [ ] T021 Run `pnpm lint` in `web/` directory - must pass
-- [ ] T022 Run `pnpm build` in `web/` directory - must succeed
+- [x] T021 Run `pnpm lint` in `web/` directory - must pass
+- [x] T022 Run `pnpm build` in `web/` directory - must succeed
 - [ ] T023 Complete manual testing checklist from `specs/014-fix-ui-bugs/quickstart.md`
 - [ ] T024 Commit changes with conventional commit message: `fix: resolve UI consistency and color bugs`
 
