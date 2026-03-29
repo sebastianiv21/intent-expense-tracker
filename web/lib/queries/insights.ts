@@ -3,6 +3,7 @@ import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, financialProfile, transactions } from "@/lib/schema";
 import { getAuthenticatedUser } from "@/lib/queries/auth";
+import { BUCKET_DEFINITIONS } from "@/lib/finance-utils";
 import type { AllocationBucket, FinancialProfile } from "@/types";
 
 const PERIOD_MAP = {
@@ -119,11 +120,23 @@ export async function getAllocationSummary(params: { month: string }) {
 
   const targets = {
     needs:
-      (incomeTarget * (profile ? Number(profile.needsPercentage) : 50)) / 100,
+      (incomeTarget *
+        (profile
+          ? Number(profile.needsPercentage)
+          : BUCKET_DEFINITIONS.needs.defaultPercentage)) /
+      100,
     wants:
-      (incomeTarget * (profile ? Number(profile.wantsPercentage) : 30)) / 100,
+      (incomeTarget *
+        (profile
+          ? Number(profile.wantsPercentage)
+          : BUCKET_DEFINITIONS.wants.defaultPercentage)) /
+      100,
     future:
-      (incomeTarget * (profile ? Number(profile.futurePercentage) : 20)) / 100,
+      (incomeTarget *
+        (profile
+          ? Number(profile.futurePercentage)
+          : BUCKET_DEFINITIONS.future.defaultPercentage)) /
+      100,
   };
 
   return {

@@ -31,6 +31,7 @@ type BucketSummary = {
   spent: number;
   target: number;
   progress: number;
+  percentage: number;
 };
 
 type DashboardData = {
@@ -146,9 +147,15 @@ export async function getDashboardData(): Promise<DashboardData> {
   const monthlyIncomeTarget = profile
     ? toNumber(profile.monthlyIncomeTarget)
     : 0;
-  const needsPercentage = profile ? toNumber(profile.needsPercentage) : 50;
-  const wantsPercentage = profile ? toNumber(profile.wantsPercentage) : 30;
-  const futurePercentage = profile ? toNumber(profile.futurePercentage) : 20;
+  const needsPercentage = profile
+    ? toNumber(profile.needsPercentage)
+    : BUCKET_DEFINITIONS.needs.defaultPercentage;
+  const wantsPercentage = profile
+    ? toNumber(profile.wantsPercentage)
+    : BUCKET_DEFINITIONS.wants.defaultPercentage;
+  const futurePercentage = profile
+    ? toNumber(profile.futurePercentage)
+    : BUCKET_DEFINITIONS.future.defaultPercentage;
 
   const bucketTotals = new Map<AllocationBucket, number>(
     BUCKET_ORDER.map((bucket) => [bucket, 0]),
@@ -177,6 +184,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       spent,
       target,
       progress: calculatePercentage(spent, target),
+      percentage,
     };
   });
 

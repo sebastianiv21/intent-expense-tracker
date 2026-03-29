@@ -135,7 +135,11 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
                   Financial profile
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Income & 50/30/20 split
+                  Income &{" "}
+                  {BUCKET_ORDER.map((bucket) =>
+                    Math.round(Number(profile[PCT_KEYS[bucket]])),
+                  ).join("/")}{" "}
+                  split
                 </p>
               </div>
               <Button

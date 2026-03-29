@@ -71,6 +71,15 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
     useState<(typeof PERIODS)[number]["value"]>("month");
   const isPeriodLocked = true;
 
+  const bucketSplitLabel = useMemo(() => {
+    if (allocation.income <= 0) return "Bucket compliance";
+    const parts = (["needs", "wants", "future"] as AllocationBucket[]).map(
+      (bucket) =>
+        Math.round((allocation.targets[bucket] / allocation.income) * 100),
+    );
+    return `${parts.join("/")} compliance`;
+  }, [allocation]);
+
   const bucketData = useMemo(() => {
     return (Object.keys(allocation.actual) as AllocationBucket[]).map(
       (bucket) => ({
@@ -133,7 +142,7 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  50/30/20 compliance
+                  {bucketSplitLabel}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Allocation vs target

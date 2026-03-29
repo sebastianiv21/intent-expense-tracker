@@ -106,7 +106,9 @@ export default async function DashboardPage() {
       {data.bucketSummaries.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <SectionHeading>50/30/20 harmony</SectionHeading>
+            <SectionHeading>
+              {data.bucketSummaries.map((b) => b.percentage).join("/")} harmony
+            </SectionHeading>
             <span className="text-xs text-muted-foreground">This month</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
