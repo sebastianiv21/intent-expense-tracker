@@ -110,8 +110,8 @@
 
 - [x] T021 Run `pnpm lint` in `web/` directory - must pass
 - [x] T022 Run `pnpm build` in `web/` directory - must succeed
-- [ ] T023 Complete manual testing checklist from `specs/014-fix-ui-bugs/quickstart.md`
-- [ ] T024 Commit changes with conventional commit message: `fix: resolve UI consistency and color bugs`
+- [x] T023 Complete manual testing checklist from `specs/014-fix-ui-bugs/quickstart.md`
+- [x] T024 Commit changes with conventional commit message: `fix: resolve UI consistency and color bugs`
 
 ---
 
