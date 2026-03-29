@@ -2,24 +2,33 @@
 
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { Cell, Pie, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { format } from "date-fns";
 import { Home, Coffee, PiggyBank, type LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { formatCurrencyCompact, getBucketColor, getTransactionColor } from "@/lib/finance-utils";
+import {
+  formatCurrencyCompact,
+  getBucketColor,
+  getTransactionColor,
+} from "@/lib/finance-utils";
 import type { AllocationBucket } from "@/types";
 
-// Dynamic imports for Recharts (SSR disabled for charts)
-const PieChart = dynamic(() => import("recharts").then((mod) => mod.PieChart), { ssr: false });
-const Pie = dynamic(() => import("recharts").then((mod) => mod.Pie), { ssr: false });
-const Cell = dynamic(() => import("recharts").then((mod) => mod.Cell), { ssr: false });
-const ResponsiveContainer = dynamic(() => import("recharts").then((mod) => mod.ResponsiveContainer), { ssr: false });
-const BarChart = dynamic(() => import("recharts").then((mod) => mod.BarChart), { ssr: false });
-const Bar = dynamic(() => import("recharts").then((mod) => mod.Bar), { ssr: false });
-const XAxis = dynamic(() => import("recharts").then((mod) => mod.XAxis), { ssr: false });
-const YAxis = dynamic(() => import("recharts").then((mod) => mod.YAxis), { ssr: false });
-const Tooltip = dynamic(() => import("recharts").then((mod) => mod.Tooltip), { ssr: false });
+// Only container-level Recharts components need dynamic import to avoid SSR.
+// Child components (Cell, Pie, Bar, XAxis, YAxis, Tooltip) are imported directly
+// because Recharts identifies them by component type — wrapping with next/dynamic
+// breaks that identity and causes props like `fill` on Cell to be silently ignored.
+const PieChart = dynamic(() => import("recharts").then((mod) => mod.PieChart), {
+  ssr: false,
+});
+const ResponsiveContainer = dynamic(
+  () => import("recharts").then((mod) => mod.ResponsiveContainer),
+  { ssr: false },
+);
+const BarChart = dynamic(() => import("recharts").then((mod) => mod.BarChart), {
+  ssr: false,
+});
 
 type InsightsPageProps = {
   insights: {
@@ -60,24 +69,30 @@ const BUCKET_ICONS: Record<AllocationBucket, LucideIcon> = {
 };
 
 export function InsightsPage({ insights, allocation }: InsightsPageProps) {
-  const [period, setPeriod] = useState<(typeof PERIODS)[number]["value"]>("month");
+  const [period, setPeriod] =
+    useState<(typeof PERIODS)[number]["value"]>("month");
   const isPeriodLocked = true;
 
   const bucketData = useMemo(() => {
-    return (Object.keys(allocation.actual) as AllocationBucket[]).map((bucket) => ({
-      name: bucket,
-      value: allocation.actual[bucket],
-      color: getBucketColor(bucket),
-      target: allocation.targets[bucket],
-    }));
+    return (Object.keys(allocation.actual) as AllocationBucket[]).map(
+      (bucket) => ({
+        name: bucket,
+        value: allocation.actual[bucket],
+        color: getBucketColor(bucket),
+        target: allocation.targets[bucket],
+      }),
+    );
   }, [allocation]);
 
   const complianceScore = useMemo(() => {
     const totals = bucketData.reduce((sum, item) => sum + item.value, 0);
     const targetTotal = bucketData.reduce((sum, item) => sum + item.target, 0);
     if (totals === 0 || targetTotal === 0) return 0;
-    
-    const diff = bucketData.reduce((sum, item) => sum + Math.abs(item.value - item.target), 0);
+
+    const diff = bucketData.reduce(
+      (sum, item) => sum + Math.abs(item.value - item.target),
+      0,
+    );
     return Math.max(0, Math.round(100 - (diff / targetTotal) * 100));
   }, [bucketData]);
 
@@ -119,8 +134,12 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-foreground">50/30/20 compliance</p>
-                <p className="text-xs text-muted-foreground">Allocation vs target</p>
+                <p className="text-sm font-semibold text-foreground">
+                  50/30/20 compliance
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Allocation vs target
+                </p>
               </div>
               <span className="text-3xl font-bold text-foreground tabular-nums">
                 {showEmptyState ? "—" : `${complianceScore}%`}
@@ -146,8 +165,13 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value) => formatCurrencyCompact(Number(value ?? 0))}
-                    contentStyle={{ background: "var(--popover)", borderColor: "var(--border)" }}
+                    formatter={(value) =>
+                      formatCurrencyCompact(Number(value ?? 0))
+                    }
+                    contentStyle={{
+                      background: "var(--popover)",
+                      borderColor: "var(--border)",
+                    }}
                     itemStyle={{ color: "var(--foreground)" }}
                   />
                 </PieChart>
@@ -167,13 +191,20 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
                 {bucketData.map((bucket) => {
                   const Icon = BUCKET_ICONS[bucket.name];
                   return (
-                    <div key={bucket.name} className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1.5 text-muted-foreground capitalize">
+                    <div
+                      key={bucket.name}
+                      className="flex items-center justify-between text-xs"
+                    >
+                      <span
+                        className="flex items-center gap-1.5 capitalize"
+                        style={{ color: bucket.color }}
+                      >
                         <Icon className="h-3 w-3" />
                         {bucket.name}
                       </span>
                       <span className="text-foreground tabular-nums">
-                        {formatCurrencyCompact(bucket.value)} / {formatCurrencyCompact(bucket.target)}
+                        {formatCurrencyCompact(bucket.value)} /{" "}
+                        {formatCurrencyCompact(bucket.target)}
                       </span>
                     </div>
                   );
@@ -204,7 +235,9 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
                 <span
                   className={cn(
                     "tabular-nums font-semibold",
-                    insights.balance < 0 ? "text-destructive" : "text-foreground"
+                    insights.balance < 0
+                      ? "text-destructive"
+                      : "text-foreground",
                   )}
                 >
                   {formatCurrencyCompact(insights.balance)}
@@ -213,7 +246,10 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Transactions</span>
                 <span className="text-foreground tabular-nums font-medium">
-                  {insights.transactionCount.toLocaleString()} {insights.transactionCount === 1 ? "transaction" : "transactions"}
+                  {insights.transactionCount.toLocaleString()}{" "}
+                  {insights.transactionCount === 1
+                    ? "transaction"
+                    : "transactions"}
                 </span>
               </div>
             </div>
@@ -225,15 +261,20 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
         <CardContent className="p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-foreground">Spending by category</p>
-              <p className="text-xs text-muted-foreground">Expense totals by category</p>
+              <p className="text-sm font-semibold text-foreground">
+                Spending by category
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Expense totals by category
+              </p>
             </div>
           </div>
 
           {insights.spendingByCategory.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-8 text-center">
               <p className="text-sm text-muted-foreground">
-                No categorized expenses yet. Add categories to your transactions to see spending breakdown.
+                No categorized expenses yet. Add categories to your transactions
+                to see spending breakdown.
               </p>
             </div>
           ) : (
@@ -256,7 +297,9 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
                     tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(value) => formatCurrencyCompact(Number(value))}
+                    tickFormatter={(value) =>
+                      formatCurrencyCompact(Number(value))
+                    }
                   />
                   <Tooltip
                     content={({ active, payload }) => {
@@ -270,7 +313,9 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
                           <div className="flex items-center gap-2 text-foreground">
                             <span className="text-base">{data.icon}</span>
                             <span>{data.name}</span>
-                            <span className="font-medium">{formatCurrencyCompact(Number(data.value ?? 0))}</span>
+                            <span className="font-medium">
+                              {formatCurrencyCompact(Number(data.value ?? 0))}
+                            </span>
                           </div>
                         </div>
                       );
@@ -285,7 +330,14 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
                     animationEasing={ANIMATION.spendingChart.easing}
                   >
                     {insights.spendingByCategory.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.bucket ? getBucketColor(entry.bucket) : getTransactionColor('expense')} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          entry.bucket
+                            ? getBucketColor(entry.bucket)
+                            : getTransactionColor("expense")
+                        }
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -296,77 +348,92 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        {(Object.keys(allocation.actual) as AllocationBucket[]).map((bucket) => {
-          const actual = allocation.actual[bucket];
-          const target = allocation.targets[bucket];
-          const variance = actual - target;
-          const Icon = BUCKET_ICONS[bucket];
-          const isOverBudget = variance > 0;
-          const percentage = target > 0 ? (actual / target) * 100 : 0;
-          const displayPercentage = Math.min(percentage, 100);
-          const overagePercentage = Math.max(0, percentage - 100);
+        {(Object.keys(allocation.actual) as AllocationBucket[]).map(
+          (bucket) => {
+            const actual = allocation.actual[bucket];
+            const target = allocation.targets[bucket];
+            const variance = actual - target;
+            const Icon = BUCKET_ICONS[bucket];
+            const isOverBudget = variance > 0;
+            const percentage = target > 0 ? (actual / target) * 100 : 0;
+            const displayPercentage = Math.min(percentage, 100);
+            const overagePercentage = Math.max(0, percentage - 100);
 
-          return (
-            <Card key={bucket} className={cn(isOverBudget && "border-destructive/50")}>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground capitalize">
-                    <Icon className="h-4 w-4" />
-                    {bucket}
-                  </p>
-                  <span
-                    className={cn(
-                      "text-xs font-bold tabular-nums",
-                      isOverBudget ? "text-destructive" : "text-muted-foreground"
-                    )}
-                  >
-                    {variance >= 0 ? "+" : ""}{formatCurrencyCompact(variance)}
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Actual</span>
-                    <span className="text-foreground tabular-nums font-medium">
-                      {formatCurrencyCompact(actual)}
+            return (
+              <Card
+                key={bucket}
+                className={cn(isOverBudget && "border-destructive/50")}
+              >
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p
+                      className="flex items-center gap-1.5 text-sm font-semibold capitalize"
+                      style={{ color: getBucketColor(bucket) }}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {bucket}
+                    </p>
+                    <span
+                      className={cn(
+                        "text-xs font-bold tabular-nums",
+                        isOverBudget
+                          ? "text-destructive"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {variance >= 0 ? "+" : ""}
+                      {formatCurrencyCompact(variance)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Target</span>
-                    <span className="text-muted-foreground tabular-nums">
-                      {formatCurrencyCompact(target)}
-                    </span>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Actual</span>
+                      <span className="text-foreground tabular-nums font-medium">
+                        {formatCurrencyCompact(actual)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Target</span>
+                      <span className="text-muted-foreground tabular-nums">
+                        {formatCurrencyCompact(target)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="absolute h-2 rounded-full transition-all"
-                      style={{
-                        width: `${displayPercentage}%`,
-                        backgroundColor: getBucketColor(bucket),
-                      }}
-                    />
-                    {overagePercentage > 0 && (
+                  <div className="space-y-1">
+                    <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
                       <div
-                        className="absolute h-2 rounded-full bg-destructive/70"
+                        className="absolute h-2 rounded-full transition-all"
                         style={{
-                          left: `${displayPercentage}%`,
-                          width: `${Math.min(overagePercentage, 20)}%`,
+                          width: `${displayPercentage}%`,
+                          backgroundColor: getBucketColor(bucket),
                         }}
                       />
-                    )}
+                      {overagePercentage > 0 && (
+                        <div
+                          className="absolute h-2 rounded-full bg-destructive/70"
+                          style={{
+                            left: `${displayPercentage}%`,
+                            width: `${Math.min(overagePercentage, 20)}%`,
+                          }}
+                        />
+                      )}
+                    </div>
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>0%</span>
+                      <span
+                        className={cn(
+                          isOverBudget && "text-destructive font-medium",
+                        )}
+                      >
+                        {percentage.toFixed(0)}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>0%</span>
-                    <span className={cn(isOverBudget && "text-destructive font-medium")}>
-                      {percentage.toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                </CardContent>
+              </Card>
+            );
+          },
+        )}
       </div>
     </div>
   );
