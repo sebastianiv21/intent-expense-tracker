@@ -1,8 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { format, addMonths, parseISO, subMonths } from "date-fns";
-import { CalendarIcon, Check, CheckCircle, ChevronLeft, ChevronRight, Coffee, Home, MoreHorizontal, PiggyBank, Plus, X } from "lucide-react";
+import {
+  CalendarIcon,
+  Check,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Coffee,
+  Home,
+  MoreHorizontal,
+  PiggyBank,
+  Plus,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -26,7 +39,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { BUCKET_ORDER, calculatePercentage, formatCurrencyCompact, getBucketColor } from "@/lib/finance-utils";
+import {
+  BUCKET_ORDER,
+  calculatePercentage,
+  formatCurrencyCompact,
+  getBucketColor,
+} from "@/lib/finance-utils";
 import { PageHeader } from "@/components/page-header";
 import {
   createBudget,
@@ -88,7 +106,12 @@ function getAmountFontSize(len: number): string {
   return "text-2xl";
 }
 
-export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPageProps) {
+export function BudgetsPage({
+  budgets,
+  categories,
+  initialMonth,
+}: BudgetsPageProps) {
+  const router = useRouter();
   const [month, setMonth] = useState(initialMonth);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<BudgetWithSpending | null>(null);
@@ -102,11 +125,18 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
   const [loading, setLoading] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [filterBucket, setFilterBucket] = useState<AllocationBucket>("needs");
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
+    null,
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null);
+  const [deleteError, setDeleteError] = useState<{
+    id: string;
+    message: string;
+  } | null>(null);
 
-  const confirmButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const confirmButtonRefs = useRef<Record<string, HTMLButtonElement | null>>(
+    {},
+  );
   const deleteButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const prevConfirmingIdRef = useRef<string | null>(null);
 
@@ -122,7 +152,10 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
   const monthDate = new Date(`${month}-01T00:00:00`);
 
   const summary = useMemo(() => {
-    const totalBudgeted = budgets.reduce((sum, budget) => sum + Number(budget.amount), 0);
+    const totalBudgeted = budgets.reduce(
+      (sum, budget) => sum + Number(budget.amount),
+      0,
+    );
     const totalSpent = budgets.reduce((sum, budget) => sum + budget.spent, 0);
     const overallProgress = calculatePercentage(totalSpent, totalBudgeted);
     return {
@@ -138,13 +171,13 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
       bucket,
       label: bucket[0].toUpperCase() + bucket.slice(1),
       budgets: budgets.filter(
-        (budget) => budget.category.allocationBucket === bucket
+        (budget) => budget.category.allocationBucket === bucket,
       ),
     }));
   }, [budgets]);
 
   const expenseCategories = categories.filter(
-    (category) => category.type === "expense"
+    (category) => category.type === "expense",
   );
 
   function openCreate() {
@@ -179,7 +212,9 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
 
   function switchFilterBucket(bucket: AllocationBucket) {
     setFilterBucket(bucket);
-    const currentCat = expenseCategories.find((c) => c.id === formState.categoryId);
+    const currentCat = expenseCategories.find(
+      (c) => c.id === formState.categoryId,
+    );
     if (currentCat?.allocationBucket !== bucket) {
       setFormState((prev) => ({ ...prev, categoryId: "" }));
     }
@@ -196,18 +231,22 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
       startDate: formState.startDate,
     };
 
-    const result = editing
-      ? await updateBudget(editing.id, payload)
-      : await createBudget(payload);
+    try {
+      const result = editing
+        ? await updateBudget(editing.id, payload)
+        : await createBudget(payload);
 
-    if (!result.success) {
-      setError(result.error);
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+
+      setSheetOpen(false);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    setSheetOpen(false);
   }
 
   function triggerDelete(budget: BudgetWithSpending) {
@@ -219,10 +258,15 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
     setConfirmingDeleteId(null);
     setDeletingId(budget.id);
     setDeleteError(null);
-    const result = await deleteBudget(budget.id);
-    setDeletingId(null);
-    if (!result.success) {
-      setDeleteError({ id: budget.id, message: result.error });
+    try {
+      const result = await deleteBudget(budget.id);
+      if (!result.success) {
+        setDeleteError({ id: budget.id, message: result.error });
+      }
+    } catch {
+      setDeleteError({ id: budget.id, message: "Failed to delete budget" });
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -237,7 +281,12 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
         title="Budgets"
         description="Plan spending by category for the month ahead."
         action={
-          <Button variant="outline" size="sm" onClick={openCreate} className="min-h-[44px]">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openCreate}
+            className="min-h-[44px]"
+          >
             New budget
           </Button>
         }
@@ -249,7 +298,11 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setMonth(format(subMonths(monthDate, 1), "yyyy-MM"))}
+            onClick={() => {
+              const newMonth = format(subMonths(monthDate, 1), "yyyy-MM");
+              setMonth(newMonth);
+              router.push(`/budgets?month=${newMonth}`);
+            }}
             aria-label="Previous month"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -263,7 +316,11 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setMonth(format(addMonths(monthDate, 1), "yyyy-MM"))}
+            onClick={() => {
+              const newMonth = format(addMonths(monthDate, 1), "yyyy-MM");
+              setMonth(newMonth);
+              router.push(`/budgets?month=${newMonth}`);
+            }}
             aria-label="Next month"
           >
             <ChevronRight className="h-4 w-4" />
@@ -273,7 +330,9 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
         <Progress
           value={summary.overallProgress}
           className="h-2"
-          indicatorClassName={summary.overallProgress >= 100 ? "bg-destructive" : "bg-primary"}
+          indicatorClassName={
+            summary.overallProgress >= 100 ? "bg-destructive" : "bg-primary"
+          }
         />
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -294,7 +353,7 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
             <p
               className={cn(
                 "text-lg font-semibold",
-                summary.remaining < 0 ? "text-destructive" : "text-foreground"
+                summary.remaining < 0 ? "text-destructive" : "text-foreground",
               )}
             >
               {formatCurrencyCompact(summary.remaining)}
@@ -308,7 +367,9 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
         {grouped.map((group) => (
           <div key={group.bucket} className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-foreground">{group.label}</h2>
+              <h2 className="text-sm font-semibold text-foreground">
+                {group.label}
+              </h2>
               <span className="text-xs text-muted-foreground">
                 {group.budgets.length} budgets
               </span>
@@ -317,11 +378,18 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
             {group.budgets.length === 0 ? (
               <div className="rounded-2xl border border-border bg-card p-10 text-center space-y-4">
                 <div className="text-4xl">💸</div>
-                <p className="font-semibold text-foreground">No {group.label} budgets yet</p>
-                <p className="text-sm text-muted-foreground">
-                  Add a budget to track your {group.label.toLowerCase()} spending.
+                <p className="font-semibold text-foreground">
+                  No {group.label} budgets yet
                 </p>
-                <Button onClick={openCreate} variant="outline" className="min-h-[44px]">
+                <p className="text-sm text-muted-foreground">
+                  Add a budget to track your {group.label.toLowerCase()}{" "}
+                  spending.
+                </p>
+                <Button
+                  onClick={openCreate}
+                  variant="outline"
+                  className="min-h-[44px]"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add budget
                 </Button>
@@ -339,20 +407,29 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                   <div key={budget.id}>
                     <div
                       className="rounded-xl border border-border bg-card p-4 space-y-3"
-                      style={{ borderLeftWidth: "3px", borderLeftColor: getBucketColor(group.bucket) }}
+                      style={{
+                        borderLeftWidth: "3px",
+                        borderLeftColor: getBucketColor(group.bucket),
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
                             className="h-10 w-10 rounded-full flex items-center justify-center text-lg shrink-0"
-                            style={{ backgroundColor: getBucketColor(group.bucket) + "26" }}
+                            style={{
+                              backgroundColor:
+                                getBucketColor(group.bucket) + "26",
+                            }}
                           >
                             {budget.category.icon ?? "•"}
                           </div>
                           <div>
-                            <p className="font-medium text-foreground">{budget.category.name}</p>
+                            <p className="font-medium text-foreground">
+                              {budget.category.name}
+                            </p>
                             <p className="text-xs text-muted-foreground">
-                              {formatCurrencyCompact(spent)} of {formatCurrencyCompact(total)}
+                              {formatCurrencyCompact(spent)} of{" "}
+                              {formatCurrencyCompact(total)}
                             </p>
                           </div>
                         </div>
@@ -360,14 +437,18 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                         <div className="flex items-center gap-2">
                           {isConfirming ? (
                             <>
-                              <span className="text-sm text-muted-foreground">Delete?</span>
+                              <span className="text-sm text-muted-foreground">
+                                Delete?
+                              </span>
                               <Button
                                 type="button"
                                 variant="destructive"
                                 size="sm"
                                 className="min-h-[44px]"
                                 aria-label="Confirm delete"
-                                ref={(el) => { confirmButtonRefs.current[budget.id] = el; }}
+                                ref={(el) => {
+                                  confirmButtonRefs.current[budget.id] = el;
+                                }}
                                 onClick={() => confirmDelete(budget)}
                               >
                                 <Check className="h-4 w-4" />
@@ -393,13 +474,17 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                                   className="min-h-[44px] min-w-[44px] -mr-2 shrink-0"
                                   aria-label={`Options for ${budget.category.name}`}
                                   disabled={isDeleting}
-                                  ref={(el) => { deleteButtonRefs.current[budget.id] = el; }}
+                                  ref={(el) => {
+                                    deleteButtonRefs.current[budget.id] = el;
+                                  }}
                                 >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => openEdit(budget)}>
+                                <DropdownMenuItem
+                                  onClick={() => openEdit(budget)}
+                                >
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -417,13 +502,21 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                       <Progress
                         value={progress}
                         className="h-2"
-                        style={{ backgroundColor: getBucketColor(group.bucket) + "22" }}
-                        indicatorStyle={{ backgroundColor: getBucketColor(group.bucket) }}
+                        style={{
+                          backgroundColor: getBucketColor(group.bucket) + "22",
+                        }}
+                        indicatorStyle={{
+                          backgroundColor: getBucketColor(group.bucket),
+                        }}
                       />
 
                       <div className="flex items-center justify-between text-xs">
-                        <span style={{ color: getBucketColor(group.bucket) }}>{group.label}</span>
-                        {overspent && <span className="text-destructive">Over budget</span>}
+                        <span style={{ color: getBucketColor(group.bucket) }}>
+                          {group.label}
+                        </span>
+                        {overspent && (
+                          <span className="text-destructive">Over budget</span>
+                        )}
                       </div>
                     </div>
 
@@ -453,7 +546,9 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                   {editing ? "Edit Budget" : "New Budget"}
                 </SheetTitle>
                 <SheetDescription className="sr-only">
-                  {editing ? "Update the budget limits below." : "Set monthly targets per category."}
+                  {editing
+                    ? "Update the budget limits below."
+                    : "Set monthly targets per category."}
                 </SheetDescription>
                 <button
                   type="button"
@@ -470,10 +565,18 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
               {/* Amount */}
               <div
                 className="relative rounded-2xl px-4 py-5 text-center"
-                style={{ background: "radial-gradient(ellipse at 50% 100%, #c97a5a18 0%, transparent 70%)" }}
+                style={{
+                  background:
+                    "radial-gradient(ellipse at 50% 100%, #c97a5a18 0%, transparent 70%)",
+                }}
               >
                 <div className="flex items-center justify-center">
-                  <span className={cn("mr-2 font-mono font-extrabold text-primary transition-all duration-200", getAmountFontSize(formState.amount.length))}>
+                  <span
+                    className={cn(
+                      "mr-2 font-mono font-extrabold text-primary transition-all duration-200",
+                      getAmountFontSize(formState.amount.length),
+                    )}
+                  >
                     $
                   </span>
                   <Input
@@ -484,7 +587,7 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                     className={cn(
                       "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                       "placeholder:text-muted-foreground/20 focus-visible:ring-0",
-                      getAmountFontSize(formState.amount.length)
+                      getAmountFontSize(formState.amount.length),
                     )}
                     value={formState.amount}
                     onChange={(e) => {
@@ -500,17 +603,23 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
               <div className="relative flex rounded-2xl bg-border p-1">
                 <div
                   className="absolute inset-y-1 w-[calc(50%-4px)] rounded-xl bg-primary transition-all duration-200"
-                  style={{ left: formState.period === "monthly" ? 4 : "calc(50%)" }}
+                  style={{
+                    left: formState.period === "monthly" ? 4 : "calc(50%)",
+                  }}
                 />
                 {(["monthly", "weekly"] as const).map((option) => (
                   <button
                     key={option}
                     type="button"
                     aria-pressed={formState.period === option}
-                    onClick={() => setFormState((prev) => ({ ...prev, period: option }))}
+                    onClick={() =>
+                      setFormState((prev) => ({ ...prev, period: option }))
+                    }
                     className={cn(
                       "relative z-10 flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200",
-                      formState.period === option ? "text-white" : "text-foreground/25"
+                      formState.period === option
+                        ? "text-white"
+                        : "text-foreground/25",
                     )}
                   >
                     {option === "monthly" ? "Monthly" : "Weekly"}
@@ -521,7 +630,8 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
               {/* Bucket selector */}
               <div className="grid grid-cols-3 gap-2">
                 {BUCKET_ORDER.map((bucket) => {
-                  const { label, Icon, borderClass, textClass, color } = BUCKET_META[bucket];
+                  const { label, Icon, borderClass, textClass, color } =
+                    BUCKET_META[bucket];
                   const isActive = filterBucket === bucket;
                   return (
                     <button
@@ -536,7 +646,11 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                           ? `${borderClass} ${textClass}`
                           : "border-transparent text-muted-foreground hover:border-border",
                       )}
-                      style={isActive ? { boxShadow: `0 0 16px ${color}30` } : undefined}
+                      style={
+                        isActive
+                          ? { boxShadow: `0 0 16px ${color}30` }
+                          : undefined
+                      }
                     >
                       <Icon className="h-5 w-5" />
                       <span className="text-[10px] font-bold uppercase tracking-widest">
@@ -548,8 +662,12 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
               </div>
 
               {/* Category chips */}
-              {expenseCategories.filter((c) => c.allocationBucket === filterBucket).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No categories in this bucket yet.</p>
+              {expenseCategories.filter(
+                (c) => c.allocationBucket === filterBucket,
+              ).length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No categories in this bucket yet.
+                </p>
               ) : (
                 <div className="relative -mx-6">
                   <div className="flex gap-2 overflow-x-auto px-6 pb-1 [&::-webkit-scrollbar]:hidden">
@@ -565,17 +683,26 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                             aria-pressed={isActive}
                             aria-label={`Select ${category.name}`}
                             onClick={() =>
-                              setFormState((prev) => ({ ...prev, categoryId: isActive ? "" : category.id }))
+                              setFormState((prev) => ({
+                                ...prev,
+                                categoryId: isActive ? "" : category.id,
+                              }))
                             }
                             className="min-h-[44px] shrink-0 whitespace-nowrap rounded-xl border px-3 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95"
                             style={{
                               borderColor: isActive ? color : "var(--border)",
-                              color: isActive ? color : "var(--muted-foreground)",
-                              backgroundColor: isActive ? `${color}18` : undefined,
+                              color: isActive
+                                ? color
+                                : "var(--muted-foreground)",
+                              backgroundColor: isActive
+                                ? `${color}18`
+                                : undefined,
                             }}
                           >
                             <span className="flex items-center gap-1.5">
-                              {category.icon && <span className="text-sm">{category.icon}</span>}
+                              {category.icon && (
+                                <span className="text-sm">{category.icon}</span>
+                              )}
                               {category.name}
                             </span>
                           </button>
@@ -603,13 +730,23 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] p-0"
+                  align="start"
+                >
                   <Calendar
                     mode="single"
-                    selected={formState.startDate ? parseISO(formState.startDate) : undefined}
+                    selected={
+                      formState.startDate
+                        ? parseISO(formState.startDate)
+                        : undefined
+                    }
                     onSelect={(day) => {
                       if (day) {
-                        setFormState((prev) => ({ ...prev, startDate: format(day, "yyyy-MM-dd") }));
+                        setFormState((prev) => ({
+                          ...prev,
+                          startDate: format(day, "yyyy-MM-dd"),
+                        }));
                         setDatePickerOpen(false);
                       }
                     }}
@@ -621,7 +758,10 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
               </Popover>
 
               {error && (
-                <p className="rounded-xl bg-destructive/10 p-3 text-center text-sm text-destructive" role="alert">
+                <p
+                  className="rounded-xl bg-destructive/10 p-3 text-center text-sm text-destructive"
+                  role="alert"
+                >
                   {error}
                 </p>
               )}
@@ -633,7 +773,9 @@ export function BudgetsPage({ budgets, categories, initialMonth }: BudgetsPagePr
                 onClick={handleSave}
                 disabled={!canSave || loading}
                 className="flex w-full items-center justify-center gap-2 rounded-3xl py-6 text-base font-bold text-white shadow-xl active:scale-[0.98] transition-all duration-200 hover:opacity-90 disabled:opacity-40"
-                style={{ background: "linear-gradient(to right, #c97a5a, #a36248)" }}
+                style={{
+                  background: "linear-gradient(to right, #c97a5a, #a36248)",
+                }}
               >
                 {loading ? "Saving…" : editing ? "Update" : "Save"}
                 <CheckCircle className="h-5 w-5" />

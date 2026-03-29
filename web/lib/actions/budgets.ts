@@ -11,7 +11,9 @@ import {
 } from "@/lib/validations/budgets";
 import type { ActionResult, Budget } from "@/types";
 
-export async function createBudget(formData: unknown): Promise<ActionResult<Budget>> {
+export async function createBudget(
+  formData: unknown,
+): Promise<ActionResult<Budget>> {
   const { userId } = await getAuthenticatedUser();
 
   const parsed = createBudgetSchema.safeParse(formData);
@@ -25,26 +27,31 @@ export async function createBudget(formData: unknown): Promise<ActionResult<Budg
 
   const { amount, categoryId, period, startDate } = parsed.data;
 
-  const result = await db
-    .insert(budgets)
-    .values({
-      userId,
-      categoryId,
-      amount: amount.toFixed(2),
-      period,
-      startDate,
-    })
-    .returning();
+  try {
+    const result = await db
+      .insert(budgets)
+      .values({
+        userId,
+        categoryId,
+        amount: amount.toFixed(2),
+        period,
+        startDate,
+      })
+      .returning();
 
-  revalidatePath("/budgets");
-  revalidatePath("/");
+    revalidatePath("/budgets");
+    revalidatePath("/");
 
-  return { success: true, data: result[0] as Budget };
+    return { success: true, data: result[0] as Budget };
+  } catch (err) {
+    console.error("Failed to create budget:", err);
+    return { success: false, error: "Failed to create budget" };
+  }
 }
 
 export async function updateBudget(
   id: string,
-  data: unknown
+  data: unknown,
 ): Promise<ActionResult<Budget>> {
   const { userId } = await getAuthenticatedUser();
 
@@ -69,36 +76,50 @@ export async function updateBudget(
     updateValues.startDate = parsed.data.startDate;
   }
 
-  const result = await db
-    .update(budgets)
-    .set(updateValues)
-    .where(and(eq(budgets.id, id), eq(budgets.userId, userId)))
-    .returning();
-
-  if (!result[0]) {
-    return { success: false, error: "Budget not found" };
+  if (Object.keys(updateValues).length === 0) {
+    return { success: false, error: "No fields to update" };
   }
 
-  revalidatePath("/budgets");
-  revalidatePath("/");
+  try {
+    const result = await db
+      .update(budgets)
+      .set(updateValues)
+      .where(and(eq(budgets.id, id), eq(budgets.userId, userId)))
+      .returning();
 
-  return { success: true, data: result[0] as Budget };
+    if (!result[0]) {
+      return { success: false, error: "Budget not found" };
+    }
+
+    revalidatePath("/budgets");
+    revalidatePath("/");
+
+    return { success: true, data: result[0] as Budget };
+  } catch (err) {
+    console.error("Failed to update budget:", err);
+    return { success: false, error: "Failed to update budget" };
+  }
 }
 
 export async function deleteBudget(id: string): Promise<ActionResult> {
   const { userId } = await getAuthenticatedUser();
 
-  const result = await db
-    .delete(budgets)
-    .where(and(eq(budgets.id, id), eq(budgets.userId, userId)))
-    .returning();
+  try {
+    const result = await db
+      .delete(budgets)
+      .where(and(eq(budgets.id, id), eq(budgets.userId, userId)))
+      .returning();
 
-  if (!result[0]) {
-    return { success: false, error: "Budget not found" };
+    if (!result[0]) {
+      return { success: false, error: "Budget not found" };
+    }
+
+    revalidatePath("/budgets");
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to delete budget:", err);
+    return { success: false, error: "Failed to delete budget" };
   }
-
-  revalidatePath("/budgets");
-  revalidatePath("/");
-
-  return { success: true };
 }

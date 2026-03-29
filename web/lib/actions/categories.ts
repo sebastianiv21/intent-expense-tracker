@@ -12,7 +12,7 @@ import {
 import type { ActionResult, Category } from "@/types";
 
 export async function createCategory(
-  formData: unknown
+  formData: unknown,
 ): Promise<ActionResult<Category>> {
   const { userId } = await getAuthenticatedUser();
 
@@ -27,27 +27,32 @@ export async function createCategory(
 
   const { name, type, icon, allocationBucket } = parsed.data;
 
-  const result = await db
-    .insert(categories)
-    .values({
-      userId,
-      name,
-      type,
-      icon: icon ?? null,
-      allocationBucket: type === "income" ? null : allocationBucket ?? null,
-    })
-    .returning();
+  try {
+    const result = await db
+      .insert(categories)
+      .values({
+        userId,
+        name,
+        type,
+        icon: icon ?? null,
+        allocationBucket: type === "income" ? null : (allocationBucket ?? null),
+      })
+      .returning();
 
-  revalidatePath("/categories");
-  revalidatePath("/transactions");
-  revalidatePath("/budgets");
+    revalidatePath("/categories");
+    revalidatePath("/transactions");
+    revalidatePath("/budgets");
 
-  return { success: true, data: result[0] as Category };
+    return { success: true, data: result[0] as Category };
+  } catch (err) {
+    console.error("Failed to create category:", err);
+    return { success: false, error: "Failed to create category" };
+  }
 }
 
 export async function updateCategory(
   id: string,
-  data: unknown
+  data: unknown,
 ): Promise<ActionResult<Category>> {
   const { userId } = await getAuthenticatedUser();
 
@@ -72,38 +77,52 @@ export async function updateCategory(
     updateValues.allocationBucket = parsed.data.allocationBucket ?? null;
   }
 
-  const result = await db
-    .update(categories)
-    .set(updateValues)
-    .where(and(eq(categories.id, id), eq(categories.userId, userId)))
-    .returning();
-
-  if (!result[0]) {
-    return { success: false, error: "Category not found" };
+  if (Object.keys(updateValues).length === 0) {
+    return { success: false, error: "No fields to update" };
   }
 
-  revalidatePath("/categories");
-  revalidatePath("/transactions");
-  revalidatePath("/budgets");
+  try {
+    const result = await db
+      .update(categories)
+      .set(updateValues)
+      .where(and(eq(categories.id, id), eq(categories.userId, userId)))
+      .returning();
 
-  return { success: true, data: result[0] as Category };
+    if (!result[0]) {
+      return { success: false, error: "Category not found" };
+    }
+
+    revalidatePath("/categories");
+    revalidatePath("/transactions");
+    revalidatePath("/budgets");
+
+    return { success: true, data: result[0] as Category };
+  } catch (err) {
+    console.error("Failed to update category:", err);
+    return { success: false, error: "Failed to update category" };
+  }
 }
 
 export async function deleteCategory(id: string): Promise<ActionResult> {
   const { userId } = await getAuthenticatedUser();
 
-  const result = await db
-    .delete(categories)
-    .where(and(eq(categories.id, id), eq(categories.userId, userId)))
-    .returning();
+  try {
+    const result = await db
+      .delete(categories)
+      .where(and(eq(categories.id, id), eq(categories.userId, userId)))
+      .returning();
 
-  if (!result[0]) {
-    return { success: false, error: "Category not found" };
+    if (!result[0]) {
+      return { success: false, error: "Category not found" };
+    }
+
+    revalidatePath("/categories");
+    revalidatePath("/transactions");
+    revalidatePath("/budgets");
+
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to delete category:", err);
+    return { success: false, error: "Failed to delete category" };
   }
-
-  revalidatePath("/categories");
-  revalidatePath("/transactions");
-  revalidatePath("/budgets");
-
-  return { success: true };
 }

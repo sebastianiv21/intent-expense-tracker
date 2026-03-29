@@ -45,9 +45,10 @@ export async function getBudgetsWithSpending(params: {
       and(
         eq(transactions.categoryId, categories.id),
         eq(transactions.userId, userId),
+        eq(transactions.type, "expense"),
         gte(transactions.date, startDate),
-        lte(transactions.date, endDate)
-      )
+        lte(transactions.date, endDate),
+      ),
     )
     .where(eq(budgets.userId, userId))
     .groupBy(budgets.id, categories.id)

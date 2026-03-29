@@ -77,7 +77,10 @@ function getAmountFontSize(len: number): string {
   return "text-2xl";
 }
 
-function getCategoryColor(bucket: AllocationBucket | null, type: TransactionType): string {
+function getCategoryColor(
+  bucket: AllocationBucket | null,
+  type: TransactionType,
+): string {
   if (type === "income") return "#7aaa7a";
   return bucket ? BUCKET_META[bucket].color : "#c4714a";
 }
@@ -86,9 +89,14 @@ function today(): string {
   return format(new Date(), "yyyy-MM-dd");
 }
 
-function firstCategoryId(categories: Category[], type: TransactionType, bucket?: AllocationBucket): string | null {
+function firstCategoryId(
+  categories: Category[],
+  type: TransactionType,
+  bucket?: AllocationBucket,
+): string | null {
   const match = categories.find(
-    (c) => c.type === type && (type === "income" || c.allocationBucket === bucket),
+    (c) =>
+      c.type === type && (type === "income" || c.allocationBucket === bucket),
   );
   return match?.id ?? null;
 }
@@ -163,7 +171,10 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  function updateField<K extends keyof FormState>(field: K, value: FormState[K]): void {
+  function updateField<K extends keyof FormState>(
+    field: K,
+    value: FormState[K],
+  ): void {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -186,7 +197,9 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
 
   const filteredCategories = useMemo(() => {
     return categories.filter(
-      (c) => c.type === form.type && (form.type === "income" || c.allocationBucket === form.selectedBucket),
+      (c) =>
+        c.type === form.type &&
+        (form.type === "income" || c.allocationBucket === form.selectedBucket),
     );
   }, [categories, form.type, form.selectedBucket]);
 
@@ -197,26 +210,31 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
     setSaving(true);
     setError(null);
 
-    const payload = {
-      amount: amountNum,
-      type: form.type,
-      description: form.description.trim() || undefined,
-      date: form.date,
-      categoryId: form.categoryId ?? undefined,
-    };
+    try {
+      const payload = {
+        amount: amountNum,
+        type: form.type,
+        description: form.description.trim() || undefined,
+        date: form.date,
+        categoryId: form.categoryId ?? undefined,
+      };
 
-    const result = mode === "edit" && transaction
-      ? await updateTransaction(transaction.id, payload)
-      : await createTransaction(payload);
+      const result =
+        mode === "edit" && transaction
+          ? await updateTransaction(transaction.id, payload)
+          : await createTransaction(payload);
 
-    setSaving(false);
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
 
-    if (!result.success) {
-      setError(result.error);
-      return;
+      close();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSaving(false);
     }
-
-    close();
   }
 
   const canSave = parseFloat(form.amount) > 0;
@@ -328,7 +346,8 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
             {!isIncome && (
               <div className="grid grid-cols-3 gap-2">
                 {BUCKET_ORDER.map((bucket) => {
-                  const { label, Icon, borderClass, textClass, color } = BUCKET_META[bucket];
+                  const { label, Icon, borderClass, textClass, color } =
+                    BUCKET_META[bucket];
                   const isActive = form.selectedBucket === bucket;
                   return (
                     <button
@@ -343,7 +362,11 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                           ? `${borderClass} ${textClass}`
                           : "border-transparent text-muted-foreground hover:border-border",
                       )}
-                      style={isActive ? { boxShadow: `0 0 16px ${color}30` } : undefined}
+                      style={
+                        isActive
+                          ? { boxShadow: `0 0 16px ${color}30` }
+                          : undefined
+                      }
                     >
                       <Icon className="h-5 w-5" />
                       <span className="text-[10px] font-bold uppercase tracking-widest">
@@ -356,20 +379,27 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
             )}
 
             {filteredCategories.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No categories available</p>
+              <p className="text-sm text-muted-foreground">
+                No categories available
+              </p>
             ) : (
               <div className="relative -mx-6">
                 <div className="flex gap-2 overflow-x-auto px-6 pb-1 [&::-webkit-scrollbar]:hidden">
                   {filteredCategories.map((cat) => {
                     const isActive = form.categoryId === cat.id;
-                    const color = getCategoryColor(cat.allocationBucket, form.type);
+                    const color = getCategoryColor(
+                      cat.allocationBucket,
+                      form.type,
+                    );
                     return (
                       <button
                         key={cat.id}
                         type="button"
                         aria-pressed={isActive}
                         aria-label={`Select ${cat.name}`}
-                        onClick={() => updateField("categoryId", isActive ? null : cat.id)}
+                        onClick={() =>
+                          updateField("categoryId", isActive ? null : cat.id)
+                        }
                         className="min-h-[44px] shrink-0 whitespace-nowrap rounded-xl border px-3 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95"
                         style={{
                           borderColor: isActive ? color : "var(--border)",
@@ -378,7 +408,9 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                         }}
                       >
                         <span className="flex items-center gap-1.5">
-                          {cat.icon && <span className="text-sm">{cat.icon}</span>}
+                          {cat.icon && (
+                            <span className="text-sm">{cat.icon}</span>
+                          )}
                           {cat.name}
                         </span>
                       </button>
@@ -434,7 +466,10 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
             />
 
             {error && (
-              <p role="alert" className="rounded-xl bg-destructive/10 p-3 text-center text-sm text-destructive">
+              <p
+                role="alert"
+                className="rounded-xl bg-destructive/10 p-3 text-center text-sm text-destructive"
+              >
                 {error}
               </p>
             )}

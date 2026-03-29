@@ -12,7 +12,7 @@ import {
 } from "@/lib/validations/recurring";
 import type { ActionResult, RecurringTransaction } from "@/types";
 
-function nextDueDate(date: Date, frequency: string) {
+function computeNextDueDate(date: Date, frequency: string) {
   switch (frequency) {
     case "daily":
       return addDays(date, 1);
@@ -30,7 +30,7 @@ function nextDueDate(date: Date, frequency: string) {
 }
 
 export async function createRecurring(
-  formData: unknown
+  formData: unknown,
 ): Promise<ActionResult<RecurringTransaction>> {
   const { userId } = await getAuthenticatedUser();
 
@@ -43,35 +43,47 @@ export async function createRecurring(
     };
   }
 
-  const { amount, type, description, frequency, startDate, endDate, categoryId } =
-    parsed.data;
+  const {
+    amount,
+    type,
+    description,
+    frequency,
+    startDate,
+    endDate,
+    categoryId,
+  } = parsed.data;
 
-  const result = await db
-    .insert(recurringTransactions)
-    .values({
-      userId,
-      amount: amount.toFixed(2),
-      type,
-      description: description ?? null,
-      frequency,
-      startDate,
-      endDate: endDate ?? null,
-      nextDueDate: startDate,
-      categoryId: categoryId ?? null,
-      isActive: true,
-    })
-    .returning();
+  try {
+    const result = await db
+      .insert(recurringTransactions)
+      .values({
+        userId,
+        amount: amount.toFixed(2),
+        type,
+        description: description ?? null,
+        frequency,
+        startDate,
+        endDate: endDate ?? null,
+        nextDueDate: startDate,
+        categoryId: categoryId ?? null,
+        isActive: true,
+      })
+      .returning();
 
-  revalidatePath("/recurring");
-  revalidatePath("/transactions");
-  revalidatePath("/");
+    revalidatePath("/recurring");
+    revalidatePath("/transactions");
+    revalidatePath("/");
 
-  return { success: true, data: result[0] as RecurringTransaction };
+    return { success: true, data: result[0] as RecurringTransaction };
+  } catch (err) {
+    console.error("Failed to create recurring transaction:", err);
+    return { success: false, error: "Failed to create recurring transaction" };
+  }
 }
 
 export async function updateRecurring(
   id: string,
-  data: unknown
+  data: unknown,
 ): Promise<ActionResult<RecurringTransaction>> {
   const { userId } = await getAuthenticatedUser();
 
@@ -112,86 +124,124 @@ export async function updateRecurring(
     updateValues.categoryId = parsed.data.categoryId ?? null;
   }
 
-  const result = await db
-    .update(recurringTransactions)
-    .set(updateValues)
-    .where(and(eq(recurringTransactions.id, id), eq(recurringTransactions.userId, userId)))
-    .returning();
+  try {
+    const result = await db
+      .update(recurringTransactions)
+      .set(updateValues)
+      .where(
+        and(
+          eq(recurringTransactions.id, id),
+          eq(recurringTransactions.userId, userId),
+        ),
+      )
+      .returning();
 
-  if (!result[0]) {
-    return { success: false, error: "Recurring transaction not found" };
+    if (!result[0]) {
+      return { success: false, error: "Recurring transaction not found" };
+    }
+
+    revalidatePath("/recurring");
+    revalidatePath("/transactions");
+    revalidatePath("/");
+
+    return { success: true, data: result[0] as RecurringTransaction };
+  } catch (err) {
+    console.error("Failed to update recurring transaction:", err);
+    return { success: false, error: "Failed to update recurring transaction" };
   }
-
-  revalidatePath("/recurring");
-  revalidatePath("/transactions");
-  revalidatePath("/");
-
-  return { success: true, data: result[0] as RecurringTransaction };
 }
 
 export async function deleteRecurring(id: string): Promise<ActionResult> {
   const { userId } = await getAuthenticatedUser();
 
-  const result = await db
-    .delete(recurringTransactions)
-    .where(and(eq(recurringTransactions.id, id), eq(recurringTransactions.userId, userId)))
-    .returning();
+  try {
+    const result = await db
+      .delete(recurringTransactions)
+      .where(
+        and(
+          eq(recurringTransactions.id, id),
+          eq(recurringTransactions.userId, userId),
+        ),
+      )
+      .returning();
 
-  if (!result[0]) {
-    return { success: false, error: "Recurring transaction not found" };
+    if (!result[0]) {
+      return { success: false, error: "Recurring transaction not found" };
+    }
+
+    revalidatePath("/recurring");
+    revalidatePath("/transactions");
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to delete recurring transaction:", err);
+    return { success: false, error: "Failed to delete recurring transaction" };
   }
-
-  revalidatePath("/recurring");
-  revalidatePath("/transactions");
-  revalidatePath("/");
-
-  return { success: true };
 }
 
-export async function processRecurringTransactions(): Promise<{ generated: number }> {
+export async function processRecurringTransactions(): Promise<{
+  generated: number;
+}> {
   const { userId } = await getAuthenticatedUser();
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const dueItems = await db
-    .select()
-    .from(recurringTransactions)
-    .where(
-      and(
-        eq(recurringTransactions.userId, userId),
-        eq(recurringTransactions.isActive, true),
-        lte(recurringTransactions.nextDueDate, today)
-      )
-    );
+  try {
+    const dueItems = await db
+      .select()
+      .from(recurringTransactions)
+      .where(
+        and(
+          eq(recurringTransactions.userId, userId),
+          eq(recurringTransactions.isActive, true),
+          lte(recurringTransactions.nextDueDate, today),
+        ),
+      );
 
-  let generated = 0;
+    let generated = 0;
 
-  for (const item of dueItems) {
-    const nextDate = new Date(item.nextDueDate);
-    const computedNext = nextDueDate(nextDate, item.frequency);
-    const nextDue = format(computedNext, "yyyy-MM-dd");
+    for (const item of dueItems) {
+      // Process all overdue periods, not just one
+      let currentDueDate = item.nextDueDate;
 
-    await db.insert(transactions).values({
-      userId,
-      amount: item.amount,
-      type: item.type,
-      description: item.description,
-      date: item.nextDueDate,
-      categoryId: item.categoryId,
-    });
+      while (currentDueDate <= today) {
+        const nextDate = new Date(currentDueDate);
+        const computedNext = computeNextDueDate(nextDate, item.frequency);
+        const nextDue = format(computedNext, "yyyy-MM-dd");
+        const shouldDeactivate = item.endDate && item.endDate < nextDue;
 
-    const shouldDeactivate = item.endDate && item.endDate < nextDue;
+        // Use a transaction to ensure atomicity of insert + update
+        await db.transaction(async (tx) => {
+          await tx.insert(transactions).values({
+            userId,
+            amount: item.amount,
+            type: item.type,
+            description: item.description,
+            date: currentDueDate,
+            categoryId: item.categoryId,
+          });
 
-    await db
-      .update(recurringTransactions)
-      .set({
-        nextDueDate: nextDue,
-        lastGeneratedDate: item.nextDueDate,
-        isActive: shouldDeactivate ? false : item.isActive,
-      })
-      .where(eq(recurringTransactions.id, item.id));
+          await tx
+            .update(recurringTransactions)
+            .set({
+              nextDueDate: nextDue,
+              lastGeneratedDate: currentDueDate,
+              isActive: shouldDeactivate ? false : item.isActive,
+            })
+            .where(eq(recurringTransactions.id, item.id));
+        });
 
-    generated += 1;
+        generated += 1;
+        currentDueDate = nextDue;
+
+        // If deactivated, stop generating
+        if (shouldDeactivate) break;
+      }
+    }
+
+    return { generated };
+  } catch (err) {
+    console.error("Failed to process recurring transactions:", err);
+    return { generated: 0 };
   }
-
-  return { generated };
 }

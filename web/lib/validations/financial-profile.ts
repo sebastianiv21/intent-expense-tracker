@@ -1,9 +1,10 @@
 import { z } from "zod";
 
-const percentageSchema = z.coerce
-  .number()
-  .min(0)
-  .max(100);
+const percentageSchema = z.coerce.number().min(0).max(100);
+
+function sumsToHundred(a: number, b: number, c: number): boolean {
+  return Math.abs(a + b + c - 100) < 0.01;
+}
 
 export const createFinancialProfileSchema = z
   .object({
@@ -16,12 +17,15 @@ export const createFinancialProfileSchema = z
   })
   .refine(
     (data) =>
-      data.needsPercentage + data.wantsPercentage + data.futurePercentage ===
-      100,
+      sumsToHundred(
+        data.needsPercentage,
+        data.wantsPercentage,
+        data.futurePercentage,
+      ),
     {
       message: "Percentages must sum to 100",
       path: ["needsPercentage"],
-    }
+    },
   );
 
 export const updateFinancialProfileSchema = z
@@ -44,13 +48,13 @@ export const updateFinancialProfileSchema = z
         wantsPercentage !== undefined &&
         futurePercentage !== undefined;
       if (!allSet) return false;
-      return needsPercentage + wantsPercentage + futurePercentage === 100;
+      return sumsToHundred(needsPercentage, wantsPercentage, futurePercentage);
     },
     {
       message:
         "If updating percentages, all three must be provided and sum to 100",
       path: ["needsPercentage"],
-    }
+    },
   );
 
 export type CreateFinancialProfileInput = z.infer<

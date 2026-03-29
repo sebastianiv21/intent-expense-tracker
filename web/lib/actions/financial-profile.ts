@@ -12,7 +12,7 @@ import {
 import type { ActionResult, FinancialProfile } from "@/types";
 
 export async function createFinancialProfile(
-  formData: unknown
+  formData: unknown,
 ): Promise<ActionResult<FinancialProfile>> {
   const { userId } = await getAuthenticatedUser();
 
@@ -25,39 +25,48 @@ export async function createFinancialProfile(
     };
   }
 
-  const existing = await db
-    .select({ userId: financialProfile.userId })
-    .from(financialProfile)
-    .where(eq(financialProfile.userId, userId))
-    .limit(1);
+  const {
+    monthlyIncomeTarget,
+    needsPercentage,
+    wantsPercentage,
+    futurePercentage,
+  } = parsed.data;
 
-  if (existing[0]) {
-    return { success: false, error: "Financial profile already exists" };
+  try {
+    const existing = await db
+      .select({ userId: financialProfile.userId })
+      .from(financialProfile)
+      .where(eq(financialProfile.userId, userId))
+      .limit(1);
+
+    if (existing[0]) {
+      return { success: false, error: "Financial profile already exists" };
+    }
+
+    const result = await db
+      .insert(financialProfile)
+      .values({
+        userId,
+        monthlyIncomeTarget: monthlyIncomeTarget.toFixed(2),
+        needsPercentage: needsPercentage.toFixed(2),
+        wantsPercentage: wantsPercentage.toFixed(2),
+        futurePercentage: futurePercentage.toFixed(2),
+      })
+      .returning();
+
+    revalidatePath("/");
+    revalidatePath("/budgets");
+    revalidatePath("/insights");
+
+    return { success: true, data: result[0] as FinancialProfile };
+  } catch (err) {
+    console.error("Failed to create financial profile:", err);
+    return { success: false, error: "Failed to create financial profile" };
   }
-
-  const { monthlyIncomeTarget, needsPercentage, wantsPercentage, futurePercentage } =
-    parsed.data;
-
-  const result = await db
-    .insert(financialProfile)
-    .values({
-      userId,
-      monthlyIncomeTarget: monthlyIncomeTarget.toFixed(2),
-      needsPercentage: needsPercentage.toFixed(2),
-      wantsPercentage: wantsPercentage.toFixed(2),
-      futurePercentage: futurePercentage.toFixed(2),
-    })
-    .returning();
-
-  revalidatePath("/");
-  revalidatePath("/budgets");
-  revalidatePath("/insights");
-
-  return { success: true, data: result[0] as FinancialProfile };
 }
 
 export async function updateFinancialProfile(
-  formData: unknown
+  formData: unknown,
 ): Promise<ActionResult<FinancialProfile>> {
   const { userId } = await getAuthenticatedUser();
 
@@ -70,8 +79,12 @@ export async function updateFinancialProfile(
     };
   }
 
-  const { monthlyIncomeTarget, needsPercentage, wantsPercentage, futurePercentage } =
-    parsed.data;
+  const {
+    monthlyIncomeTarget,
+    needsPercentage,
+    wantsPercentage,
+    futurePercentage,
+  } = parsed.data;
 
   const updateValues: Record<string, string | Date> = {
     updatedAt: new Date(),
@@ -90,19 +103,24 @@ export async function updateFinancialProfile(
     updateValues.futurePercentage = futurePercentage.toFixed(2);
   }
 
-  const result = await db
-    .update(financialProfile)
-    .set(updateValues)
-    .where(eq(financialProfile.userId, userId))
-    .returning();
+  try {
+    const result = await db
+      .update(financialProfile)
+      .set(updateValues)
+      .where(eq(financialProfile.userId, userId))
+      .returning();
 
-  if (!result[0]) {
-    return { success: false, error: "Financial profile not found" };
+    if (!result[0]) {
+      return { success: false, error: "Financial profile not found" };
+    }
+
+    revalidatePath("/");
+    revalidatePath("/budgets");
+    revalidatePath("/insights");
+
+    return { success: true, data: result[0] as FinancialProfile };
+  } catch (err) {
+    console.error("Failed to update financial profile:", err);
+    return { success: false, error: "Failed to update financial profile" };
   }
-
-  revalidatePath("/");
-  revalidatePath("/budgets");
-  revalidatePath("/insights");
-
-  return { success: true, data: result[0] as FinancialProfile };
 }

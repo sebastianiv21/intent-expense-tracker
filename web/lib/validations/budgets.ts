@@ -1,16 +1,20 @@
 import { z } from "zod";
 
+const dateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
+
 export const createBudgetSchema = z.object({
   categoryId: z.string().uuid(),
   amount: z.number().positive(),
   period: z.enum(["monthly", "weekly"]),
-  startDate: z.string().min(1),
+  startDate: dateSchema,
 });
 
 export const updateBudgetSchema = z.object({
   amount: z.number().positive().optional(),
   period: z.enum(["monthly", "weekly"]).optional(),
-  startDate: z.string().min(1).optional(),
+  startDate: dateSchema.optional(),
 });
 
 export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;

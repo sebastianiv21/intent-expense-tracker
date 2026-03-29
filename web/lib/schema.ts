@@ -58,6 +58,7 @@ export const session = pgTable(
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
+      .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
     ipAddress: text("ip_address"),
@@ -87,6 +88,7 @@ export const account = pgTable(
     password: text("password"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
+      .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
@@ -134,63 +136,91 @@ export const financialProfile = pgTable("financial_profile", {
     .notNull()
     .default("20.00"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const categories = pgTable("categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: varchar("user_id", { length: 255 }).notNull(),
-  name: varchar("name", { length: 100 }).notNull(),
-  type: transactionTypeEnum("type").notNull(),
-  allocationBucket: allocationBucketEnum("allocation_bucket"),
-  icon: varchar("icon", { length: 10 }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const transactions = pgTable("transactions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: varchar("user_id", { length: 255 }).notNull(),
-  categoryId: uuid("category_id").references(() => categories.id, {
-    onDelete: "set null",
-  }),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
-  type: transactionTypeEnum("type").notNull(),
-  description: text("description"),
-  date: date("date").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const budgets = pgTable("budgets", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: varchar("user_id", { length: 255 }).notNull(),
-  categoryId: uuid("category_id")
+  updatedAt: timestamp("updated_at")
     .notNull()
-    .references(() => categories.id, { onDelete: "cascade" }),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
-  period: budgetPeriodEnum("period").notNull(),
-  startDate: date("start_date").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date()),
 });
 
-export const recurringTransactions = pgTable("recurring_transactions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: varchar("user_id", { length: 255 }).notNull(),
-  categoryId: uuid("category_id").references(() => categories.id, {
-    onDelete: "set null",
-  }),
-  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
-  type: transactionTypeEnum("type").notNull(),
-  description: varchar("description", { length: 255 }),
-  frequency: recurrenceFrequencyEnum("frequency").notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date"),
-  nextDueDate: date("next_due_date").notNull(),
-  lastGeneratedDate: date("last_generated_date"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const categories = pgTable(
+  "categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: varchar("user_id", { length: 255 }).notNull(),
+    name: varchar("name", { length: 100 }).notNull(),
+    type: transactionTypeEnum("type").notNull(),
+    allocationBucket: allocationBucketEnum("allocation_bucket"),
+    icon: varchar("icon", { length: 10 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date()),
+  },
+  (table) => [index("categories_userId_idx").on(table.userId)],
+);
+
+export const transactions = pgTable(
+  "transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: varchar("user_id", { length: 255 }).notNull(),
+    categoryId: uuid("category_id").references(() => categories.id, {
+      onDelete: "set null",
+    }),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    type: transactionTypeEnum("type").notNull(),
+    description: text("description"),
+    date: date("date").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("transactions_userId_idx").on(table.userId),
+    index("transactions_date_idx").on(table.date),
+  ],
+);
+
+export const budgets = pgTable(
+  "budgets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: varchar("user_id", { length: 255 }).notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    period: budgetPeriodEnum("period").notNull(),
+    startDate: date("start_date").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("budgets_userId_idx").on(table.userId)],
+);
+
+export const recurringTransactions = pgTable(
+  "recurring_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: varchar("user_id", { length: 255 }).notNull(),
+    categoryId: uuid("category_id").references(() => categories.id, {
+      onDelete: "set null",
+    }),
+    amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+    type: transactionTypeEnum("type").notNull(),
+    description: varchar("description", { length: 255 }),
+    frequency: recurrenceFrequencyEnum("frequency").notNull(),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date"),
+    nextDueDate: date("next_due_date").notNull(),
+    lastGeneratedDate: date("last_generated_date"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date()),
+  },
+  (table) => [index("recurring_userId_idx").on(table.userId)],
+);
 
 // ─── Relations ───────────────────────────────────────────────────────────────
 

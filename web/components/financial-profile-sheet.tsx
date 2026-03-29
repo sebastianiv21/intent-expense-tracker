@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { updateFinancialProfile } from "@/lib/actions/financial-profile";
 import {
   formatCurrency,
@@ -60,7 +60,7 @@ const SLIDER_CLASS = cn(
   "[&::-moz-range-thumb]:w-5",
   "[&::-moz-range-thumb]:h-5",
   "[&::-moz-range-thumb]:rounded-full",
-  "[&::-moz-range-thumb]:bg-[var(--thumb-color)]"
+  "[&::-moz-range-thumb]:bg-[var(--thumb-color)]",
 );
 
 type Buckets = {
@@ -81,9 +81,20 @@ export function FinancialProfileSheet({
   onOpenChange,
 }: FinancialProfileSheetProps) {
   const [income, setIncome] = useState(profile.monthlyIncomeTarget.toString());
-  const [buckets, setBuckets] = useState<Buckets>(() => bucketsFromProfile(profile));
+  const [buckets, setBuckets] = useState<Buckets>(() =>
+    bucketsFromProfile(profile),
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Reset state when the sheet opens (to pick up any profile prop changes)
+  useEffect(() => {
+    if (open) {
+      setIncome(profile.monthlyIncomeTarget.toString());
+      setBuckets(bucketsFromProfile(profile));
+      setError("");
+    }
+  }, [open, profile]);
 
   const total = buckets.needs + buckets.wants + buckets.future;
   const isValid = total === 100 && parseFloat(income) > 0;
@@ -105,21 +116,25 @@ export function FinancialProfileSheet({
     setLoading(true);
     setError("");
 
-    const result = await updateFinancialProfile({
-      monthlyIncomeTarget: parseFloat(income),
-      needsPercentage: buckets.needs,
-      wantsPercentage: buckets.wants,
-      futurePercentage: buckets.future,
-    });
+    try {
+      const result = await updateFinancialProfile({
+        monthlyIncomeTarget: parseFloat(income),
+        needsPercentage: buckets.needs,
+        wantsPercentage: buckets.wants,
+        futurePercentage: buckets.future,
+      });
 
-    setLoading(false);
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
 
-    if (!result.success) {
-      setError(result.error);
-      return;
+      onOpenChange(false);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    onOpenChange(false);
   }
 
   return (
@@ -146,7 +161,7 @@ export function FinancialProfileSheet({
                 <span
                   className={cn(
                     "mr-2 font-mono font-extrabold text-primary transition-all duration-200",
-                    fontSizeClass
+                    fontSizeClass,
                   )}
                 >
                   $
@@ -160,7 +175,7 @@ export function FinancialProfileSheet({
                   className={cn(
                     "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                     "placeholder:text-muted-foreground/20 focus-visible:ring-0",
-                    fontSizeClass
+                    fontSizeClass,
                   )}
                   value={income}
                   onChange={(e) => {
@@ -183,7 +198,7 @@ export function FinancialProfileSheet({
               <span
                 className={cn(
                   "text-xs font-medium",
-                  total === 100 ? "text-income" : "text-destructive"
+                  total === 100 ? "text-income" : "text-destructive",
                 )}
               >
                 {getAllocationCounterText(total)}
@@ -200,7 +215,10 @@ export function FinancialProfileSheet({
                   <div
                     key={key}
                     className="motion-safe:transition-all motion-safe:duration-200"
-                    style={{ width: `${buckets[key]}%`, backgroundColor: color }}
+                    style={{
+                      width: `${buckets[key]}%`,
+                      backgroundColor: color,
+                    }}
                   />
                 );
               })}

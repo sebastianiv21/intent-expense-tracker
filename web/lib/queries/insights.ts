@@ -1,4 +1,4 @@
-import { format, subMonths, subYears } from "date-fns";
+import { format, subDays, subMonths, subYears } from "date-fns";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, financialProfile, transactions } from "@/lib/schema";
@@ -6,8 +6,11 @@ import { getAuthenticatedUser } from "@/lib/queries/auth";
 import type { AllocationBucket, FinancialProfile } from "@/types";
 
 const PERIOD_MAP = {
-  week: () => ({ start: subMonths(new Date(), 0), end: new Date() }),
-  month: () => ({ start: new Date(new Date().getFullYear(), new Date().getMonth(), 1), end: new Date() }),
+  week: () => ({ start: subDays(new Date(), 7), end: new Date() }),
+  month: () => ({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    end: new Date(),
+  }),
   "3months": () => ({ start: subMonths(new Date(), 3), end: new Date() }),
   "6months": () => ({ start: subMonths(new Date(), 6), end: new Date() }),
   year: () => ({ start: subYears(new Date(), 1), end: new Date() }),
@@ -32,8 +35,8 @@ export async function getInsights(params: {
       and(
         eq(transactions.userId, userId),
         gte(transactions.date, startDate),
-        lte(transactions.date, endDate)
-      )
+        lte(transactions.date, endDate),
+      ),
     );
 
   const spendingByCategory = await db
@@ -50,15 +53,17 @@ export async function getInsights(params: {
         eq(transactions.userId, userId),
         eq(transactions.type, "expense"),
         gte(transactions.date, startDate),
-        lte(transactions.date, endDate)
-      )
+        lte(transactions.date, endDate),
+      ),
     )
     .groupBy(categories.name, categories.icon, categories.allocationBucket);
 
   return {
     totalExpenses: Number(totals[0]?.totalExpenses ?? 0),
     totalIncome: Number(totals[0]?.totalIncome ?? 0),
-    balance: Number(totals[0]?.totalIncome ?? 0) - Number(totals[0]?.totalExpenses ?? 0),
+    balance:
+      Number(totals[0]?.totalIncome ?? 0) -
+      Number(totals[0]?.totalExpenses ?? 0),
     transactionCount: Number(totals[0]?.count ?? 0),
     spendingByCategory: spendingByCategory.map((row) => ({
       name: row.name ?? "Uncategorized",
@@ -96,8 +101,8 @@ export async function getAllocationSummary(params: { month: string }) {
         eq(transactions.userId, userId),
         eq(transactions.type, "expense"),
         gte(transactions.date, startDate),
-        lte(transactions.date, endDate)
-      )
+        lte(transactions.date, endDate),
+      ),
     )
     .groupBy(categories.allocationBucket);
 
@@ -113,9 +118,12 @@ export async function getAllocationSummary(params: { month: string }) {
   });
 
   const targets = {
-    needs: incomeTarget * (profile ? Number(profile.needsPercentage) : 50) / 100,
-    wants: incomeTarget * (profile ? Number(profile.wantsPercentage) : 30) / 100,
-    future: incomeTarget * (profile ? Number(profile.futurePercentage) : 20) / 100,
+    needs:
+      (incomeTarget * (profile ? Number(profile.needsPercentage) : 50)) / 100,
+    wants:
+      (incomeTarget * (profile ? Number(profile.wantsPercentage) : 30)) / 100,
+    future:
+      (incomeTarget * (profile ? Number(profile.futurePercentage) : 20)) / 100,
   };
 
   return {

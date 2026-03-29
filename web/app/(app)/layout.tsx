@@ -31,7 +31,12 @@ export default async function AppLayout({
     redirect("/onboarding");
   }
 
-  await processRecurringTransactions();
+  // Process recurring transactions - don't let failures block the page
+  try {
+    await processRecurringTransactions();
+  } catch (err) {
+    console.error("Failed to process recurring transactions:", err);
+  }
 
   const categories = await getCategories();
 

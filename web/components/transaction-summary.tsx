@@ -12,9 +12,13 @@ export function TransactionSummary({ totals }: TransactionSummaryProps) {
         {totals.count} transaction{totals.count !== 1 ? "s" : ""}
       </span>
       <span>·</span>
-      <span className="text-emerald-500">+{formatCurrency(totals.totalIncome.toString())}</span>
+      <span className="text-emerald-500">
+        +{formatCurrency(totals.totalIncome)}
+      </span>
       <span>·</span>
-      <span className="text-red-400">−{formatCurrency(totals.totalExpenses.toString())}</span>
+      <span className="text-red-400">
+        −{formatCurrency(totals.totalExpenses)}
+      </span>
     </div>
   );
 }

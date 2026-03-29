@@ -2,9 +2,19 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, transactions } from "@/lib/schema";
 import { getAuthenticatedUser } from "@/lib/queries/auth";
-import type { Category, Transaction, TransactionTotals, TransactionType, TransactionWithCategory } from "@/types";
+import type {
+  Category,
+  Transaction,
+  TransactionTotals,
+  TransactionType,
+  TransactionWithCategory,
+} from "@/types";
 
 type OrderBy = "date_desc" | "date_asc" | "amount_desc" | "amount_asc";
+
+function escapeILike(value: string): string {
+  return value.replace(/[%_\\]/g, "\\$&");
+}
 
 export async function getTransactions(params: {
   type?: TransactionType;
@@ -35,8 +45,8 @@ export async function getTransactions(params: {
   }
 
   if (search && search.trim().length > 0) {
-    const term = `%${search.trim()}%`;
-    const searchCondition = sql`${transactions.description} ILIKE ${term} OR ${categories.name} ILIKE ${term}`;
+    const term = `%${escapeILike(search.trim())}%`;
+    const searchCondition = sql`(${transactions.description} ILIKE ${term} OR ${categories.name} ILIKE ${term})`;
     conditions.push(searchCondition);
   }
 
@@ -69,10 +79,11 @@ export async function getTransactions(params: {
 
 export async function getTransactionTotals(params: {
   type?: TransactionType;
+  categoryId?: string;
   search?: string;
 }): Promise<TransactionTotals> {
   const { userId } = await getAuthenticatedUser();
-  const { type, search } = params;
+  const { type, categoryId, search } = params;
 
   const conditions = [eq(transactions.userId, userId)];
 
@@ -80,9 +91,13 @@ export async function getTransactionTotals(params: {
     conditions.push(eq(transactions.type, type));
   }
 
+  if (categoryId) {
+    conditions.push(eq(transactions.categoryId, categoryId));
+  }
+
   if (search && search.trim().length > 0) {
-    const term = `%${search.trim()}%`;
-    const searchCondition = sql`${transactions.description} ILIKE ${term} OR ${categories.name} ILIKE ${term}`;
+    const term = `%${escapeILike(search.trim())}%`;
+    const searchCondition = sql`(${transactions.description} ILIKE ${term} OR ${categories.name} ILIKE ${term})`;
     conditions.push(searchCondition);
   }
 

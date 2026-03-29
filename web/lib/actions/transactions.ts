@@ -10,10 +10,17 @@ import {
   createTransactionSchema,
   updateTransactionSchema,
 } from "@/lib/validations/transactions";
-import type { ActionResult, FilterState, Transaction, TransactionBatch, TransactionType, TransactionWithCategory } from "@/types";
+import type {
+  ActionResult,
+  FilterState,
+  Transaction,
+  TransactionBatch,
+  TransactionType,
+  TransactionWithCategory,
+} from "@/types";
 
 export async function createTransaction(
-  formData: unknown
+  formData: unknown,
 ): Promise<ActionResult<Transaction>> {
   const { userId } = await getAuthenticatedUser();
 
@@ -28,27 +35,32 @@ export async function createTransaction(
 
   const { amount, type, description, date, categoryId } = parsed.data;
 
-  const result = await db
-    .insert(transactions)
-    .values({
-      userId,
-      amount: amount.toFixed(2),
-      type,
-      description: description ?? null,
-      date,
-      categoryId: categoryId ?? null,
-    })
-    .returning();
+  try {
+    const result = await db
+      .insert(transactions)
+      .values({
+        userId,
+        amount: amount.toFixed(2),
+        type,
+        description: description ?? null,
+        date,
+        categoryId: categoryId ?? null,
+      })
+      .returning();
 
-  revalidatePath("/transactions");
-  revalidatePath("/");
+    revalidatePath("/transactions");
+    revalidatePath("/");
 
-  return { success: true, data: result[0] as Transaction };
+    return { success: true, data: result[0] as Transaction };
+  } catch (err) {
+    console.error("Failed to create transaction:", err);
+    return { success: false, error: "Failed to create transaction" };
+  }
 }
 
 export async function updateTransaction(
   id: string,
-  data: unknown
+  data: unknown,
 ): Promise<ActionResult<Transaction>> {
   const { userId } = await getAuthenticatedUser();
 
@@ -79,40 +91,48 @@ export async function updateTransaction(
     updateValues.categoryId = parsed.data.categoryId;
   }
 
-  const result = await db
-    .update(transactions)
-    .set(updateValues)
-    .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
-    .returning();
+  try {
+    const result = await db
+      .update(transactions)
+      .set(updateValues)
+      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
+      .returning();
 
-  if (!result[0]) {
-    return { success: false, error: "Transaction not found" };
+    if (!result[0]) {
+      return { success: false, error: "Transaction not found" };
+    }
+
+    revalidatePath("/transactions");
+    revalidatePath("/");
+
+    return { success: true, data: result[0] as Transaction };
+  } catch (err) {
+    console.error("Failed to update transaction:", err);
+    return { success: false, error: "Failed to update transaction" };
   }
-
-  revalidatePath("/transactions");
-  revalidatePath("/");
-
-  return { success: true, data: result[0] as Transaction };
 }
 
-export async function deleteTransaction(
-  id: string
-): Promise<ActionResult> {
+export async function deleteTransaction(id: string): Promise<ActionResult> {
   const { userId } = await getAuthenticatedUser();
 
-  const result = await db
-    .delete(transactions)
-    .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
-    .returning();
+  try {
+    const result = await db
+      .delete(transactions)
+      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
+      .returning();
 
-  if (!result[0]) {
-    return { success: false, error: "Transaction not found" };
+    if (!result[0]) {
+      return { success: false, error: "Transaction not found" };
+    }
+
+    revalidatePath("/transactions");
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to delete transaction:", err);
+    return { success: false, error: "Failed to delete transaction" };
   }
-
-  revalidatePath("/transactions");
-  revalidatePath("/");
-
-  return { success: true };
 }
 
 export async function loadMoreTransactions(params: {
@@ -121,20 +141,26 @@ export async function loadMoreTransactions(params: {
   type?: TransactionType;
   search?: string;
 }): Promise<TransactionBatch> {
+  // Clamp limit to prevent abuse
+  const limit = Math.min(Math.max(params.limit, 1), 100);
+  const offset = Math.max(params.offset, 0);
+
   const rows = await getTransactions({
-    ...params,
-    limit: params.limit + 1,
+    type: params.type,
+    search: params.search,
+    limit: limit + 1,
+    offset,
     orderBy: "date_desc",
   });
 
   return {
-    transactions: rows.slice(0, params.limit),
-    hasMore: rows.length > params.limit,
+    transactions: rows.slice(0, limit),
+    hasMore: rows.length > limit,
   };
 }
 
 export async function exportTransactions(
-  params: FilterState
+  params: FilterState,
 ): Promise<TransactionWithCategory[]> {
   return getTransactions({
     ...params,

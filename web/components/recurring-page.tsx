@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
+import { toast } from "sonner";
 import {
   CalendarIcon,
   Check,
@@ -127,7 +128,8 @@ function getAmountFontSize(len: number): string {
 export function RecurringPage({ recurring, categories }: RecurringPageProps) {
   const [status, setStatus] = useState<"active" | "paused">("active");
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [editing, setEditing] = useState<RecurringTransactionWithCategory | null>(null);
+  const [editing, setEditing] =
+    useState<RecurringTransactionWithCategory | null>(null);
   const [formState, setFormState] = useState<RecurringFormState>({
     amount: "",
     type: "expense",
@@ -141,12 +143,19 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
   const [error, setError] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [endDatePickerOpen, setEndDatePickerOpen] = useState(false);
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
+    null,
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null);
+  const [deleteError, setDeleteError] = useState<{
+    id: string;
+    message: string;
+  } | null>(null);
   const [filterBucket, setFilterBucket] = useState<AllocationBucket>("needs");
 
-  const confirmButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const confirmButtonRefs = useRef<Record<string, HTMLButtonElement | null>>(
+    {},
+  );
   const deleteButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const prevConfirmingIdRef = useRef<string | null>(null);
 
@@ -179,18 +188,25 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
       netRecurring: totalIncome - totalExpenses,
       activeCount: activeItems.length,
       pausedCount: recurring.filter((item) => !item.isActive).length,
-      expenseRatio: totalIncome > 0 ? calculatePercentage(totalExpenses, totalIncome) : 0,
+      expenseRatio:
+        totalIncome > 0 ? calculatePercentage(totalExpenses, totalIncome) : 0,
     };
   }, [recurring]);
 
   const filtered = useMemo(() => {
-    return recurring.filter((item) => (status === "active" ? item.isActive : !item.isActive));
+    return recurring.filter((item) =>
+      status === "active" ? item.isActive : !item.isActive,
+    );
   }, [recurring, status]);
 
   const categoriesByType = useMemo(() => {
-    const filtered = categories.filter((category) => category.type === formState.type);
+    const filtered = categories.filter(
+      (category) => category.type === formState.type,
+    );
     if (formState.type === "expense") {
-      return filtered.filter((category) => category.allocationBucket === filterBucket);
+      return filtered.filter(
+        (category) => category.allocationBucket === filterBucket,
+      );
     }
     return filtered;
   }, [categories, formState.type, filterBucket]);
@@ -220,7 +236,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     setFilterBucket(
       item.type === "expense" && item.category?.allocationBucket
         ? item.category.allocationBucket
-        : "needs"
+        : "needs",
     );
     setFormState({
       amount: Number(item.amount).toString(),
@@ -259,24 +275,34 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
       categoryId: formState.categoryId || undefined,
     };
 
-    const result = editing
-      ? await updateRecurring(editing.id, payload)
-      : await createRecurring(payload);
+    try {
+      const result = editing
+        ? await updateRecurring(editing.id, payload)
+        : await createRecurring(payload);
 
-    if (!result.success) {
-      setError(result.error);
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+
+      setSheetOpen(false);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    setSheetOpen(false);
   }
 
   async function handleToggle(item: RecurringTransactionWithCategory) {
-    const result = await updateRecurring(item.id, { isActive: !item.isActive });
-    if (!result.success) {
-      setError(result.error);
+    try {
+      const result = await updateRecurring(item.id, {
+        isActive: !item.isActive,
+      });
+      if (!result.success) {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Failed to update recurring item");
     }
   }
 
@@ -289,10 +315,18 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     setConfirmingDeleteId(null);
     setDeletingId(item.id);
     setDeleteError(null);
-    const result = await deleteRecurring(item.id);
-    setDeletingId(null);
-    if (!result.success) {
-      setDeleteError({ id: item.id, message: result.error });
+    try {
+      const result = await deleteRecurring(item.id);
+      if (!result.success) {
+        setDeleteError({ id: item.id, message: result.error });
+      }
+    } catch {
+      setDeleteError({
+        id: item.id,
+        message: "Failed to delete recurring item",
+      });
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -307,7 +341,12 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
         title="Recurring"
         description="Automate income and expenses on a schedule."
         action={
-          <Button variant="outline" size="sm" onClick={openCreate} className="min-h-[44px]">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openCreate}
+            className="min-h-[44px]"
+          >
             Add recurring
           </Button>
         }
@@ -333,7 +372,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
             <p
               className={cn(
                 "text-lg font-semibold",
-                summary.netRecurring >= 0 ? "text-[#6aaa6a]" : "text-[#e05252]"
+                summary.netRecurring >= 0 ? "text-[#6aaa6a]" : "text-[#e05252]",
               )}
             >
               {summary.netRecurring >= 0 ? "+" : ""}
@@ -346,7 +385,9 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
           <Progress
             value={summary.expenseRatio}
             className="h-2"
-            indicatorClassName={summary.expenseRatio >= 100 ? "bg-[#e05252]" : "bg-primary"}
+            indicatorClassName={
+              summary.expenseRatio >= 100 ? "bg-[#e05252]" : "bg-primary"
+            }
           />
         )}
 
@@ -373,9 +414,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
       <div className="space-y-3">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-10 text-center space-y-4">
-            <div className="text-4xl">
-              {status === "active" ? "🔄" : "⏸️"}
-            </div>
+            <div className="text-4xl">{status === "active" ? "🔄" : "⏸️"}</div>
             <p className="font-semibold text-foreground">
               {status === "active"
                 ? "No active recurring items"
@@ -387,7 +426,11 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                 : "Paused items will appear here."}
             </p>
             {status === "active" && (
-              <Button onClick={openCreate} variant="outline" className="min-h-[44px]">
+              <Button
+                onClick={openCreate}
+                variant="outline"
+                className="min-h-[44px]"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add recurring
               </Button>
@@ -419,10 +462,13 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                         </div>
                         <div>
                           <p className="font-medium text-foreground">
-                            {item.description || item.category?.name || "Recurring"}
+                            {item.description ||
+                              item.category?.name ||
+                              "Recurring"}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {item.frequency} • Next {format(new Date(item.nextDueDate), "MMM d")}
+                            {item.frequency} • Next{" "}
+                            {format(new Date(item.nextDueDate), "MMM d")}
                           </p>
                         </div>
                       </div>
@@ -483,7 +529,9 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                               <DropdownMenuItem onClick={() => openEdit(item)}>
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleToggle(item)}>
+                              <DropdownMenuItem
+                                onClick={() => handleToggle(item)}
+                              >
                                 {item.isActive ? "Pause" : "Resume"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -552,7 +600,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                   <span
                     className={cn(
                       "mr-2 font-mono font-extrabold text-primary transition-all duration-200",
-                      getAmountFontSize(formState.amount.length)
+                      getAmountFontSize(formState.amount.length),
                     )}
                   >
                     $
@@ -565,7 +613,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                     className={cn(
                       "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                       "placeholder:text-muted-foreground/20 focus-visible:ring-0",
-                      getAmountFontSize(formState.amount.length)
+                      getAmountFontSize(formState.amount.length),
                     )}
                     value={formState.amount}
                     onChange={(e) => {
@@ -590,7 +638,10 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                   id="description"
                   value={formState.description}
                   onChange={(e) =>
-                    setFormState((prev) => ({ ...prev, description: e.target.value }))
+                    setFormState((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                   placeholder="e.g., Netflix, Rent, Salary..."
                   className="h-14 rounded-2xl bg-background border-border"
@@ -628,7 +679,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                         "relative z-10 flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200",
                         formState.type === option
                           ? "text-white"
-                          : "text-foreground/25"
+                          : "text-foreground/25",
                       )}
                     >
                       {option === "expense" ? "Expense" : "Income"}
@@ -645,7 +696,8 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     {BUCKET_ORDER.map((bucket) => {
-                      const { label, Icon, borderClass, textClass, color } = BUCKET_META[bucket];
+                      const { label, Icon, borderClass, textClass, color } =
+                        BUCKET_META[bucket];
                       const isActive = filterBucket === bucket;
                       return (
                         <button
@@ -658,9 +710,13 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                             "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 bg-background py-4 transition-all duration-200 active:scale-95",
                             isActive
                               ? `${borderClass} ${textClass}`
-                              : "border-transparent text-muted-foreground hover:border-border"
+                              : "border-transparent text-muted-foreground hover:border-border",
                           )}
-                          style={isActive ? { boxShadow: `0 0 16px ${color}30` } : undefined}
+                          style={
+                            isActive
+                              ? { boxShadow: `0 0 16px ${color}30` }
+                              : undefined
+                          }
                         >
                           <Icon className="h-5 w-5" />
                           <span className="text-[10px] font-bold uppercase tracking-widest">
@@ -696,7 +752,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                           "min-h-[44px] rounded-xl border px-3 py-2 text-sm font-medium transition-all duration-200 active:scale-95",
                           isActive
                             ? "border-primary bg-primary/10 text-primary"
-                            : "border-border text-muted-foreground hover:border-primary/50"
+                            : "border-border text-muted-foreground hover:border-primary/50",
                         )}
                       >
                         {freq.label}
@@ -717,9 +773,11 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                       {categoriesByType.map((category) => {
                         const isActive = formState.categoryId === category.id;
                         // Use bucket color for expense categories, type color for income
-                        const chipColor = formState.type === "expense" && category.allocationBucket
-                          ? getBucketColor(category.allocationBucket)
-                          : getTransactionColor(formState.type);
+                        const chipColor =
+                          formState.type === "expense" &&
+                          category.allocationBucket
+                            ? getBucketColor(category.allocationBucket)
+                            : getTransactionColor(formState.type);
                         return (
                           <button
                             key={category.id}
@@ -734,9 +792,15 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                             }
                             className="min-h-[44px] shrink-0 whitespace-nowrap rounded-xl border px-3 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95"
                             style={{
-                              borderColor: isActive ? chipColor : "var(--border)",
-                              color: isActive ? chipColor : "var(--muted-foreground)",
-                              backgroundColor: isActive ? chipColor + "18" : undefined,
+                              borderColor: isActive
+                                ? chipColor
+                                : "var(--border)",
+                              color: isActive
+                                ? chipColor
+                                : "var(--muted-foreground)",
+                              backgroundColor: isActive
+                                ? chipColor + "18"
+                                : undefined,
                             }}
                           >
                             <span className="flex items-center gap-1.5">
@@ -799,7 +863,10 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
               </Popover>
 
               {/* End Date picker */}
-              <Popover open={endDatePickerOpen} onOpenChange={setEndDatePickerOpen}>
+              <Popover
+                open={endDatePickerOpen}
+                onOpenChange={setEndDatePickerOpen}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -811,7 +878,9 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                         {format(parseISO(formState.endDate), "MMMM d, yyyy")}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">End date (optional)</span>
+                      <span className="text-muted-foreground">
+                        End date (optional)
+                      </span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -822,7 +891,14 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                   <Calendar
                     mode="single"
                     selected={
-                      formState.endDate ? parseISO(formState.endDate) : undefined
+                      formState.endDate
+                        ? parseISO(formState.endDate)
+                        : undefined
+                    }
+                    fromDate={
+                      formState.startDate
+                        ? parseISO(formState.startDate)
+                        : undefined
                     }
                     onSelect={(day) => {
                       if (day) {

@@ -56,88 +56,102 @@ function toNumber(value: unknown): number {
 export async function getDashboardData(): Promise<DashboardData> {
   const { userId } = await getAuthenticatedUser();
   const now = new Date();
-  const startOfMonth = format(new Date(now.getFullYear(), now.getMonth(), 1), "yyyy-MM-dd");
-  const endOfMonth = format(new Date(now.getFullYear(), now.getMonth() + 1, 0), "yyyy-MM-dd");
-  const today = format(now, "yyyy-MM-dd");
+  const startOfMonth = format(
+    new Date(now.getFullYear(), now.getMonth(), 1),
+    "yyyy-MM-dd",
+  );
+  const endOfMonth = format(
+    new Date(now.getFullYear(), now.getMonth() + 1, 0),
+    "yyyy-MM-dd",
+  );
 
-  const profileResult = await db
-    .select()
-    .from(financialProfile)
-    .where(eq(financialProfile.userId, userId))
-    .limit(1);
+  // Run all independent queries in parallel for better performance
+  const [profileResult, totalsResult, bucketRows, recentRows, recurringRows] =
+    await Promise.all([
+      db
+        .select()
+        .from(financialProfile)
+        .where(eq(financialProfile.userId, userId))
+        .limit(1),
+
+      db
+        .select({
+          income: sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount} else 0 end), 0)`,
+          expenses: sql<number>`coalesce(sum(case when ${transactions.type} = 'expense' then ${transactions.amount} else 0 end), 0)`,
+        })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.userId, userId),
+            gte(transactions.date, startOfMonth),
+            lte(transactions.date, endOfMonth),
+          ),
+        ),
+
+      db
+        .select({
+          bucket: categories.allocationBucket,
+          spent: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+        })
+        .from(transactions)
+        .leftJoin(categories, eq(transactions.categoryId, categories.id))
+        .where(
+          and(
+            eq(transactions.userId, userId),
+            eq(transactions.type, "expense"),
+            gte(transactions.date, startOfMonth),
+            lte(transactions.date, endOfMonth),
+          ),
+        )
+        .groupBy(categories.allocationBucket),
+
+      db
+        .select({
+          transaction: transactions,
+          category: categories,
+        })
+        .from(transactions)
+        .leftJoin(categories, eq(transactions.categoryId, categories.id))
+        .where(eq(transactions.userId, userId))
+        .orderBy(desc(transactions.date))
+        .limit(5),
+
+      // Include both upcoming and overdue recurring transactions
+      db
+        .select({
+          recurring: recurringTransactions,
+          category: categories,
+        })
+        .from(recurringTransactions)
+        .leftJoin(
+          categories,
+          eq(recurringTransactions.categoryId, categories.id),
+        )
+        .where(
+          and(
+            eq(recurringTransactions.userId, userId),
+            eq(recurringTransactions.isActive, true),
+          ),
+        )
+        .orderBy(asc(recurringTransactions.nextDueDate))
+        .limit(3),
+    ]);
 
   const profile = profileResult[0] as FinancialProfile | undefined;
-
-  const totalsResult = await db
-    .select({
-      income: sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount} else 0 end), 0)`,
-      expenses: sql<number>`coalesce(sum(case when ${transactions.type} = 'expense' then ${transactions.amount} else 0 end), 0)`,
-    })
-    .from(transactions)
-    .where(
-      and(
-        eq(transactions.userId, userId),
-        gte(transactions.date, startOfMonth),
-        lte(transactions.date, endOfMonth)
-      )
-    );
-
-  const bucketRows = await db
-    .select({
-      bucket: categories.allocationBucket,
-      spent: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
-    })
-    .from(transactions)
-    .leftJoin(categories, eq(transactions.categoryId, categories.id))
-    .where(
-      and(
-        eq(transactions.userId, userId),
-        eq(transactions.type, "expense"),
-        gte(transactions.date, startOfMonth),
-        lte(transactions.date, endOfMonth)
-      )
-    )
-    .groupBy(categories.allocationBucket);
-
-  const recentRows = await db
-    .select({
-      transaction: transactions,
-      category: categories,
-    })
-    .from(transactions)
-    .leftJoin(categories, eq(transactions.categoryId, categories.id))
-    .where(eq(transactions.userId, userId))
-    .orderBy(desc(transactions.date))
-    .limit(5);
-
-  const recurringRows = await db
-    .select({
-      recurring: recurringTransactions,
-      category: categories,
-    })
-    .from(recurringTransactions)
-    .leftJoin(categories, eq(recurringTransactions.categoryId, categories.id))
-    .where(
-      and(
-        eq(recurringTransactions.userId, userId),
-        eq(recurringTransactions.isActive, true),
-        gte(recurringTransactions.nextDueDate, today)
-      )
-    )
-    .orderBy(asc(recurringTransactions.nextDueDate))
-    .limit(3);
 
   const monthIncome = toNumber(totalsResult[0]?.income);
   const monthExpenses = toNumber(totalsResult[0]?.expenses);
   const balance = monthIncome - monthExpenses;
 
-  const monthlyIncomeTarget = profile ? toNumber(profile.monthlyIncomeTarget) : 0;
+  const monthlyIncomeTarget = profile
+    ? toNumber(profile.monthlyIncomeTarget)
+    : 0;
   const needsPercentage = profile ? toNumber(profile.needsPercentage) : 50;
   const wantsPercentage = profile ? toNumber(profile.wantsPercentage) : 30;
   const futurePercentage = profile ? toNumber(profile.futurePercentage) : 20;
 
   const bucketTotals = new Map<AllocationBucket, number>(
-    BUCKET_ORDER.map((bucket) => [bucket, 0])
+    BUCKET_ORDER.map((bucket) => [bucket, 0]),
   );
 
   bucketRows.forEach((row) => {
@@ -166,7 +180,11 @@ export async function getDashboardData(): Promise<DashboardData> {
     };
   });
 
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysInMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+  ).getDate();
   const dayOfMonth = now.getDate();
   const daysRemaining = Math.max(daysInMonth - dayOfMonth, 0);
   const dailyAverage = dayOfMonth > 0 ? monthExpenses / dayOfMonth : 0;

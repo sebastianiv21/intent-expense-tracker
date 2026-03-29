@@ -3,7 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ElementType } from "react";
-import { Check, CheckCircle, Coffee, Grid3X3, Home, MoreHorizontal, PiggyBank, Plus, X } from "lucide-react";
+import {
+  Check,
+  CheckCircle,
+  Coffee,
+  Grid3X3,
+  Home,
+  MoreHorizontal,
+  PiggyBank,
+  Plus,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -42,7 +52,11 @@ const BUCKET_OPTIONS: Array<{ label: string; value: AllocationBucket }> = [
   { label: "Future", value: "future" },
 ];
 
-const BUCKET_PILLS: Array<{ key: AllocationBucket; label: string; Icon: ElementType }> = [
+const BUCKET_PILLS: Array<{
+  key: AllocationBucket;
+  label: string;
+  Icon: ElementType;
+}> = [
   { key: "needs", label: "Needs", Icon: Home },
   { key: "wants", label: "Wants", Icon: Coffee },
   { key: "future", label: "Future", Icon: PiggyBank },
@@ -50,15 +64,42 @@ const BUCKET_PILLS: Array<{ key: AllocationBucket; label: string; Icon: ElementT
 
 const CATEGORY_EMOJIS = [
   // Default seed icons (always present)
-  "🏠", "🛒", "💡", "🛡️", "🚗", "🏥",
-  "🍽️", "🎬", "🛍️", "📺", "🎨",
-  "💰", "📈", "🏦", "💳",
-  "💼", "💻", "💵",
+  "🏠",
+  "🛒",
+  "💡",
+  "🛡️",
+  "🚗",
+  "🏥",
+  "🍽️",
+  "🎬",
+  "🛍️",
+  "📺",
+  "🎨",
+  "💰",
+  "📈",
+  "🏦",
+  "💳",
+  "💼",
+  "💻",
+  "💵",
   // Additional options
-  "🏃", "☕", "🐾", "🍕", "⛽",
-  "🚌", "🚲", "✈️", "💊", "👕",
-  "🎮", "🎁", "🎵", "📚",
-  "🔧", "🧾", "🎓",
+  "🏃",
+  "☕",
+  "🐾",
+  "🍕",
+  "⛽",
+  "🚌",
+  "🚲",
+  "✈️",
+  "💊",
+  "👕",
+  "🎮",
+  "🎁",
+  "🎵",
+  "📚",
+  "🔧",
+  "🧾",
+  "🎓",
 ];
 
 type CategoryFormState = {
@@ -82,7 +123,9 @@ function getEmojiPreviewColor(formState: CategoryFormState): string {
   const base =
     formState.type === "income"
       ? getTransactionColor("income")
-      : getBucketColor((formState.allocationBucket || "needs") as AllocationBucket);
+      : getBucketColor(
+          (formState.allocationBucket || "needs") as AllocationBucket,
+        );
   return base + "26";
 }
 
@@ -100,11 +143,18 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
+    null,
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null);
+  const [deleteError, setDeleteError] = useState<{
+    id: string;
+    message: string;
+  } | null>(null);
 
-  const confirmButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const confirmButtonRefs = useRef<Record<string, HTMLButtonElement | null>>(
+    {},
+  );
   const deleteButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const prevConfirmingIdRef = useRef<string | null>(null);
 
@@ -124,7 +174,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
         if (type === "income") return true;
         return c.allocationBucket === bucket;
       }),
-    [categories, type, bucket]
+    [categories, type, bucket],
   );
 
   const counts = useMemo(
@@ -132,19 +182,24 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
       BUCKET_OPTIONS.reduce<Record<AllocationBucket, number>>(
         (acc, { value }) => {
           acc[value] = categories.filter(
-            (c) => c.type === "expense" && c.allocationBucket === value
+            (c) => c.type === "expense" && c.allocationBucket === value,
           ).length;
           return acc;
         },
-        { needs: 0, wants: 0, future: 0 }
+        { needs: 0, wants: 0, future: 0 },
       ),
-    [categories]
+    [categories],
   );
 
   function openCreate() {
     setConfirmingDeleteId(null);
     setEditingCategory(null);
-    setFormState({ name: "", icon: "", type: "expense", allocationBucket: "needs" });
+    setFormState({
+      name: "",
+      icon: "",
+      type: "expense",
+      allocationBucket: "needs",
+    });
     setError("");
     setSheetOpen(true);
   }
@@ -176,19 +231,23 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
           : undefined,
     };
 
-    const result = editingCategory
-      ? await updateCategory(editingCategory.id, payload)
-      : await createCategory(payload);
+    try {
+      const result = editingCategory
+        ? await updateCategory(editingCategory.id, payload)
+        : await createCategory(payload);
 
-    if (!result.success) {
-      setError(result.error);
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+
+      setSheetOpen(false);
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    setSheetOpen(false);
-    router.refresh();
   }
 
   function triggerDelete(category: Category) {
@@ -200,13 +259,18 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
     setConfirmingDeleteId(null);
     setDeletingId(category.id);
     setDeleteError(null);
-    const result = await deleteCategory(category.id);
-    setDeletingId(null);
-    if (!result.success) {
-      setDeleteError({ id: category.id, message: result.error });
-      return;
+    try {
+      const result = await deleteCategory(category.id);
+      if (!result.success) {
+        setDeleteError({ id: category.id, message: result.error });
+        return;
+      }
+      router.refresh();
+    } catch {
+      setDeleteError({ id: category.id, message: "Failed to delete category" });
+    } finally {
+      setDeletingId(null);
     }
-    router.refresh();
   }
 
   const canSave =
@@ -219,7 +283,12 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
         title="Categories"
         description="Organize income sources and spending buckets."
         action={
-          <Button variant="outline" size="sm" onClick={openCreate} className="min-h-[44px]">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openCreate}
+            className="min-h-[44px]"
+          >
             Add category
           </Button>
         }
@@ -229,7 +298,11 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
         <Tabs value={type} onValueChange={(v) => setType(v as TransactionType)}>
           <TabsList className="w-full">
             {TYPE_OPTIONS.map((option) => (
-              <TabsTrigger key={option.value} value={option.value} className="flex-1">
+              <TabsTrigger
+                key={option.value}
+                value={option.value}
+                className="flex-1"
+              >
                 {option.label}
               </TabsTrigger>
             ))}
@@ -249,11 +322,23 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                   aria-label={`Filter ${option.label} categories`}
                   className={cn(
                     "min-h-[44px] px-3 rounded-full border text-sm flex items-center gap-2 transition",
-                    !isActive && "border-border text-muted-foreground opacity-50"
+                    !isActive &&
+                      "border-border text-muted-foreground opacity-50",
                   )}
-                  style={isActive ? { borderColor: color, color, backgroundColor: color + "33" } : undefined}
+                  style={
+                    isActive
+                      ? {
+                          borderColor: color,
+                          color,
+                          backgroundColor: color + "33",
+                        }
+                      : undefined
+                  }
                 >
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
                   {option.label}
                   <span className="text-xs">({counts[option.value]})</span>
                 </button>
@@ -271,7 +356,11 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
             <p className="text-sm text-muted-foreground">
               Add your first one to organize your spending.
             </p>
-            <Button onClick={openCreate} variant="outline" className="min-h-[44px]">
+            <Button
+              onClick={openCreate}
+              variant="outline"
+              className="min-h-[44px]"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add category
             </Button>
@@ -297,11 +386,13 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                       {category.icon ?? "•"}
                     </div>
                     <div>
-                      <p className="font-medium text-foreground">{category.name}</p>
+                      <p className="font-medium text-foreground">
+                        {category.name}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {category.type === "income"
                           ? "Income"
-                          : category.allocationBucket ?? "Expense"}
+                          : (category.allocationBucket ?? "Expense")}
                       </p>
                     </div>
                   </div>
@@ -309,14 +400,18 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                   <div className="flex items-center gap-2">
                     {isConfirming ? (
                       <>
-                        <span className="text-sm text-muted-foreground">Delete?</span>
+                        <span className="text-sm text-muted-foreground">
+                          Delete?
+                        </span>
                         <Button
                           type="button"
                           variant="destructive"
                           size="sm"
                           className="min-h-[44px]"
                           aria-label="Confirm delete"
-                          ref={(el) => { confirmButtonRefs.current[category.id] = el; }}
+                          ref={(el) => {
+                            confirmButtonRefs.current[category.id] = el;
+                          }}
                           onClick={() => confirmDelete(category)}
                         >
                           <Check className="h-4 w-4" />
@@ -342,7 +437,9 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                             className="min-h-[44px] min-w-[44px] -mr-2 shrink-0"
                             aria-label={`Options for ${category.name}`}
                             disabled={isDeleting}
-                            ref={(el) => { deleteButtonRefs.current[category.id] = el; }}
+                            ref={(el) => {
+                              deleteButtonRefs.current[category.id] = el;
+                            }}
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
@@ -386,7 +483,9 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                   {editingCategory ? "Edit Category" : "New Category"}
                 </SheetTitle>
                 <SheetDescription className="sr-only">
-                  {editingCategory ? "Update the details below." : "Add a new way to track income or expenses."}
+                  {editingCategory
+                    ? "Update the details below."
+                    : "Add a new way to track income or expenses."}
                 </SheetDescription>
                 <button
                   onClick={() => setSheetOpen(false)}
@@ -414,15 +513,23 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                     <div className="font-semibold text-foreground">
                       {formState.name.trim() || "Category Name"}
                     </div>
-                    {formState.type === "expense" && formState.allocationBucket ? (
+                    {formState.type === "expense" &&
+                    formState.allocationBucket ? (
                       <div
                         className="text-xs font-medium capitalize"
-                        style={{ color: getBucketColor(formState.allocationBucket as AllocationBucket) }}
+                        style={{
+                          color: getBucketColor(
+                            formState.allocationBucket as AllocationBucket,
+                          ),
+                        }}
                       >
                         {formState.allocationBucket}
                       </div>
                     ) : (
-                      <div className="text-xs font-medium" style={{ color: getTransactionColor("income") }}>
+                      <div
+                        className="text-xs font-medium"
+                        style={{ color: getTransactionColor("income") }}
+                      >
                         Income
                       </div>
                     )}
@@ -436,7 +543,9 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 </Label>
                 <Input
                   value={formState.name}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setFormState((prev) => ({ ...prev, name: e.target.value }))
+                  }
                   placeholder="e.g., Groceries, Salary, Rent..."
                   className="h-14 rounded-2xl bg-background border-border"
                 />
@@ -451,25 +560,30 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 </div>
                 <div className="max-h-[180px] overflow-y-auto rounded-xl border border-border bg-background p-2">
                   <div className="grid grid-cols-5 place-items-center gap-1">
-                  {CATEGORY_EMOJIS.map((emoji) => {
-                    const isSelected = formState.icon === emoji;
-                    return (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() =>
-                          setFormState((prev) => ({ ...prev, icon: isSelected ? "" : emoji }))
-                        }
-                        className={cn(
-                          "flex h-10 w-10 items-center justify-center rounded-lg text-xl transition-all hover:scale-105 active:scale-95",
-                          isSelected ? "ring-2 ring-primary bg-primary/10" : "hover:bg-border"
-                        )}
-                        title={emoji}
-                      >
-                        {emoji}
-                      </button>
-                    );
-                  })}
+                    {CATEGORY_EMOJIS.map((emoji) => {
+                      const isSelected = formState.icon === emoji;
+                      return (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              icon: isSelected ? "" : emoji,
+                            }))
+                          }
+                          className={cn(
+                            "flex h-10 w-10 items-center justify-center rounded-lg text-xl transition-all hover:scale-105 active:scale-95",
+                            isSelected
+                              ? "ring-2 ring-primary bg-primary/10"
+                              : "hover:bg-border",
+                          )}
+                          title={emoji}
+                        >
+                          {emoji}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -484,13 +598,18 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                     setFormState((prev) => ({
                       ...prev,
                       type: v as TransactionType,
-                      allocationBucket: v === "income" ? "" : prev.allocationBucket || "needs",
+                      allocationBucket:
+                        v === "income" ? "" : prev.allocationBucket || "needs",
                     }))
                   }
                 >
                   <TabsList className="w-full">
                     {TYPE_OPTIONS.map((option) => (
-                      <TabsTrigger key={option.value} value={option.value} className="flex-1">
+                      <TabsTrigger
+                        key={option.value}
+                        value={option.value}
+                        className="flex-1"
+                      >
                         {option.label}
                       </TabsTrigger>
                     ))}
@@ -512,17 +631,25 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                           key={key}
                           type="button"
                           onClick={() =>
-                            setFormState((prev) => ({ ...prev, allocationBucket: key }))
+                            setFormState((prev) => ({
+                              ...prev,
+                              allocationBucket: key,
+                            }))
                           }
                           aria-label={`Select ${label} bucket`}
                           aria-pressed={isSelected}
                           className={cn(
                             "flex flex-col items-center gap-2 rounded-3xl border-2 bg-background p-4 transition-all hover:scale-[1.02]",
-                            !isSelected && "border-transparent text-muted-foreground"
+                            !isSelected &&
+                              "border-transparent text-muted-foreground",
                           )}
                           style={
                             isSelected
-                              ? { borderColor: color, color, backgroundColor: color + "1a" }
+                              ? {
+                                  borderColor: color,
+                                  color,
+                                  backgroundColor: color + "1a",
+                                }
                               : undefined
                           }
                         >
@@ -538,7 +665,10 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
               )}
 
               {error && (
-                <p className="rounded-xl bg-destructive/10 p-3 text-center text-sm text-destructive" role="alert">
+                <p
+                  className="rounded-xl bg-destructive/10 p-3 text-center text-sm text-destructive"
+                  role="alert"
+                >
                   {error}
                 </p>
               )}
@@ -550,7 +680,9 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 onClick={handleSave}
                 disabled={!canSave || loading}
                 className="w-full rounded-3xl py-6 text-lg font-bold text-white shadow-xl flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ background: "linear-gradient(to right, #c97a5a, #a36248)" }}
+                style={{
+                  background: "linear-gradient(to right, #c97a5a, #a36248)",
+                }}
               >
                 {loading ? "Saving…" : editingCategory ? "Update" : "Create"}
                 <CheckCircle className="h-5 w-5" />

@@ -34,7 +34,12 @@ export default function LoginPage() {
 
   async function handleGoogle() {
     setLoading(true);
-    await signIn.social({ provider: "google", callbackURL: "/" });
+    try {
+      await signIn.social({ provider: "google", callbackURL: "/" });
+    } catch {
+      setError("Google sign-in failed. Please try again.");
+      setLoading(false);
+    }
   }
 
   return (

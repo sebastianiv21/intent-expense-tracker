@@ -33,15 +33,23 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          await db.insert(schema.categories).values(
-            DEFAULT_CATEGORIES.map((cat) => ({
-              userId: user.id,
-              name: cat.name,
-              type: cat.type,
-              allocationBucket: cat.allocationBucket ?? null,
-              icon: cat.icon,
-            }))
-          );
+          try {
+            await db.insert(schema.categories).values(
+              DEFAULT_CATEGORIES.map((cat) => ({
+                userId: user.id,
+                name: cat.name,
+                type: cat.type,
+                allocationBucket: cat.allocationBucket ?? null,
+                icon: cat.icon,
+              })),
+            );
+          } catch (err) {
+            console.error(
+              "Failed to seed default categories for user",
+              user.id,
+              err,
+            );
+          }
         },
       },
     },

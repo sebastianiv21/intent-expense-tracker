@@ -1,6 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,10 +18,14 @@ type TransactionItemProps = {
   onDelete?: (transaction: TransactionWithCategory) => void;
 };
 
-export function TransactionItem({ transaction, onDelete }: TransactionItemProps) {
+export function TransactionItem({
+  transaction,
+  onDelete,
+}: TransactionItemProps) {
   const { openEdit } = useTransactionSheet();
 
   const amountColor = getTransactionColor(transaction.type);
+  const parsedDate = parseISO(transaction.date);
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 motion-safe:transition-colors motion-safe:duration-150 hover:bg-muted/30">
@@ -32,10 +36,13 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
           </div>
           <div>
             <p className="font-medium text-foreground">
-              {transaction.description || transaction.category?.name || "Transaction"}
+              {transaction.description ||
+                transaction.category?.name ||
+                "Transaction"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {transaction.category?.name ?? "Uncategorized"} • {format(new Date(transaction.date), "MMM d")}
+              {transaction.category?.name ?? "Uncategorized"} •{" "}
+              {format(parsedDate, "MMM d")}
             </p>
           </div>
         </div>
@@ -46,12 +53,17 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
               {formatCurrency(transaction.amount)}
             </p>
             <p className="text-xs text-muted-foreground">
-              {format(new Date(transaction.date), "yyyy")}
+              {format(parsedDate, "yyyy")}
             </p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px] -mr-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="min-h-11 min-w-11 -mr-2 shrink-0"
+                aria-label={`Options for ${transaction.description || transaction.category?.name || "transaction"}`}
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -59,12 +71,14 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
               <DropdownMenuItem onClick={() => openEdit(transaction)}>
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => onDelete?.(transaction)}
-              >
-                Delete
-              </DropdownMenuItem>
+              {onDelete && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onDelete(transaction)}
+                >
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

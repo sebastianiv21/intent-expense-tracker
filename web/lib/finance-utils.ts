@@ -23,7 +23,12 @@ export const BUCKET_DEFINITIONS = {
   },
 } as const satisfies Record<
   AllocationBucket,
-  { label: string; color: string; defaultPercentage: number; description: string }
+  {
+    label: string;
+    color: string;
+    defaultPercentage: number;
+    description: string;
+  }
 >;
 
 export const BUCKET_ORDER: AllocationBucket[] = ["needs", "wants", "future"];
@@ -48,20 +53,24 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
+const compactCurrencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
 export function formatCurrency(amount: number | string): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (Number.isNaN(num)) return "$0.00";
   return currencyFormatter.format(num);
 }
 
 export function formatCurrencyCompact(amount: number | string): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (Number.isNaN(num)) return "$0.00";
   if (Math.abs(num) >= 1000) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      notation: "compact",
-      maximumFractionDigits: 1,
-    }).format(num);
+    return compactCurrencyFormatter.format(num);
   }
   return currencyFormatter.format(num);
 }
@@ -70,12 +79,12 @@ export function formatCurrencyCompact(amount: number | string): string {
 
 export function calculatePercentage(value: number, total: number): number {
   if (total === 0) return 0;
-  return Math.min(100, Math.round((value / total) * 100));
+  return Math.round((value / total) * 100);
 }
 
 export function calculateBucketTarget(
   monthlyIncome: number,
-  percentage: number
+  percentage: number,
 ): number {
   return (monthlyIncome * percentage) / 100;
 }

@@ -84,8 +84,13 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
     .toUpperCase();
 
   async function handleLogout() {
-    await signOut();
-    router.push("/login");
+    try {
+      await signOut();
+    } catch {
+      // If signOut fails, still redirect to login
+    } finally {
+      router.push("/login");
+    }
   }
 
   return (
