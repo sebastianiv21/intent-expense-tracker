@@ -1,4 +1,6 @@
-import { formatCurrency } from "@/lib/finance-utils";
+"use client";
+
+import { useCurrency } from "@/components/currency-provider";
 import type { TransactionTotals } from "@/types";
 
 type TransactionSummaryProps = {
@@ -6,6 +8,8 @@ type TransactionSummaryProps = {
 };
 
 export function TransactionSummary({ totals }: TransactionSummaryProps) {
+  const { formatCurrency } = useCurrency();
+
   return (
     <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
       <span>

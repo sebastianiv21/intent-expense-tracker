@@ -5,8 +5,10 @@ import { db } from "@/lib/db";
 import { financialProfile } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { CurrencyProvider } from "@/components/currency-provider";
 import { processRecurringTransactions } from "@/lib/actions/recurring";
 import { getCategories } from "@/lib/queries/categories";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 export default async function AppLayout({
   children,
@@ -39,6 +41,11 @@ export default async function AppLayout({
   }
 
   const categories = await getCategories();
+  const currency = profile[0]?.currency ?? DEFAULT_CURRENCY;
 
-  return <AppShell categories={categories}>{children}</AppShell>;
+  return (
+    <CurrencyProvider currency={currency}>
+      <AppShell categories={categories}>{children}</AppShell>
+    </CurrencyProvider>
+  );
 }

@@ -1,4 +1,5 @@
 import type { AllocationBucket } from "@/types";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 // ─── Bucket Definitions ───────────────────────────────────────────────────────
 
@@ -46,33 +47,60 @@ export function getTransactionColor(type: "income" | "expense"): string {
 
 // ─── Currency Formatter ───────────────────────────────────────────────────────
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+const formatterCache = new Map<string, Intl.NumberFormat>();
+const compactFormatterCache = new Map<string, Intl.NumberFormat>();
 
-const compactCurrencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-export function formatCurrency(amount: number | string): string {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (Number.isNaN(num)) return "$0.00";
-  return currencyFormatter.format(num);
+function getCurrencyFormatter(currency: string): Intl.NumberFormat {
+  let formatter = formatterCache.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    formatterCache.set(currency, formatter);
+  }
+  return formatter;
 }
 
-export function formatCurrencyCompact(amount: number | string): string {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (Number.isNaN(num)) return "$0.00";
-  if (Math.abs(num) >= 1000) {
-    return compactCurrencyFormatter.format(num);
+function getCompactCurrencyFormatter(currency: string): Intl.NumberFormat {
+  let formatter = compactFormatterCache.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      notation: "compact",
+      maximumFractionDigits: 1,
+    });
+    compactFormatterCache.set(currency, formatter);
   }
-  return currencyFormatter.format(num);
+  return formatter;
+}
+
+function getZeroFormatted(currency: string): string {
+  return getCurrencyFormatter(currency).format(0);
+}
+
+export function formatCurrency(
+  amount: number | string,
+  currency: string = DEFAULT_CURRENCY,
+): string {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (Number.isNaN(num)) return getZeroFormatted(currency);
+  return getCurrencyFormatter(currency).format(num);
+}
+
+export function formatCurrencyCompact(
+  amount: number | string,
+  currency: string = DEFAULT_CURRENCY,
+): string {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (Number.isNaN(num)) return getZeroFormatted(currency);
+  if (Math.abs(num) >= 1000) {
+    return getCompactCurrencyFormatter(currency).format(num);
+  }
+  return getCurrencyFormatter(currency).format(num);
 }
 
 // ─── Percentage Calculator ────────────────────────────────────────────────────

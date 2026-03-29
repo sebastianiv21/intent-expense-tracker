@@ -1,4 +1,12 @@
 import { z } from "zod";
+import { SUPPORTED_CURRENCIES } from "@/lib/currencies";
+
+const currencyCodeSchema = z
+  .string()
+  .length(3)
+  .refine((code) => SUPPORTED_CURRENCIES.some((c) => c.code === code), {
+    message: "Unsupported currency code",
+  });
 
 const percentageSchema = z.coerce.number().min(0).max(100);
 
@@ -14,6 +22,7 @@ export const createFinancialProfileSchema = z
     needsPercentage: percentageSchema.default(50),
     wantsPercentage: percentageSchema.default(30),
     futurePercentage: percentageSchema.default(20),
+    currency: currencyCodeSchema.default("USD"),
   })
   .refine(
     (data) =>
@@ -34,6 +43,7 @@ export const updateFinancialProfileSchema = z
     needsPercentage: percentageSchema.optional(),
     wantsPercentage: percentageSchema.optional(),
     futurePercentage: percentageSchema.optional(),
+    currency: currencyCodeSchema.optional(),
   })
   .refine(
     (data) => {

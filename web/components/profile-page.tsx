@@ -18,11 +18,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  formatCurrency,
   getBucketColor,
   BUCKET_DEFINITIONS,
   BUCKET_ORDER,
 } from "@/lib/finance-utils";
+import { useCurrency } from "@/components/currency-provider";
+import { getCurrencyInfo } from "@/lib/currencies";
 import { cn } from "@/lib/utils";
 import type { FinancialProfile } from "@/types";
 
@@ -73,8 +74,10 @@ type ProfilePageProps = {
 
 export function ProfilePage({ user, profile }: ProfilePageProps) {
   const router = useRouter();
+  const { formatCurrency } = useCurrency();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const currencyInfo = getCurrencyInfo(profile.currency);
 
   const initials = user.name
     .split(" ")
@@ -147,6 +150,12 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
               <span className="text-muted-foreground">Monthly income</span>
               <span className="font-semibold text-foreground tabular-nums">
                 {formatCurrency(profile.monthlyIncomeTarget)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Currency</span>
+              <span className="font-semibold text-foreground">
+                {currencyInfo.code} ({currencyInfo.symbol})
               </span>
             </div>
             <div className="space-y-2">

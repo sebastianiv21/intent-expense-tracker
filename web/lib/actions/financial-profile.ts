@@ -30,6 +30,7 @@ export async function createFinancialProfile(
     needsPercentage,
     wantsPercentage,
     futurePercentage,
+    currency,
   } = parsed.data;
 
   try {
@@ -51,6 +52,7 @@ export async function createFinancialProfile(
         needsPercentage: needsPercentage.toFixed(2),
         wantsPercentage: wantsPercentage.toFixed(2),
         futurePercentage: futurePercentage.toFixed(2),
+        currency,
       })
       .returning();
 
@@ -84,6 +86,7 @@ export async function updateFinancialProfile(
     needsPercentage,
     wantsPercentage,
     futurePercentage,
+    currency,
   } = parsed.data;
 
   const updateValues: Record<string, string | Date> = {
@@ -101,6 +104,9 @@ export async function updateFinancialProfile(
   }
   if (futurePercentage !== undefined) {
     updateValues.futurePercentage = futurePercentage.toFixed(2);
+  }
+  if (currency !== undefined) {
+    updateValues.currency = currency;
   }
 
   try {

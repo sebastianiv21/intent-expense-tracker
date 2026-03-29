@@ -42,9 +42,9 @@ import { cn } from "@/lib/utils";
 import {
   BUCKET_ORDER,
   calculatePercentage,
-  formatCurrencyCompact,
   getBucketColor,
 } from "@/lib/finance-utils";
+import { useCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/page-header";
 import {
   createBudget,
@@ -112,6 +112,7 @@ export function BudgetsPage({
   initialMonth,
 }: BudgetsPageProps) {
   const router = useRouter();
+  const { formatCurrencyCompact } = useCurrency();
   const [month, setMonth] = useState(initialMonth);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<BudgetWithSpending | null>(null);

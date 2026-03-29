@@ -71,6 +71,7 @@ export type FinancialProfile = {
   needsPercentage: string;
   wantsPercentage: string;
   futurePercentage: string;
+  currency: string;
   createdAt: Date;
   updatedAt: Date;
 };

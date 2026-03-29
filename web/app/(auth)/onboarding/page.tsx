@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/finance-utils";
+import { getCurrencySymbol, DEFAULT_CURRENCY } from "@/lib/currencies";
+import { CurrencySelector } from "@/components/currency-selector";
 
 type Buckets = {
   needs: number;
@@ -22,6 +24,7 @@ export default function OnboardingPage() {
     wants: 30,
     future: 20,
   });
+  const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +48,7 @@ export default function OnboardingPage() {
       needsPercentage: buckets.needs,
       wantsPercentage: buckets.wants,
       futurePercentage: buckets.future,
+      currency,
     });
 
     if (!result.success) {
@@ -56,17 +60,18 @@ export default function OnboardingPage() {
     router.push("/");
   }
 
-  const BUCKETS: Array<{ key: keyof Buckets; label: string; color: string }> =
-    [
-      { key: "needs", label: "Needs", color: "#8b9a7e" },
-      { key: "wants", label: "Wants", color: "#c97a5a" },
-      { key: "future", label: "Future", color: "#a89562" },
-    ];
+  const BUCKETS: Array<{ key: keyof Buckets; label: string; color: string }> = [
+    { key: "needs", label: "Needs", color: "#8b9a7e" },
+    { key: "wants", label: "Wants", color: "#c97a5a" },
+    { key: "future", label: "Future", color: "#a89562" },
+  ];
 
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-foreground">Set up your profile</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Set up your profile
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Enter your monthly income and allocation preferences
         </p>
@@ -74,10 +79,15 @@ export default function OnboardingPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
+          <Label>Currency</Label>
+          <CurrencySelector value={currency} onChange={setCurrency} />
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="income">Monthly income</Label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              $
+              {getCurrencySymbol(currency)}
             </span>
             <Input
               id="income"
@@ -126,7 +136,8 @@ export default function OnboardingPage() {
               />
               {incomeNum > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {formatCurrency((incomeNum * buckets[key]) / 100)} / month
+                  {formatCurrency((incomeNum * buckets[key]) / 100, currency)} /
+                  month
                 </p>
               )}
             </div>

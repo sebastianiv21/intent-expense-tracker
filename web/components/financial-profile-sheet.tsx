@@ -7,6 +7,8 @@ import {
   BUCKET_DEFINITIONS,
   BUCKET_ORDER,
 } from "@/lib/finance-utils";
+import { getCurrencySymbol } from "@/lib/currencies";
+import { CurrencySelector } from "@/components/currency-selector";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +86,7 @@ export function FinancialProfileSheet({
   const [buckets, setBuckets] = useState<Buckets>(() =>
     bucketsFromProfile(profile),
   );
+  const [currency, setCurrency] = useState(profile.currency ?? "USD");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -92,6 +95,7 @@ export function FinancialProfileSheet({
     if (open) {
       setIncome(profile.monthlyIncomeTarget.toString());
       setBuckets(bucketsFromProfile(profile));
+      setCurrency(profile.currency ?? "USD");
       setError("");
     }
   }, [open, profile]);
@@ -104,6 +108,7 @@ export function FinancialProfileSheet({
   function resetState() {
     setIncome(profile.monthlyIncomeTarget.toString());
     setBuckets(bucketsFromProfile(profile));
+    setCurrency(profile.currency ?? "USD");
     setError("");
   }
 
@@ -122,6 +127,7 @@ export function FinancialProfileSheet({
         needsPercentage: buckets.needs,
         wantsPercentage: buckets.wants,
         futurePercentage: buckets.future,
+        currency,
       });
 
       if (!result.success) {
@@ -164,7 +170,7 @@ export function FinancialProfileSheet({
                     fontSizeClass,
                   )}
                 >
-                  $
+                  {getCurrencySymbol(currency)}
                 </span>
                 <Input
                   id="income"
@@ -187,9 +193,14 @@ export function FinancialProfileSheet({
             </div>
             {incomeNum > 0 && (
               <p className="text-center text-xs text-muted-foreground tabular-nums">
-                = {formatCurrency(incomeNum * 12)} / year
+                = {formatCurrency(incomeNum * 12, currency)} / year
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Currency</Label>
+            <CurrencySelector value={currency} onChange={setCurrency} />
           </div>
 
           <div className="space-y-4">
@@ -260,7 +271,11 @@ export function FinancialProfileSheet({
                       style={{ color, backgroundColor: `${color}18` }}
                       aria-hidden="true"
                     >
-                      {formatCurrency((incomeNum * buckets[key]) / 100)} / month
+                      {formatCurrency(
+                        (incomeNum * buckets[key]) / 100,
+                        currency,
+                      )}{" "}
+                      / month
                     </span>
                   )}
                 </div>

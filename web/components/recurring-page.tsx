@@ -41,12 +41,12 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
-  formatCurrencyCompact,
   getTransactionColor,
   getBucketColor,
   calculatePercentage,
   BUCKET_ORDER,
 } from "@/lib/finance-utils";
+import { useCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/page-header";
 import {
   createRecurring,
@@ -127,6 +127,7 @@ function getAmountFontSize(len: number): string {
 
 export function RecurringPage({ recurring, categories }: RecurringPageProps) {
   const [status, setStatus] = useState<"active" | "paused">("active");
+  const { formatCurrencyCompact } = useCurrency();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] =
     useState<RecurringTransactionWithCategory | null>(null);

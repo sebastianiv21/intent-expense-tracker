@@ -15,6 +15,13 @@
       "when": 1774752289404,
       "tag": "0001_add-transactions-updated-at",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774755245204,
+      "tag": "0002_add-currency-to-financial-profile",
+      "breakpoints": true
     }
   ]
 }

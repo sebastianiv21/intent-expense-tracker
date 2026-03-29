@@ -9,7 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatCurrency, getTransactionColor } from "@/lib/finance-utils";
+import { getTransactionColor } from "@/lib/finance-utils";
+import { useCurrency } from "@/components/currency-provider";
 import { useTransactionSheet } from "@/components/transaction-sheet-context";
 import type { TransactionWithCategory } from "@/types";
 
@@ -23,6 +24,7 @@ export function TransactionItem({
   onDelete,
 }: TransactionItemProps) {
   const { openEdit } = useTransactionSheet();
+  const { formatCurrency } = useCurrency();
 
   const amountColor = getTransactionColor(transaction.type);
   const parsedDate = parseISO(transaction.date);

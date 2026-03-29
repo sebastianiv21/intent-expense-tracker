@@ -8,11 +8,8 @@ import { Home, Coffee, PiggyBank, type LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  formatCurrencyCompact,
-  getBucketColor,
-  getTransactionColor,
-} from "@/lib/finance-utils";
+import { getBucketColor, getTransactionColor } from "@/lib/finance-utils";
+import { useCurrency } from "@/components/currency-provider";
 import type { AllocationBucket } from "@/types";
 
 // Only container-level Recharts components need dynamic import to avoid SSR.
@@ -69,6 +66,7 @@ const BUCKET_ICONS: Record<AllocationBucket, LucideIcon> = {
 };
 
 export function InsightsPage({ insights, allocation }: InsightsPageProps) {
+  const { formatCurrencyCompact } = useCurrency();
   const [period, setPeriod] =
     useState<(typeof PERIODS)[number]["value"]>("month");
   const isPeriodLocked = true;

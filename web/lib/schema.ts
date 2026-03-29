@@ -135,6 +135,7 @@ export const financialProfile = pgTable("financial_profile", {
   })
     .notNull()
     .default("20.00"),
+  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()
