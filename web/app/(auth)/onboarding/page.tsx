@@ -6,8 +6,13 @@ import { createFinancialProfile } from "@/lib/actions/financial-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatCurrency } from "@/lib/finance-utils";
+import {
+  formatCurrency,
+  formatAmountDisplay,
+  parseAmountInput,
+} from "@/lib/finance-utils";
 import { getCurrencySymbol, DEFAULT_CURRENCY } from "@/lib/currencies";
+import { cn } from "@/lib/utils";
 import { CurrencySelector } from "@/components/currency-selector";
 
 type Buckets = {
@@ -30,6 +35,15 @@ export default function OnboardingPage() {
 
   const total = buckets.needs + buckets.wants + buckets.future;
   const isValid = total === 100 && parseFloat(income) > 0;
+
+  function getAmountFontSize(len: number): string {
+    if (len <= 5) return "text-5xl";
+    if (len <= 7) return "text-4xl";
+    if (len <= 9) return "text-3xl";
+    return "text-2xl";
+  }
+
+  const fontSizeClass = getAmountFontSize(income.replace(/,/g, "").length);
 
   function updateBucket(key: keyof Buckets, value: number) {
     setBuckets((prev) => ({ ...prev, [key]: value }));
@@ -85,23 +99,47 @@ export default function OnboardingPage() {
 
         <div className="space-y-2">
           <Label htmlFor="income">Monthly income</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              {getCurrencySymbol(currency)}
-            </span>
-            <Input
-              id="income"
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="5000.00"
-              value={income}
-              onChange={(e) => setIncome(e.target.value)}
-              required
-              className="pl-7 text-lg font-semibold"
-              inputMode="decimal"
-            />
+          <div
+            className="relative rounded-2xl px-4 py-5 text-center transition-all duration-300"
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 100%, #c4714a18 0%, transparent 70%)",
+            }}
+          >
+            <div className="flex items-center justify-center">
+              <span
+                className={cn(
+                  "mr-2 font-mono font-extrabold text-primary transition-all duration-200",
+                  fontSizeClass,
+                )}
+              >
+                {getCurrencySymbol(currency)}
+              </span>
+              <Input
+                id="income"
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                aria-label="Monthly income amount"
+                className={cn(
+                  "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
+                  "placeholder:text-muted-foreground/20 focus-visible:ring-0",
+                  fontSizeClass,
+                )}
+                onChange={(e) => {
+                  const val = parseAmountInput(e.target.value);
+                  setIncome(val);
+                }}
+                value={formatAmountDisplay(income)}
+                required
+              />
+            </div>
           </div>
+          {incomeNum > 0 && (
+            <p className="text-center text-xs text-muted-foreground tabular-nums">
+              = {formatCurrency(incomeNum * 12, currency)} / year
+            </p>
+          )}
         </div>
 
         <div className="space-y-4">

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { updateFinancialProfile } from "@/lib/actions/financial-profile";
 import {
   formatCurrency,
+  formatAmountDisplay,
+  parseAmountInput,
   BUCKET_DEFINITIONS,
   BUCKET_ORDER,
 } from "@/lib/finance-utils";
@@ -103,7 +105,7 @@ export function FinancialProfileSheet({
   const total = buckets.needs + buckets.wants + buckets.future;
   const isValid = total === 100 && parseFloat(income) > 0;
   const incomeNum = parseFloat(income) || 0;
-  const fontSizeClass = getAmountFontSize(income.length);
+  const fontSizeClass = getAmountFontSize(income.replace(/,/g, "").length);
 
   function resetState() {
     setIncome(profile.monthlyIncomeTarget.toString());
@@ -183,10 +185,10 @@ export function FinancialProfileSheet({
                     "placeholder:text-muted-foreground/20 focus-visible:ring-0",
                     fontSizeClass,
                   )}
-                  value={income}
+                  value={formatAmountDisplay(income)}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9.]/g, "");
-                    if ((val.match(/\./g) ?? []).length <= 1) setIncome(val);
+                    const val = parseAmountInput(e.target.value);
+                    setIncome(val);
                   }}
                 />
               </div>

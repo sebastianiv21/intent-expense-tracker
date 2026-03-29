@@ -43,6 +43,8 @@ import {
   BUCKET_ORDER,
   calculatePercentage,
   getBucketColor,
+  formatAmountDisplay,
+  parseAmountInput,
 } from "@/lib/finance-utils";
 import { useCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/page-header";
@@ -575,7 +577,9 @@ export function BudgetsPage({
                   <span
                     className={cn(
                       "mr-2 font-mono font-extrabold text-primary transition-all duration-200",
-                      getAmountFontSize(formState.amount.length),
+                      getAmountFontSize(
+                        formState.amount.replace(/,/g, "").length,
+                      ),
                     )}
                   >
                     $
@@ -588,13 +592,14 @@ export function BudgetsPage({
                     className={cn(
                       "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                       "placeholder:text-muted-foreground/20 focus-visible:ring-0",
-                      getAmountFontSize(formState.amount.length),
+                      getAmountFontSize(
+                        formState.amount.replace(/,/g, "").length,
+                      ),
                     )}
-                    value={formState.amount}
+                    value={formatAmountDisplay(formState.amount)}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9.]/g, "");
-                      if ((val.match(/\./g) ?? []).length <= 1)
-                        setFormState((prev) => ({ ...prev, amount: val }));
+                      const val = parseAmountInput(e.target.value);
+                      setFormState((prev) => ({ ...prev, amount: val }));
                     }}
                   />
                 </div>

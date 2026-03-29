@@ -46,13 +46,10 @@ export function HeroBalanceCard({
           <span className="text-xs font-medium text-primary-foreground/70 uppercase tracking-wide">
             Monthly balance
           </span>
-          <span
-            className={cn(
-              "text-4xl font-bold tracking-tight",
-              balance < 0 ? "text-destructive" : "text-primary-foreground",
-            )}
-          >
-            {formatCurrency(balance)}
+          <span className="text-4xl font-bold tracking-tight text-primary-foreground">
+            {balance < 0
+              ? `-${formatCurrency(Math.abs(balance))}`
+              : formatCurrency(balance)}
           </span>
           <span className="text-xs text-primary-foreground/80">
             Income {formatCurrencyCompact(monthIncome)} · Expenses{" "}

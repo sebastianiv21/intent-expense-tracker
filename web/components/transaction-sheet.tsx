@@ -27,7 +27,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { BUCKET_ORDER } from "@/lib/finance-utils";
+import {
+  BUCKET_ORDER,
+  formatAmountDisplay,
+  parseAmountInput,
+} from "@/lib/finance-utils";
 import {
   createTransaction,
   updateTransaction,
@@ -241,7 +245,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
   }
 
   const canSave = parseFloat(form.amount) > 0;
-  const fontSizeClass = getAmountFontSize(form.amount.length);
+  const fontSizeClass = getAmountFontSize(form.amount.replace(/,/g, "").length);
   const isIncome = form.type === "income";
   const amountGlow = isIncome
     ? "radial-gradient(ellipse at 50% 100%, #7aaa7a18 0%, transparent 70%)"
@@ -306,11 +310,10 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                     fontSizeClass,
                     isIncome ? "text-income" : "text-foreground",
                   )}
-                  value={form.amount}
+                  value={formatAmountDisplay(form.amount)}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9.]/g, "");
-                    if ((val.match(/\./g) ?? []).length <= 1)
-                      updateField("amount", val);
+                    const val = parseAmountInput(e.target.value);
+                    updateField("amount", val);
                   }}
                 />
               </div>
