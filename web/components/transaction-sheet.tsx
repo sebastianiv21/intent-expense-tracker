@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CalendarIcon,
   CheckCircle,
@@ -153,6 +154,7 @@ type TransactionSheetProps = {
 };
 
 export function TransactionSheet({ categories }: TransactionSheetProps) {
+  const router = useRouter();
   const { isOpen, mode, transaction, close } = useTransactionSheet();
   const [form, setForm] = useState<FormState>(() =>
     buildInitialState(mode, transaction, categories),
@@ -230,6 +232,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
       }
 
       close();
+      router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

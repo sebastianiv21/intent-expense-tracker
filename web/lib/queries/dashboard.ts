@@ -113,7 +113,7 @@ export async function getDashboardData(): Promise<DashboardData> {
         .from(transactions)
         .leftJoin(categories, eq(transactions.categoryId, categories.id))
         .where(eq(transactions.userId, userId))
-        .orderBy(desc(transactions.date))
+        .orderBy(desc(transactions.date), desc(transactions.createdAt))
         .limit(5),
 
       // Include both upcoming and overdue recurring transactions

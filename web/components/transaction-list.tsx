@@ -57,10 +57,18 @@ type TransactionListProps = {
 };
 
 export function TransactionList(props: TransactionListProps) {
+  const [prevInitial, setPrevInitial] = useState(props.initialTransactions);
   const [rows, setRows] = useState<TransactionWithCategory[]>(
     props.initialTransactions,
   );
   const [hasMore, setHasMore] = useState(props.initialHasMore);
+
+  // Sync local state when the server re-renders with fresh data (e.g. after router.refresh)
+  if (props.initialTransactions !== prevInitial) {
+    setPrevInitial(props.initialTransactions);
+    setRows(props.initialTransactions);
+    setHasMore(props.initialHasMore);
+  }
   const [isPending, startTransition] = useTransition();
   const [loadError, setLoadError] = useState<string | null>(null);
 

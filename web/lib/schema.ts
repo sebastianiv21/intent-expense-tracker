@@ -173,6 +173,10 @@ export const transactions = pgTable(
     description: text("description"),
     date: date("date").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date()),
   },
   (table) => [
     index("transactions_userId_idx").on(table.userId),

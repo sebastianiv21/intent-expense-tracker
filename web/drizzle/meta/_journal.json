@@ -8,6 +8,13 @@
       "when": 1773634068795,
       "tag": "0000_lyrical_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774752289404,
+      "tag": "0001_add-transactions-updated-at",
+      "breakpoints": true
     }
   ]
 }

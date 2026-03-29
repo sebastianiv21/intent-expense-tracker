@@ -35,6 +35,7 @@ export type Transaction = {
   description: string | null;
   date: string;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type Budget = {

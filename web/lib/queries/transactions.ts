@@ -52,12 +52,12 @@ export async function getTransactions(params: {
 
   const orderByClause =
     orderBy === "date_asc"
-      ? asc(transactions.date)
+      ? [asc(transactions.date), asc(transactions.createdAt)]
       : orderBy === "amount_asc"
-        ? asc(transactions.amount)
+        ? [asc(transactions.amount), desc(transactions.createdAt)]
         : orderBy === "amount_desc"
-          ? desc(transactions.amount)
-          : desc(transactions.date);
+          ? [desc(transactions.amount), desc(transactions.createdAt)]
+          : [desc(transactions.date), desc(transactions.createdAt)];
 
   const result = await db
     .select({
@@ -67,7 +67,7 @@ export async function getTransactions(params: {
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .where(and(...conditions))
-    .orderBy(orderByClause)
+    .orderBy(...orderByClause)
     .limit(limit)
     .offset(offset);
 
