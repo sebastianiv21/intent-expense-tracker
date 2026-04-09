@@ -226,7 +226,10 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
       />
 
       <Sheet open={logoutOpen} onOpenChange={setLogoutOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-6">
+        <SheetContent
+          side="bottom"
+          className="rounded-t-2xl px-4 pb-6 lg:left-1/2 lg:w-[min(100%-2rem,58rem)] lg:-translate-x-1/2 lg:rounded-3xl"
+        >
           <SheetHeader className="text-left">
             <SheetTitle>Log out?</SheetTitle>
             <SheetDescription>
