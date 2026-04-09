@@ -105,41 +105,102 @@ export function formatCurrencyCompact(
 
 // ─── Amount Input Helpers ─────────────────────────────────────────────────────
 
+export type AmountDecimalSeparator = "." | "," | null;
+
+function inferDecimalSeparator(input: string): AmountDecimalSeparator {
+  const matches = [...input.matchAll(/[.,]/g)];
+  if (matches.length === 0) return null;
+
+  if (matches.length === 1) {
+    const match = matches[0];
+    const digitsAfter = input.length - (match.index ?? 0) - 1;
+    if (digitsAfter === 3) return null;
+    return match[0] as "." | ",";
+  }
+
+  const lastMatch = matches[matches.length - 1];
+  const digitsAfter = input.length - (lastMatch.index ?? 0) - 1;
+  if (digitsAfter === 0 || digitsAfter <= 2) {
+    return lastMatch[0] as "." | ",";
+  }
+
+  return null;
+}
+
 /**
- * Formats a raw numeric string (digits + optional dot) for display inside
- * amount input fields, adding thousand separators while preserving a
- * trailing decimal point or trailing zeros after the decimal.
+ * Formats a normalized numeric string for display inside amount input fields,
+ * adding thousand separators while preserving a trailing decimal separator or
+ * trailing zeros after the decimal.
  *
  * Examples:
- *   "10000000"   → "10,000,000"
- *   "1234.5"     → "1,234.5"
- *   "1234."      → "1,234."
- *   "1234.50"    → "1,234.50"
- *   ""           → ""
+ *   ("10000000", null) → "10,000,000"
+ *   ("1234.5", ",")    → "1,234,5"
+ *   ("1234.", ",")     → "1,234,"
+ *   ("1234.50", ".")   → "1,234.50"
+ *   ("", null)         → ""
  */
-export function formatAmountDisplay(raw: string): string {
+export function formatAmountDisplay(
+  raw: string,
+  decimalSeparator: AmountDecimalSeparator = null,
+): string {
   if (!raw) return "";
   const [intPart, ...decParts] = raw.split(".");
   const hasDot = raw.includes(".");
   const formatted = intPart ? Number(intPart).toLocaleString("en-US") : "";
   if (hasDot) {
-    return formatted + "." + (decParts[0] ?? "");
+    return formatted + (decimalSeparator ?? ".") + (decParts[0] ?? "");
   }
   return formatted;
 }
 
 /**
- * Strips thousand-separator commas from a display string, keeping only
- * digits and at most one decimal point.  Safe to pass directly to
- * parseFloat() or store as raw state.
+ * Converts a user-entered amount string into a normalized numeric string
+ * using "." for the decimal separator while tracking which separator should
+ * be shown back to the user.
  */
-export function parseAmountInput(display: string): string {
-  const stripped = display.replace(/,/g, "");
-  const clean = stripped.replace(/[^0-9.]/g, "");
-  // allow at most one dot
-  const parts = clean.split(".");
-  if (parts.length > 2) return parts[0] + "." + parts.slice(1).join("");
-  return clean;
+export function parseAmountInput(
+  display: string,
+  fallbackDecimalSeparator: AmountDecimalSeparator = null,
+): {
+  normalizedValue: string;
+  decimalSeparator: AmountDecimalSeparator;
+} {
+  const clean = display.replace(/[^0-9.,]/g, "");
+  if (!clean) {
+    return { normalizedValue: "", decimalSeparator: null };
+  }
+
+  const inferredSeparator = inferDecimalSeparator(clean);
+  const decimalSeparator =
+    inferredSeparator ??
+    (fallbackDecimalSeparator && clean.includes(fallbackDecimalSeparator)
+      ? fallbackDecimalSeparator
+      : null);
+
+  if (!decimalSeparator) {
+    return {
+      normalizedValue: clean.replace(/[.,]/g, ""),
+      decimalSeparator: null,
+    };
+  }
+
+  const decimalIndex = clean.lastIndexOf(decimalSeparator);
+  const intPart = clean.slice(0, decimalIndex).replace(/[.,]/g, "");
+  const decPart = clean.slice(decimalIndex + 1).replace(/[.,]/g, "");
+
+  return {
+    normalizedValue: `${intPart || "0"}.${decPart}`,
+    decimalSeparator,
+  };
+}
+
+export function parseStoredAmount(raw: string): number {
+  const amount = Number.parseFloat(raw);
+  return Number.isFinite(amount) ? amount : Number.NaN;
+}
+
+export function getAmountInputLength(raw: string): number {
+  return raw.replace(/[.,]/g, "").length;
 }
 
 // ─── Percentage Calculator ────────────────────────────────────────────────────

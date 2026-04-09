@@ -44,7 +44,9 @@ import {
   calculatePercentage,
   getBucketColor,
   formatAmountDisplay,
+  getAmountInputLength,
   parseAmountInput,
+  parseStoredAmount,
 } from "@/lib/finance-utils";
 import { useCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/page-header";
@@ -136,6 +138,9 @@ export function BudgetsPage({
     id: string;
     message: string;
   } | null>(null);
+  const [amountDecimalSeparator, setAmountDecimalSeparator] = useState<
+    "." | "," | null
+  >(null);
 
   const confirmButtonRefs = useRef<Record<string, HTMLButtonElement | null>>(
     {},
@@ -195,6 +200,7 @@ export function BudgetsPage({
     });
     setError("");
     setDatePickerOpen(false);
+    setAmountDecimalSeparator(null);
     setSheetOpen(true);
   }
 
@@ -210,6 +216,7 @@ export function BudgetsPage({
     });
     setError("");
     setDatePickerOpen(false);
+    setAmountDecimalSeparator(null);
     setSheetOpen(true);
   }
 
@@ -229,7 +236,7 @@ export function BudgetsPage({
 
     const payload = {
       categoryId: formState.categoryId,
-      amount: parseFloat(formState.amount),
+      amount: parseStoredAmount(formState.amount),
       period: formState.period,
       startDate: formState.startDate,
     };
@@ -275,7 +282,7 @@ export function BudgetsPage({
 
   const canSave =
     formState.categoryId.length > 0 &&
-    parseFloat(formState.amount) > 0 &&
+    parseStoredAmount(formState.amount) > 0 &&
     formState.startDate.length > 0;
 
   return (
@@ -577,9 +584,7 @@ export function BudgetsPage({
                   <span
                     className={cn(
                       "mr-2 font-mono font-extrabold text-primary transition-all duration-200",
-                      getAmountFontSize(
-                        formState.amount.replace(/,/g, "").length,
-                      ),
+                      getAmountFontSize(getAmountInputLength(formState.amount)),
                     )}
                   >
                     $
@@ -592,14 +597,22 @@ export function BudgetsPage({
                     className={cn(
                       "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                       "placeholder:text-muted-foreground/20 focus-visible:ring-0",
-                      getAmountFontSize(
-                        formState.amount.replace(/,/g, "").length,
-                      ),
+                      getAmountFontSize(getAmountInputLength(formState.amount)),
                     )}
-                    value={formatAmountDisplay(formState.amount)}
+                    value={formatAmountDisplay(
+                      formState.amount,
+                      amountDecimalSeparator,
+                    )}
                     onChange={(e) => {
-                      const val = parseAmountInput(e.target.value);
-                      setFormState((prev) => ({ ...prev, amount: val }));
+                      const parsed = parseAmountInput(
+                        e.target.value,
+                        amountDecimalSeparator,
+                      );
+                      setFormState((prev) => ({
+                        ...prev,
+                        amount: parsed.normalizedValue,
+                      }));
+                      setAmountDecimalSeparator(parsed.decimalSeparator);
                     }}
                   />
                 </div>

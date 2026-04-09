@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import {
   formatCurrency,
   formatAmountDisplay,
+  getAmountInputLength,
   parseAmountInput,
+  parseStoredAmount,
 } from "@/lib/finance-utils";
 import { getCurrencySymbol, DEFAULT_CURRENCY } from "@/lib/currencies";
 import { cn } from "@/lib/utils";
@@ -32,9 +34,12 @@ export default function OnboardingPage() {
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [incomeDecimalSeparator, setIncomeDecimalSeparator] = useState<
+    "." | "," | null
+  >(null);
 
   const total = buckets.needs + buckets.wants + buckets.future;
-  const isValid = total === 100 && parseFloat(income) > 0;
+  const isValid = total === 100 && parseStoredAmount(income) > 0;
 
   function getAmountFontSize(len: number): string {
     if (len <= 5) return "text-5xl";
@@ -43,13 +48,13 @@ export default function OnboardingPage() {
     return "text-2xl";
   }
 
-  const fontSizeClass = getAmountFontSize(income.replace(/,/g, "").length);
+  const fontSizeClass = getAmountFontSize(getAmountInputLength(income));
 
   function updateBucket(key: keyof Buckets, value: number) {
     setBuckets((prev) => ({ ...prev, [key]: value }));
   }
 
-  const incomeNum = parseFloat(income) || 0;
+  const incomeNum = parseStoredAmount(income) || 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +63,7 @@ export default function OnboardingPage() {
     setLoading(true);
 
     const result = await createFinancialProfile({
-      monthlyIncomeTarget: parseFloat(income),
+      monthlyIncomeTarget: parseStoredAmount(income),
       needsPercentage: buckets.needs,
       wantsPercentage: buckets.wants,
       futurePercentage: buckets.future,
@@ -127,10 +132,14 @@ export default function OnboardingPage() {
                   fontSizeClass,
                 )}
                 onChange={(e) => {
-                  const val = parseAmountInput(e.target.value);
-                  setIncome(val);
+                  const parsed = parseAmountInput(
+                    e.target.value,
+                    incomeDecimalSeparator,
+                  );
+                  setIncome(parsed.normalizedValue);
+                  setIncomeDecimalSeparator(parsed.decimalSeparator);
                 }}
-                value={formatAmountDisplay(income)}
+                value={formatAmountDisplay(income, incomeDecimalSeparator)}
                 required
               />
             </div>

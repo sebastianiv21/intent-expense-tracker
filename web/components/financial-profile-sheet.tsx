@@ -5,7 +5,9 @@ import { updateFinancialProfile } from "@/lib/actions/financial-profile";
 import {
   formatCurrency,
   formatAmountDisplay,
+  getAmountInputLength,
   parseAmountInput,
+  parseStoredAmount,
   BUCKET_DEFINITIONS,
   BUCKET_ORDER,
 } from "@/lib/finance-utils";
@@ -91,6 +93,9 @@ export function FinancialProfileSheet({
   const [currency, setCurrency] = useState(profile.currency ?? "USD");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [incomeDecimalSeparator, setIncomeDecimalSeparator] = useState<
+    "." | "," | null
+  >(null);
 
   // Reset state when the sheet opens (to pick up any profile prop changes)
   useEffect(() => {
@@ -99,19 +104,21 @@ export function FinancialProfileSheet({
       setBuckets(bucketsFromProfile(profile));
       setCurrency(profile.currency ?? "USD");
       setError("");
+      setIncomeDecimalSeparator(null);
     }
   }, [open, profile]);
 
   const total = buckets.needs + buckets.wants + buckets.future;
-  const isValid = total === 100 && parseFloat(income) > 0;
-  const incomeNum = parseFloat(income) || 0;
-  const fontSizeClass = getAmountFontSize(income.replace(/,/g, "").length);
+  const isValid = total === 100 && parseStoredAmount(income) > 0;
+  const incomeNum = parseStoredAmount(income) || 0;
+  const fontSizeClass = getAmountFontSize(getAmountInputLength(income));
 
   function resetState() {
     setIncome(profile.monthlyIncomeTarget.toString());
     setBuckets(bucketsFromProfile(profile));
     setCurrency(profile.currency ?? "USD");
     setError("");
+    setIncomeDecimalSeparator(null);
   }
 
   function updateBucket(key: keyof Buckets, value: number) {
@@ -125,7 +132,7 @@ export function FinancialProfileSheet({
 
     try {
       const result = await updateFinancialProfile({
-        monthlyIncomeTarget: parseFloat(income),
+        monthlyIncomeTarget: parseStoredAmount(income),
         needsPercentage: buckets.needs,
         wantsPercentage: buckets.wants,
         futurePercentage: buckets.future,
@@ -185,10 +192,17 @@ export function FinancialProfileSheet({
                     "placeholder:text-muted-foreground/20 focus-visible:ring-0",
                     fontSizeClass,
                   )}
-                  value={formatAmountDisplay(income)}
+                  value={formatAmountDisplay(
+                    income,
+                    incomeDecimalSeparator,
+                  )}
                   onChange={(e) => {
-                    const val = parseAmountInput(e.target.value);
-                    setIncome(val);
+                    const parsed = parseAmountInput(
+                      e.target.value,
+                      incomeDecimalSeparator,
+                    );
+                    setIncome(parsed.normalizedValue);
+                    setIncomeDecimalSeparator(parsed.decimalSeparator);
                   }}
                 />
               </div>

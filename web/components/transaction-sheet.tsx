@@ -30,7 +30,9 @@ import { cn } from "@/lib/utils";
 import {
   BUCKET_ORDER,
   formatAmountDisplay,
+  getAmountInputLength,
   parseAmountInput,
+  parseStoredAmount,
 } from "@/lib/finance-utils";
 import {
   createTransaction,
@@ -166,6 +168,9 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [amountDecimalSeparator, setAmountDecimalSeparator] = useState<
+    "." | "," | null
+  >(null);
 
   // Reset form whenever the sheet opens
   useEffect(() => {
@@ -173,6 +178,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
       setForm(buildInitialState(mode, transaction, categories));
       setError(null);
       setDatePickerOpen(false);
+      setAmountDecimalSeparator(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -210,7 +216,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
   }, [categories, form.type, form.selectedBucket]);
 
   async function handleSubmit(): Promise<void> {
-    const amountNum = parseFloat(form.amount);
+    const amountNum = parseStoredAmount(form.amount);
     if (!amountNum || amountNum <= 0) return;
 
     setSaving(true);
@@ -244,8 +250,8 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
     }
   }
 
-  const canSave = parseFloat(form.amount) > 0;
-  const fontSizeClass = getAmountFontSize(form.amount.replace(/,/g, "").length);
+  const canSave = parseStoredAmount(form.amount) > 0;
+  const fontSizeClass = getAmountFontSize(getAmountInputLength(form.amount));
   const isIncome = form.type === "income";
   const amountGlow = isIncome
     ? "radial-gradient(ellipse at 50% 100%, #7aaa7a18 0%, transparent 70%)"
@@ -310,10 +316,17 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                     fontSizeClass,
                     isIncome ? "text-income" : "text-foreground",
                   )}
-                  value={formatAmountDisplay(form.amount)}
+                  value={formatAmountDisplay(
+                    form.amount,
+                    amountDecimalSeparator,
+                  )}
                   onChange={(e) => {
-                    const val = parseAmountInput(e.target.value);
-                    updateField("amount", val);
+                    const parsed = parseAmountInput(
+                      e.target.value,
+                      amountDecimalSeparator,
+                    );
+                    updateField("amount", parsed.normalizedValue);
+                    setAmountDecimalSeparator(parsed.decimalSeparator);
                   }}
                 />
               </div>

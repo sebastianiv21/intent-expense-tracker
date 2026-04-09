@@ -46,7 +46,9 @@ import {
   calculatePercentage,
   BUCKET_ORDER,
   formatAmountDisplay,
+  getAmountInputLength,
   parseAmountInput,
+  parseStoredAmount,
 } from "@/lib/finance-utils";
 import { useCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/page-header";
@@ -155,6 +157,9 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     message: string;
   } | null>(null);
   const [filterBucket, setFilterBucket] = useState<AllocationBucket>("needs");
+  const [amountDecimalSeparator, setAmountDecimalSeparator] = useState<
+    "." | "," | null
+  >(null);
 
   const confirmButtonRefs = useRef<Record<string, HTMLButtonElement | null>>(
     {},
@@ -230,6 +235,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     setError("");
     setDatePickerOpen(false);
     setEndDatePickerOpen(false);
+    setAmountDecimalSeparator(null);
     setSheetOpen(true);
   }
 
@@ -253,6 +259,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     setError("");
     setDatePickerOpen(false);
     setEndDatePickerOpen(false);
+    setAmountDecimalSeparator(null);
     setSheetOpen(true);
   }
 
@@ -269,7 +276,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     setError("");
 
     const payload = {
-      amount: parseFloat(formState.amount),
+      amount: parseStoredAmount(formState.amount),
       type: formState.type,
       description: formState.description.trim() || undefined,
       frequency: formState.frequency,
@@ -334,7 +341,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
   }
 
   const canSave =
-    parseFloat(formState.amount) > 0 &&
+    parseStoredAmount(formState.amount) > 0 &&
     formState.startDate.length > 0 &&
     formState.frequency.length > 0;
 
@@ -603,9 +610,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                   <span
                     className={cn(
                       "mr-2 font-mono font-extrabold text-primary transition-all duration-200",
-                      getAmountFontSize(
-                        formState.amount.replace(/,/g, "").length,
-                      ),
+                      getAmountFontSize(getAmountInputLength(formState.amount)),
                     )}
                   >
                     $
@@ -618,14 +623,22 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                     className={cn(
                       "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                       "placeholder:text-muted-foreground/20 focus-visible:ring-0",
-                      getAmountFontSize(
-                        formState.amount.replace(/,/g, "").length,
-                      ),
+                      getAmountFontSize(getAmountInputLength(formState.amount)),
                     )}
-                    value={formatAmountDisplay(formState.amount)}
+                    value={formatAmountDisplay(
+                      formState.amount,
+                      amountDecimalSeparator,
+                    )}
                     onChange={(e) => {
-                      const val = parseAmountInput(e.target.value);
-                      setFormState((prev) => ({ ...prev, amount: val }));
+                      const parsed = parseAmountInput(
+                        e.target.value,
+                        amountDecimalSeparator,
+                      );
+                      setFormState((prev) => ({
+                        ...prev,
+                        amount: parsed.normalizedValue,
+                      }));
+                      setAmountDecimalSeparator(parsed.decimalSeparator);
                     }}
                   />
                 </div>
