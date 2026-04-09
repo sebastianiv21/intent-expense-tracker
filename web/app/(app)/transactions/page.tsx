@@ -5,7 +5,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { TransactionList } from "@/components/transaction-list";
 import { TransactionSearch } from "@/components/transaction-search";
-import { ExportButton } from "@/components/export-button";
+import { TransactionsHeaderActions } from "@/components/transactions-header-actions";
 import { Button } from "@/components/ui/button";
 import type { FilterState, TransactionType } from "@/types";
 
@@ -24,7 +24,7 @@ type EmptyStateProps = {
 function EmptyState({ typeParam, searchQuery }: EmptyStateProps) {
   const message =
     !typeParam && !searchQuery
-      ? "No transactions yet. Tap the + button to add your first entry."
+      ? "No transactions yet. Add your first transaction to start tracking activity."
       : `No results for${searchQuery ? ` "${searchQuery}"` : ""}${typeParam ? ` in ${typeParam}` : ""}. Try a different search or filter.`;
 
   return (
@@ -83,9 +83,7 @@ export default async function TransactionsPage({
       <PageHeader
         title="Transactions"
         description="Track income and expenses"
-        action={
-          <ExportButton filter={{ type: typeParam, search: searchQuery }} />
-        }
+        action={<TransactionsHeaderActions filter={filter} />}
       />
 
       <div className="space-y-3">

@@ -261,7 +261,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
       {/* [&>button]:hidden suppresses the default Radix close button */}
       <SheetContent
         side="bottom"
-        className="max-h-[90vh] rounded-t-3xl border border-border bg-card p-0 [&>button]:hidden"
+        className="max-h-[90vh] rounded-t-3xl border border-border bg-card p-0 [&>button]:hidden lg:left-1/2 lg:w-[min(100%-2rem,58rem)] lg:-translate-x-1/2 lg:rounded-3xl"
       >
         <div className="flex max-h-[90vh] flex-col">
           {/* Header */}
