@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Document provider decision in STATE.md and update schema.ts with new columns and exchangeRateCache table
+- [x] 01-01-PLAN.md — Document provider decision in STATE.md and update schema.ts with new columns and exchangeRateCache table
 - [ ] 01-02-PLAN.md — Generate Drizzle migration, add backfill UPDATE, push to Neon database and verify all five success criteria
 
 ### Phase 2: Exchange Rate Service
