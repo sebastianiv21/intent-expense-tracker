@@ -44,7 +44,10 @@ Plans:
   2. A second call for the same `(from, to, date)` triple reads from the `exchange_rate_cache` table without making an external API request
   3. A call for a date that is not in cache inserts a new row into `exchange_rate_cache` and returns the fetched rate
   4. Calling `getOrFetchExchangeRate("USD", "USD", any_date)` returns 1.0 without hitting the external API
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 02-01-PLAN.md — Implement getOrFetchExchangeRate service and verify all four success criteria
 
 ### Phase 3: Data Layer Integration
 **Goal**: Transaction creation and editing fully support multi-currency — the server actions accept a currency field, fetch the correct historical rate, and persist all five currency-related fields correctly, while existing dashboard queries remain unmodified
