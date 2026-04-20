@@ -23,8 +23,8 @@ Every transaction is recorded in the currency it was actually made in, with accu
 
 ### Active
 
-- [ ] Each transaction stores its own currency code (the currency the purchase was made in)
-- [ ] Each transaction stores the exchange rate used at the time of recording (rate for transaction date)
+- [x] Each transaction stores its own currency code (the currency the purchase was made in) — Validated in Phase 01: provider-validation-and-schema-foundation
+- [x] Each transaction stores the exchange rate used at the time of recording (rate for transaction date) — Validated in Phase 01: provider-validation-and-schema-foundation
 - [ ] Transaction creation UI shows a currency selector per transaction (defaults to user's base currency)
 - [ ] Exchange rates are fetched from ExchangeRate-API for the transaction's date and cached 24h in DB
 - [ ] All dashboard totals and reports display amounts converted to the user's profile currency
@@ -61,10 +61,10 @@ Every transaction is recorded in the currency it was actually made in, with accu
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| ExchangeRate-API as rate source | Free tier sufficient at 1,500 req/mo with 24h cache | — Pending |
+| ExchangeRate-API as rate source | Free tier sufficient at 1,500 req/mo with 24h cache | fawazahmed0 confirmed (Phase 01) — Frankfurter rejected, no COP support |
 | Store rate at transaction creation time | Historical accuracy — rate shouldn't change retroactively | — Pending |
-| Cache rates in DB (not in-memory) | Serverless/edge functions have no persistent memory | — Pending |
-| Existing transactions default to base currency @ rate 1.0 | No migration risk; old data predates multi-currency | — Pending |
+| Cache rates in DB (not in-memory) | Serverless/edge functions have no persistent memory | exchangeRateCache table live in Neon (Phase 01) |
+| Existing transactions default to base currency @ rate 1.0 | No migration risk; old data predates multi-currency | Applied via migration backfill (Phase 01) |
 | Per-transaction currency selector (defaults to base) | Most transactions will be in base; COP is the exception | — Pending |
 
 ## Evolution
