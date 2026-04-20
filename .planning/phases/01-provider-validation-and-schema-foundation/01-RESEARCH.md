@@ -421,17 +421,17 @@ Note: The `UPDATE transactions SET original_amount = amount` line will NOT be au
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **original_amount precision: numeric(12,2) vs numeric(20,10)?**
    - What we know: REQUIREMENTS.md specifies `numeric(12,2)`. CONTEXT.md D-04 specifies `numeric(20,10)` only for `exchange_rate`. `original_amount` is a user-entered amount (like the existing `amount` column which is `numeric(12,2)`).
    - What's unclear: COP amounts can be large (e.g., 50,000 COP = ~$12 USD). `numeric(12,2)` allows up to 9,999,999,999.99 which is more than sufficient.
-   - Recommendation: Use `numeric(12,2)` for `original_amount` (consistent with REQUIREMENTS.md and existing `amount` column). Use `numeric(20,10)` only for `exchange_rate` (as specified in D-04).
+   - RESOLVED: Use `numeric(12,2)` for `original_amount` (consistent with REQUIREMENTS.md and existing `amount` column). Use `numeric(20,10)` only for `exchange_rate` (as specified in D-04).
 
 2. **Primary key for exchange_rate_cache: UUID vs composite?**
    - What we know: CONTEXT.md leaves this to Claude's discretion.
    - What's unclear: A composite PK on `(from_currency, to_currency, rate_date)` would make the UNIQUE constraint implicit and remove the need for a separate UUID column. However, UUID PKs are the established pattern in this project (all other tables use `uuid("id").primaryKey().defaultRandom()`).
-   - Recommendation: Use UUID PK (consistent with all other tables) + separate `uniqueIndex` on the three lookup columns (as specified in D-07).
+   - RESOLVED: Use UUID PK (consistent with all other tables) + separate `uniqueIndex` on the three lookup columns (as specified in D-07).
 
 ---
 
