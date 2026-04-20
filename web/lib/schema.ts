@@ -9,6 +9,7 @@ import {
   numeric,
   date,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import { relations } from "drizzle-orm";
@@ -173,6 +174,11 @@ export const transactions = pgTable(
     type: transactionTypeEnum("type").notNull(),
     description: text("description"),
     date: date("date").notNull(),
+    currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+    originalAmount: numeric("original_amount", { precision: 12, scale: 2 }).notNull(),
+    exchangeRate: numeric("exchange_rate", { precision: 20, scale: 10 })
+      .notNull()
+      .default("1.0"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at")
       .notNull()
@@ -225,6 +231,25 @@ export const recurringTransactions = pgTable(
       .$onUpdate(() => /* @__PURE__ */ new Date()),
   },
   (table) => [index("recurring_userId_idx").on(table.userId)],
+);
+
+export const exchangeRateCache = pgTable(
+  "exchange_rate_cache",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fromCurrency: varchar("from_currency", { length: 3 }).notNull(),
+    toCurrency: varchar("to_currency", { length: 3 }).notNull(),
+    rateDate: date("rate_date").notNull(),
+    rate: numeric("rate", { precision: 20, scale: 10 }).notNull(),
+    fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("exchange_rate_cache_lookup_idx").on(
+      table.fromCurrency,
+      table.toCurrency,
+      table.rateDate,
+    ),
+  ],
 );
 
 // ─── Relations ───────────────────────────────────────────────────────────────
