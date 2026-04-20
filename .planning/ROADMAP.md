@@ -29,7 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `SELECT currency, original_amount, exchange_rate FROM transactions LIMIT 1` succeeds — all three new columns exist on the transactions table
   4. `SELECT COUNT(*) FROM transactions WHERE exchange_rate IS NULL` returns 0 — existing rows have defaults applied (currency = 'USD', exchange_rate = 1.0, original_amount = amount)
   5. The `exchange_rate` column is typed `numeric(20,10)` — a value of 0.000244 can be stored and retrieved without truncation
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Document provider decision in STATE.md and update schema.ts with new columns and exchangeRateCache table
+- [ ] 01-02-PLAN.md — Generate Drizzle migration, add backfill UPDATE, push to Neon database and verify all five success criteria
 
 ### Phase 2: Exchange Rate Service
 **Goal**: A single service function `getOrFetchExchangeRate(from, to, date)` is working correctly — it returns the right rate from cache or API, stores it, and the conversion math is verified before any form or action code touches it
@@ -74,7 +78,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Provider Validation and Schema Foundation | 0/? | Not started | - |
+| 1. Provider Validation and Schema Foundation | 0/2 | Not started | - |
 | 2. Exchange Rate Service | 0/? | Not started | - |
 | 3. Data Layer Integration | 0/? | Not started | - |
 | 4. UI Layer | 0/? | Not started | - |
