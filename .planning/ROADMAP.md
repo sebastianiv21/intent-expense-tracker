@@ -47,7 +47,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 02-01-PLAN.md — Implement getOrFetchExchangeRate service and verify all four success criteria
+- [x] 02-01-PLAN.md — Implement getOrFetchExchangeRate service and verify all four success criteria
 
 ### Phase 3: Data Layer Integration
 **Goal**: Transaction creation and editing fully support multi-currency — the server actions accept a currency field, fetch the correct historical rate, and persist all five currency-related fields correctly, while existing dashboard queries remain unmodified
