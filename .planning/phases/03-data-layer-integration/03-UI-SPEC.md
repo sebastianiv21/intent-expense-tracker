@@ -72,7 +72,7 @@ Inherits the project-wide type scale. Sizes used within new Phase 3 elements:
 | Heading | 24px (text-2xl) | 700 (bold) | 1.2 | Sheet title "New Awareness" / "Edit Awareness" |
 | Display | dynamic (text-2xl to text-5xl) | 800 (extrabold) | 1.0 | Amount input — existing responsive scale |
 
-**Currency badge text:** 14px, weight 600 (semibold), `font-mono`. Shows currency code
+**Currency badge text:** 14px, weight 700 (bold), `font-mono`. Shows currency code
 (`USD` or `COP`) in uppercase. Same mono class as the amount input.
 
 **Conversion preview text:** 14px, weight 400 (regular), `text-muted-foreground`. Example:
@@ -126,7 +126,7 @@ Replaces the hardcoded `<span>$</span>` at line 299-305 in `transaction-sheet.ts
 Anatomy:
 - Outer: `<PopoverTrigger asChild>`
 - Inner: `<button>` — 44px min-height, `rounded-xl`, `border border-border`, `bg-muted`,
-  `px-3 py-2`, font-mono, 14px semibold
+  `px-3 py-2`, font-mono, 14px bold
 - Content: currency code text only (e.g. `USD`, `COP`) — no symbol, no icon
 - Active (popover open): `border-primary`, `bg-primary/10`, `text-primary`
 - Inactive: `border-border`, `bg-muted`, `text-muted-foreground` — shifts to foreground
@@ -147,9 +147,9 @@ Opens below the currency badge. Contains exactly two option buttons: `USD` and `
 ```
 
 - Container: `PopoverContent` with `w-32 p-1` — same compact style as date picker popover
-- Each option: full-width button, `h-11` (44px), `rounded-lg`, `text-sm font-semibold`,
+- Each option: full-width button, `h-11` (44px), `rounded-lg`, `text-sm font-bold`,
   `text-left px-3`
-- Selected currency: `bg-primary/10 text-primary font-semibold`
+- Selected currency: `bg-primary/10 text-primary font-bold`
 - Unselected: `text-foreground hover:bg-muted`
 - No search, no scroll — exactly two options (USD and COP)
 - Closes on selection
