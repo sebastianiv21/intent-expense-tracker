@@ -59,8 +59,11 @@ Plans:
   3. Submitting a transaction in the user's base currency (USD) sets `exchange_rate = 1.0` and skips the external API call entirely
   4. The transaction form shows a currency selector defaulting to the user's configured base currency, a live conversion preview while the user types, and amount input that formats per currency (no decimals for COP, 2 for USD)
   5. Dashboard bucket totals and spending aggregates return the same values as before this milestone for all pre-existing transactions
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Extend Transaction type, Zod schemas, finance-utils, and server actions with full multi-currency persistence
+- [ ] 03-02-PLAN.md — Add currency badge, popover, conversion preview, COP decimal handling, and edit pre-fill to TransactionSheet
 
 ### Phase 4: UI Layer
 **Goal**: The transaction list and detail views correctly display multi-currency transactions — foreign-currency amounts are shown in their original currency, detail shows the full dual display, and COP formats without unwanted decimal places
@@ -83,5 +86,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Provider Validation and Schema Foundation | 0/2 | Not started | - |
 | 2. Exchange Rate Service | 0/? | Not started | - |
-| 3. Data Layer Integration | 0/? | Not started | - |
+| 3. Data Layer Integration | 0/2 | Not started | - |
 | 4. UI Layer | 0/? | Not started | - |
