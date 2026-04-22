@@ -70,7 +70,7 @@ Inherits the project-wide type scale. Sizes used within new Phase 3 elements:
 | Body | 16px | 400 (regular) | 1.5 | Notes textarea, date button labels |
 | Label | 14px | 400 (regular) | 1.5 | Category pills, popover option text |
 | Heading | 24px (text-2xl) | 700 (bold) | 1.2 | Sheet title "New Awareness" / "Edit Awareness" |
-| Display | dynamic (text-2xl to text-5xl) | 800 (extrabold) | 1.0 | Amount input — existing responsive scale |
+| Display | dynamic (text-2xl to text-5xl) | 700 (bold) | 1.0 | Amount input — existing responsive scale |
 
 **Currency badge text:** 14px, weight 700 (bold), `font-mono`. Shows currency code
 (`USD` or `COP`) in uppercase. Same mono class as the amount input.
@@ -78,7 +78,7 @@ Inherits the project-wide type scale. Sizes used within new Phase 3 elements:
 **Conversion preview text:** 14px, weight 400 (regular), `text-muted-foreground`. Example:
 `"≈ $12.50 USD"`. Uses `tabular-nums` class (already defined in globals.css).
 
-No new font sizes or weights are introduced. Maximum 4 sizes, 2 weights (400 + 700/800).
+No new font sizes or weights are introduced. Maximum 4 sizes, 2 weights (400 regular + 700 bold).
 
 ---
 
