@@ -393,7 +393,13 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                       e.target.value,
                       amountDecimalSeparator,
                     );
-                    updateField("amount", parsed.normalizedValue);
+                    let { normalizedValue } = parsed;
+                    // Clamp decimal places to what the currency supports (e.g. 2 for USD)
+                    if (normalizedValue.includes(".")) {
+                      const [int, dec] = normalizedValue.split(".");
+                      normalizedValue = `${int}.${dec.slice(0, getCurrencyDecimals(form.currency))}`;
+                    }
+                    updateField("amount", normalizedValue);
                     setAmountDecimalSeparator(parsed.decimalSeparator);
                   }}
                 />
