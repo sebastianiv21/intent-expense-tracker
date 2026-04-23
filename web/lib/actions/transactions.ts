@@ -110,7 +110,8 @@ export async function updateTransaction(
 
   if (currencyChanged || dateChanged) {
     // Re-fetch rate when currency or date changes (D-05)
-    const baseCurrency = parsed.data.baseCurrency ?? existing[0].currency;
+    // baseCurrency is required in updateTransactionSchema — always the user's base currency
+    const baseCurrency = parsed.data.baseCurrency;
     let exchangeRate: number;
     try {
       exchangeRate = await getOrFetchExchangeRate(newCurrency, baseCurrency, newDate);
