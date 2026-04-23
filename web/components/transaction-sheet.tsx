@@ -377,16 +377,18 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                     amountDecimalSeparator,
                   )}
                   onChange={(e) => {
+                    if (getCurrencyDecimals(form.currency) === 0) {
+                      // Zero-decimal currency: bypass the heuristic separator
+                      // detection — the thousands comma in "50,000" confuses
+                      // inferDecimalSeparator when a 5th digit is appended.
+                      updateField("amount", e.target.value.replace(/[^0-9]/g, ""));
+                      return;
+                    }
                     const parsed = parseAmountInput(
                       e.target.value,
                       amountDecimalSeparator,
                     );
-                    let normalizedValue = parsed.normalizedValue;
-                    // Strip decimals for zero-decimal currencies (ENTRY-04)
-                    if (getCurrencyDecimals(form.currency) === 0 && normalizedValue.includes(".")) {
-                      normalizedValue = normalizedValue.split(".")[0];
-                    }
-                    updateField("amount", normalizedValue);
+                    updateField("amount", parsed.normalizedValue);
                     setAmountDecimalSeparator(parsed.decimalSeparator);
                   }}
                 />
