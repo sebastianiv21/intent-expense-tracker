@@ -407,7 +407,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   {previewLoading
                     ? "Fetching rate\u2026"
                     : previewRate !== null && parseStoredAmount(form.amount) > 0
-                      ? `\u2248 ${formatCurrency(parseStoredAmount(form.amount) * previewRate, baseCurrency)}`
+                      ? `\u2248 ${formatCurrency(parseStoredAmount(form.amount) * previewRate, baseCurrency)} ${baseCurrency}`
                       : null}
                 </p>
               )}
