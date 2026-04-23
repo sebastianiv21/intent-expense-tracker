@@ -114,7 +114,7 @@ function inferDecimalSeparator(input: string): AmountDecimalSeparator {
   if (matches.length === 1) {
     const match = matches[0];
     const digitsAfter = input.length - (match.index ?? 0) - 1;
-    if (digitsAfter === 3) return null;
+    if (digitsAfter >= 3) return null; // 3+ digits after separator = thousands, not decimal
     return match[0] as "." | ",";
   }
 
