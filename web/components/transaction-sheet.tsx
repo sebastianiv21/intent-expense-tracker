@@ -551,8 +551,18 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   selected={form.date ? parseISO(form.date) : undefined}
                   onSelect={(day) => {
                     if (day) {
-                      updateField("date", format(day, "yyyy-MM-dd"));
+                      const newDate = format(day, "yyyy-MM-dd");
+                      updateField("date", newDate);
                       setDatePickerOpen(false);
+                      // Re-fetch preview rate when date changes and a foreign currency is selected
+                      if (form.currency !== baseCurrency) {
+                        setPreviewRate(null);
+                        setPreviewLoading(true);
+                        getExchangeRateForPreview(form.currency, baseCurrency, newDate).then((result) => {
+                          setPreviewLoading(false);
+                          if ("rate" in result) setPreviewRate(result.rate);
+                        });
+                      }
                     }
                   }}
                   className="w-full [--cell-size:2.25rem]"
