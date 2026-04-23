@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import {
   BUCKET_ORDER,
   formatAmountDisplay,
+  formatCurrency,
   getAmountInputLength,
   getCurrencyDecimals,
   parseAmountInput,
@@ -226,6 +227,23 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
     );
   }, [categories, form.type, form.selectedBucket]);
 
+  async function handleCurrencySelect(newCurrency: string): Promise<void> {
+    updateField("currency", newCurrency);
+    setCurrencyPickerOpen(false);
+    setPreviewRate(null);
+    // No preview needed for same-currency transactions (D-06)
+    if (newCurrency === baseCurrency) return;
+    setPreviewLoading(true);
+    const result = await getExchangeRateForPreview(newCurrency, baseCurrency, form.date);
+    setPreviewLoading(false);
+    if ("rate" in result) {
+      setPreviewRate(result.rate);
+    } else {
+      // Rate fetch failed — surface error in the existing alert block; preview stays hidden
+      setError("Couldn't fetch exchange rate — please try again.");
+    }
+  }
+
   async function handleSubmit(): Promise<void> {
     const amountNum = parseStoredAmount(form.amount);
     if (!amountNum || amountNum <= 0) return;
@@ -240,6 +258,8 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
         description: form.description.trim() || undefined,
         date: form.date,
         categoryId: form.categoryId ?? undefined,
+        currency: form.currency,
+        baseCurrency,
       };
 
       const result =
@@ -306,20 +326,45 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
               style={{ background: amountGlow }}
             >
               <div className="flex items-center justify-center">
-                <span
-                  className={cn(
-                    "mr-2 font-mono font-extrabold transition-all duration-200",
-                    fontSizeClass,
-                    isIncome ? "text-income" : "text-primary",
-                  )}
-                >
-                  $
-                </span>
+                <Popover open={currencyPickerOpen} onOpenChange={setCurrencyPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Select currency"
+                      className={cn(
+                        "mr-2 min-h-[44px] rounded-xl border px-3 py-2 font-mono font-bold transition-colors",
+                        fontSizeClass,
+                        currencyPickerOpen
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-muted text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {form.currency}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-32 p-1" align="start">
+                    {(["USD", "COP"] as const).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => handleCurrencySelect(c)}
+                        className={cn(
+                          "w-full rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors",
+                          c === form.currency
+                            ? "bg-primary/10 text-primary"
+                            : "text-foreground hover:bg-muted",
+                        )}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
                 <Input
                   id="amount"
                   type="text"
-                  inputMode="decimal"
-                  placeholder="0.00"
+                  inputMode={getCurrencyDecimals(form.currency) === 0 ? "numeric" : "decimal"}
+                  placeholder={getCurrencyDecimals(form.currency) === 0 ? "0" : "0.00"}
                   aria-label="Transaction amount"
                   className={cn(
                     "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
@@ -336,11 +381,31 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                       e.target.value,
                       amountDecimalSeparator,
                     );
-                    updateField("amount", parsed.normalizedValue);
+                    let normalizedValue = parsed.normalizedValue;
+                    // Strip decimals for zero-decimal currencies (ENTRY-04)
+                    if (getCurrencyDecimals(form.currency) === 0 && normalizedValue.includes(".")) {
+                      normalizedValue = normalizedValue.split(".")[0];
+                    }
+                    updateField("amount", normalizedValue);
                     setAmountDecimalSeparator(parsed.decimalSeparator);
                   }}
                 />
               </div>
+              {form.currency !== baseCurrency && (
+                <p
+                  aria-live="polite"
+                  className={cn(
+                    "mt-2 text-center text-sm tabular-nums",
+                    previewLoading ? "text-muted-foreground/50" : "text-muted-foreground",
+                  )}
+                >
+                  {previewLoading
+                    ? "Fetching rate\u2026"
+                    : previewRate !== null && parseStoredAmount(form.amount) > 0
+                      ? `\u2248 ${formatCurrency(parseStoredAmount(form.amount) * previewRate, baseCurrency)}`
+                      : null}
+                </p>
+              )}
             </div>
 
             <div className="relative flex rounded-2xl bg-border p-1">
