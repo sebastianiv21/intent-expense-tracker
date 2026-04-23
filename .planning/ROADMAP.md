@@ -74,7 +74,11 @@ Plans:
   2. Opening a COP transaction's detail view shows: original amount, arrow, converted base-currency amount, exchange rate, and the rate date (e.g., COL$50.000 → $12.50 USD @ 4,000 COP/USD · 2026-04-19)
   3. COP amounts display with 0 decimal places throughout the app (COL$50.000, not COL$50.000,00)
   4. USD amounts continue to display with 2 decimal places — no regression in existing currency formatting
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Fix getCurrencyFormatter to use per-currency decimal places (DISP-03)
+- [ ] 04-02-PLAN.md — Add multi-currency amount display and inline expansion to TransactionItem (DISP-01, DISP-02)
 **UI hint**: yes
 
 ## Progress
