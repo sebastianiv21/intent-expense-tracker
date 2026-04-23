@@ -250,7 +250,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
 
   async function handleSubmit(): Promise<void> {
     const amountNum = parseStoredAmount(form.amount);
-    if (!amountNum || amountNum <= 0) return;
+    if (Number.isNaN(amountNum) || amountNum <= 0) return;
 
     setSaving(true);
     setError(null);
