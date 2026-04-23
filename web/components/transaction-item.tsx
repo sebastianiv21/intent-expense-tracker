@@ -74,6 +74,22 @@ export function TransactionItem({
               {`${sign}${displayAmount}`}
             </p>
           </div>
+          {isForeign && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="min-h-11 min-w-11 shrink-0"
+              aria-expanded={expanded}
+              aria-label={`${expanded ? "Hide" : "Show"} conversion details for ${txLabel}`}
+              onClick={() => setExpanded((prev) => !prev)}
+            >
+              {expanded ? (
+                <ChevronUp className="h-4 w-4" style={{ color: "var(--accent)" }} />
+              ) : (
+                <ChevronDown className="h-4 w-4" style={{ color: "var(--accent)" }} />
+              )}
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -101,6 +117,13 @@ export function TransactionItem({
           </DropdownMenu>
         </div>
       </div>
+      {isForeign && expanded && invertedRate !== null && (
+        <div className="pt-2 pl-[52px]">
+          <p className="text-xs text-muted-foreground">
+            {`→ ${formatBase(transaction.amount)} ${baseCurrency}  ·  ${invertedRate} ${transaction.currency}/${baseCurrency}  ·  ${format(parsedDate, "MMM d, yyyy")}`}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
