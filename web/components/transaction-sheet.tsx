@@ -122,7 +122,7 @@ interface FormState {
 type EditableTransaction = {
   amount: string;
   originalAmount: string | null; // pre-fill edit form with this value, not amount (CONTEXT.md discretion)
-  currency: string | null;       // pre-fill edit form currency badge
+  currency: string | null; // pre-fill edit form currency badge
   type: TransactionType;
   categoryId: string | null;
   date: string;
@@ -234,7 +234,11 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
     // No preview needed for same-currency transactions (D-06)
     if (newCurrency === baseCurrency) return;
     setPreviewLoading(true);
-    const result = await getExchangeRateForPreview(newCurrency, baseCurrency, form.date);
+    const result = await getExchangeRateForPreview(
+      newCurrency,
+      baseCurrency,
+      form.date,
+    );
     setPreviewLoading(false);
     if ("rate" in result) {
       setPreviewRate(result.rate);
@@ -326,7 +330,10 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
               style={{ background: amountGlow }}
             >
               <div className="flex items-center justify-center">
-                <Popover open={currencyPickerOpen} onOpenChange={setCurrencyPickerOpen}>
+                <Popover
+                  open={currencyPickerOpen}
+                  onOpenChange={setCurrencyPickerOpen}
+                >
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -363,8 +370,14 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                 <Input
                   id="amount"
                   type="text"
-                  inputMode={getCurrencyDecimals(form.currency) === 0 ? "numeric" : "decimal"}
-                  placeholder={getCurrencyDecimals(form.currency) === 0 ? "0" : "0.00"}
+                  inputMode={
+                    getCurrencyDecimals(form.currency) === 0
+                      ? "numeric"
+                      : "decimal"
+                  }
+                  placeholder={
+                    getCurrencyDecimals(form.currency) === 0 ? "0" : "0.00"
+                  }
                   aria-label="Transaction amount"
                   className={cn(
                     "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
@@ -372,13 +385,16 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                     fontSizeClass,
                     isIncome ? "text-income" : "text-foreground",
                   )}
-                  value={formatAmountDisplay(form.amount, amountDecimalSeparator)}
+                  value={form.amount}
                   onChange={(e) => {
                     if (getCurrencyDecimals(form.currency) === 0) {
                       // Zero-decimal currency: bypass the heuristic separator
                       // detection — the thousands comma in "50,000" confuses
                       // inferDecimalSeparator when a 5th digit is appended.
-                      updateField("amount", e.target.value.replace(/[^0-9]/g, ""));
+                      updateField(
+                        "amount",
+                        e.target.value.replace(/[^0-9]/g, ""),
+                      );
                       return;
                     }
                     const parsed = parseAmountInput(
@@ -401,7 +417,9 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   aria-live="polite"
                   className={cn(
                     "mt-2 text-center text-sm tabular-nums",
-                    previewLoading ? "text-muted-foreground/50" : "text-muted-foreground",
+                    previewLoading
+                      ? "text-muted-foreground/50"
+                      : "text-muted-foreground",
                   )}
                 >
                   {previewLoading
