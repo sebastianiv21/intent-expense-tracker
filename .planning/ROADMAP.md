@@ -77,8 +77,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Fix getCurrencyFormatter to use per-currency decimal places (DISP-03)
-- [ ] 04-02-PLAN.md — Add multi-currency amount display and inline expansion to TransactionItem (DISP-01, DISP-02)
+- [x] 04-01-PLAN.md — Fix getCurrencyFormatter to use per-currency decimal places (DISP-03)
+- [x] 04-02-PLAN.md — Add multi-currency amount display and inline expansion to TransactionItem (DISP-01, DISP-02)
 **UI hint**: yes
 
 ## Progress
