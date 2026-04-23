@@ -63,7 +63,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Extend Transaction type, Zod schemas, finance-utils, and server actions with full multi-currency persistence
-- [ ] 03-02-PLAN.md — Add currency badge, popover, conversion preview, COP decimal handling, and edit pre-fill to TransactionSheet
+- [x] 03-02-PLAN.md — Add currency badge, popover, conversion preview, COP decimal handling, and edit pre-fill to TransactionSheet
 
 ### Phase 4: UI Layer
 **Goal**: The transaction list and detail views correctly display multi-currency transactions — foreign-currency amounts are shown in their original currency, detail shows the full dual display, and COP formats without unwanted decimal places
