@@ -74,11 +74,13 @@ function getCurrencyFormatter(currency: string): Intl.NumberFormat {
 function getCompactCurrencyFormatter(currency: string): Intl.NumberFormat {
   let formatter = compactFormatterCache.get(currency);
   if (!formatter) {
+    const decimals = getCurrencyDecimals(currency);
     formatter = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
       notation: "compact",
-      maximumFractionDigits: 1,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: decimals === 0 ? 0 : 1,
     });
     compactFormatterCache.set(currency, formatter);
   }
