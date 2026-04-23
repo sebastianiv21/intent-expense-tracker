@@ -18,6 +18,8 @@ export const updateTransactionSchema = z.object({
   description: z.string().max(255).optional(),
   date: dateSchema.optional(),
   categoryId: z.string().uuid().nullable().optional(),
+  currency: z.enum(SUPPORTED_CURRENCIES).optional(),          // NEW
+  baseCurrency: z.enum(SUPPORTED_CURRENCIES),                 // required — needed for correct exchange-rate recalculation
 });
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
