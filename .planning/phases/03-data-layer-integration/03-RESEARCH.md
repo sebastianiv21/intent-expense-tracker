@@ -558,17 +558,17 @@ const previewAmount =
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **How to expose `baseCurrency` to the form payload for the server action**
    - What we know: `CurrencyProvider` context already has `currency` (the user's base currency); `TransactionSheet` is `"use client"` so it can call `useCurrency()`.
    - What's unclear: Whether to include `baseCurrency` in the Zod schema + payload (readable by the server action) or always re-query it in the action.
-   - Recommendation: Include as a validated field in the Zod payload (Option A). Simple, no extra query.
+   - RESOLVED: Include as a validated field in the Zod payload (Option A). Simple, no extra query. `z.enum(SUPPORTED_CURRENCIES)` at the server boundary ensures the server never trusts a spoofed value.
 
 2. **Edit mode: when does the form know that currency or date changed?**
    - What we know: `updateTransaction` needs to detect changes (D-05). The client knows both old and new values.
    - What's unclear: Whether the action should do the comparison (requires a DB pre-read) or the client should only send `currency`/`date` when they actually changed.
-   - Recommendation: Action does the pre-read for safety — client-side "change detection" is unreliable if the sheet re-opens with stale state.
+   - RESOLVED: Action does the pre-read for safety — client-side "change detection" is unreliable if the sheet re-opens with stale state. Single `db.select().where(id + userId).limit(1)` before update.
 
 ---
 
