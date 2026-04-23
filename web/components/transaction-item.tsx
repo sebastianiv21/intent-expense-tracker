@@ -39,9 +39,10 @@ export function TransactionItem({
     ? formatCurrencyRaw(transaction.originalAmount, transaction.currency)
     : formatBase(transaction.amount);
 
+  const rawRate = parseFloat(transaction.exchangeRate ?? "0");
   const invertedRate =
-    isForeign && transaction.exchangeRate
-      ? Math.round(1 / parseFloat(transaction.exchangeRate)).toLocaleString("en-US")
+    isForeign && rawRate > 0
+      ? Math.round(1 / rawRate).toLocaleString("en-US")
       : null;
 
   const txLabel =
