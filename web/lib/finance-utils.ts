@@ -105,6 +105,15 @@ export function formatCurrencyCompact(
 
 // ─── Amount Input Helpers ─────────────────────────────────────────────────────
 
+/**
+ * Returns the number of decimal places for a given currency.
+ * COP (Colombian Peso) is a zero-decimal currency.
+ * All other currencies default to 2 decimal places.
+ */
+export function getCurrencyDecimals(currency: string): number {
+  return currency === "COP" ? 0 : 2;
+}
+
 export type AmountDecimalSeparator = "." | "," | null;
 
 function inferDecimalSeparator(input: string): AmountDecimalSeparator {
