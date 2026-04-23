@@ -28,7 +28,7 @@ Every transaction is recorded in the currency it was actually made in, with accu
 - [ ] Transaction creation UI shows a currency selector per transaction (defaults to user's base currency)
 - [x] Exchange rates are fetched from fawazahmed0 CDN for the transaction's date and cached 24h in DB — Validated in Phase 02: exchange-rate-service
 - [ ] All dashboard totals and reports display amounts converted to the user's profile currency
-- [ ] Transaction detail shows original amount + converted amount + rate (e.g., COL$50.000 → $12.50 USD @ 4,000)
+- [x] Transaction detail shows original amount + converted amount + rate (e.g., COL$50.000 → $12.50 USD @ 4,000) — Validated in Phase 04: ui-layer
 - [ ] Existing transactions are treated as base-currency (USD) with exchange rate = 1.0
 
 ### Out of Scope
@@ -85,4 +85,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-23 after Phase 03: data-layer-integration*
+*Last updated: 2026-04-23 after Phase 04: ui-layer*
