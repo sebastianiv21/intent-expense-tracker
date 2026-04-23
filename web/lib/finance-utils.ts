@@ -50,14 +50,19 @@ export function getTransactionColor(type: "income" | "expense"): string {
 const formatterCache = new Map<string, Intl.NumberFormat>();
 const compactFormatterCache = new Map<string, Intl.NumberFormat>();
 
+export function getCurrencyDecimals(currency: string): number {
+  return currency === "COP" ? 0 : 2;
+}
+
 function getCurrencyFormatter(currency: string): Intl.NumberFormat {
   let formatter = formatterCache.get(currency);
   if (!formatter) {
+    const decimals = getCurrencyDecimals(currency);
     formatter = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     });
     formatterCache.set(currency, formatter);
   }
@@ -104,15 +109,6 @@ export function formatCurrencyCompact(
 }
 
 // ─── Amount Input Helpers ─────────────────────────────────────────────────────
-
-/**
- * Returns the number of decimal places for a given currency.
- * COP (Colombian Peso) is a zero-decimal currency.
- * All other currencies default to 2 decimal places.
- */
-export function getCurrencyDecimals(currency: string): number {
-  return currency === "COP" ? 0 : 2;
-}
 
 export type AmountDecimalSeparator = "." | "," | null;
 
