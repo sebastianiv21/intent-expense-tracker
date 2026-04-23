@@ -215,6 +215,9 @@ export async function processRecurringTransactions(): Promise<{
           await tx.insert(transactions).values({
             userId,
             amount: item.amount,
+            originalAmount: item.amount,   // recurring transactions are base-currency (rate = 1.0)
+            currency: "USD",               // base currency default for legacy/recurring entries
+            exchangeRate: "1.0",
             type: item.type,
             description: item.description,
             date: currentDueDate,
