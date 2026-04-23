@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { format, addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { and, eq, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { recurringTransactions, transactions } from "@/lib/schema";
+import { financialProfile, recurringTransactions, transactions } from "@/lib/schema";
 import { getAuthenticatedUser } from "@/lib/queries/auth";
 import {
   createRecurringSchema,
@@ -186,6 +186,15 @@ export async function processRecurringTransactions(): Promise<{
   const { userId } = await getAuthenticatedUser();
   const today = format(new Date(), "yyyy-MM-dd");
 
+  // Look up the user's base currency so generated transactions use the correct currency
+  // instead of a hardcoded "USD" that would be wrong for COP users.
+  const profileRows = await db
+    .select({ currency: financialProfile.currency })
+    .from(financialProfile)
+    .where(eq(financialProfile.userId, userId))
+    .limit(1);
+  const baseCur = profileRows[0]?.currency ?? "USD";
+
   try {
     const dueItems = await db
       .select()
@@ -215,6 +224,9 @@ export async function processRecurringTransactions(): Promise<{
           await tx.insert(transactions).values({
             userId,
             amount: item.amount,
+            originalAmount: item.amount,   // recurring transactions are base-currency (rate = 1.0)
+            currency: baseCur,             // user's actual base currency from financial profile
+            exchangeRate: "1.0",
             type: item.type,
             description: item.description,
             date: currentDueDate,
