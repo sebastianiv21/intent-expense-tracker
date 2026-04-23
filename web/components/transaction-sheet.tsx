@@ -26,13 +26,16 @@ import {
   BUCKET_ORDER,
   formatAmountDisplay,
   getAmountInputLength,
+  getCurrencyDecimals,
   parseAmountInput,
   parseStoredAmount,
 } from "@/lib/finance-utils";
 import {
   createTransaction,
+  getExchangeRateForPreview,
   updateTransaction,
 } from "@/lib/actions/transactions";
+import { useCurrency } from "@/components/currency-provider";
 import type { AllocationBucket, Category, TransactionType } from "@/types";
 
 // ─── Bucket config ────────────────────────────────────────────────────────────
@@ -112,10 +115,13 @@ interface FormState {
   date: string;
   description: string;
   selectedBucket: AllocationBucket;
+  currency: string; // ISO 4217 code; defaults to baseCurrency on create, transaction.currency on edit
 }
 
 type EditableTransaction = {
   amount: string;
+  originalAmount: string | null; // pre-fill edit form with this value, not amount (CONTEXT.md discretion)
+  currency: string | null;       // pre-fill edit form currency badge
   type: TransactionType;
   categoryId: string | null;
   date: string;
@@ -127,10 +133,12 @@ function buildInitialState(
   mode: "create" | "edit",
   transaction: EditableTransaction | null | undefined,
   categories: Category[],
+  baseCurrency: string, // required by D-03 (default) and edit pre-fill (CONTEXT.md discretion)
 ): FormState {
   if (mode === "edit" && transaction) {
     return {
-      amount: transaction.amount ?? "",
+      amount: transaction.originalAmount ?? transaction.amount ?? "", // CRITICAL: originalAmount, not amount (CONTEXT.md discretion)
+      currency: transaction.currency ?? baseCurrency,
       type: transaction.type ?? "expense",
       categoryId: transaction.categoryId ?? null,
       date: transaction.date?.slice(0, 10) ?? today(),
@@ -140,6 +148,7 @@ function buildInitialState(
   }
   return {
     amount: "",
+    currency: baseCurrency, // D-03: always default to user's base currency; form does NOT remember last-used
     type: "expense",
     categoryId: firstCategoryId(categories, "expense", "needs"),
     date: today(),
@@ -157,8 +166,9 @@ type TransactionSheetProps = {
 export function TransactionSheet({ categories }: TransactionSheetProps) {
   const router = useRouter();
   const { isOpen, mode, transaction, close } = useTransactionSheet();
+  const { currency: baseCurrency } = useCurrency();
   const [form, setForm] = useState<FormState>(() =>
-    buildInitialState(mode, transaction, categories),
+    buildInitialState(mode, transaction, categories, baseCurrency),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,14 +176,20 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
   const [amountDecimalSeparator, setAmountDecimalSeparator] = useState<
     "." | "," | null
   >(null);
+  const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
+  const [previewRate, setPreviewRate] = useState<number | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Reset form whenever the sheet opens
   useEffect(() => {
     if (isOpen) {
-      setForm(buildInitialState(mode, transaction, categories));
+      setForm(buildInitialState(mode, transaction, categories, baseCurrency));
       setError(null);
       setDatePickerOpen(false);
       setAmountDecimalSeparator(null);
+      setCurrencyPickerOpen(false);
+      setPreviewRate(null);
+      setPreviewLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
