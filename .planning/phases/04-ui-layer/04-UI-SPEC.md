@@ -46,6 +46,7 @@ Declared values (multiples of 4 — standard 8-point scale):
 Exceptions:
 - Touch target minimum: 44px — the existing dropdown trigger uses `min-h-11 min-w-11` (44px). The chevron toggle button MUST also use `min-h-11 min-w-11` to comply.
 - Detail row internal padding: `pt-2` (8px top) to visually separate from the main row — no additional indentation.
+- Detail row left indent: `pl-[52px]` — computed layout alignment: 40px category icon + 12px gap = 52px. Not a scale multiple; justified by icon geometry.
 
 Source: Observed in `transaction-item.tsx` line 64 (existing `min-h-11 min-w-11`); 8-point scale is project default.
 
@@ -55,12 +56,14 @@ Source: Observed in `transaction-item.tsx` line 64 (existing `min-h-11 min-w-11`
 
 | Role | Size | Weight | Line Height | Tailwind class |
 |------|------|--------|-------------|----------------|
-| Body / primary label | 14px (sm) | 500 (medium) | 1.5 | `text-sm font-medium` |
+| Body / primary label | 14px (sm) | 400 (regular) | 1.5 | `text-sm` |
 | Amount (primary) | 14px (sm) | 600 (semibold) | 1.4 | `text-sm font-semibold` |
 | Secondary label / date | 12px (xs) | 400 (regular) | 1.4 | `text-xs text-muted-foreground` |
 | Detail row (expansion) | 12px (xs) | 400 (regular) | 1.4 | `text-xs text-muted-foreground` |
 
 Notes:
+- Exactly 2 weights in use: 400 (regular) and 600 (semibold). No third weight.
+- The amount line uses `font-semibold` (600) to establish hierarchy over the description and secondary labels, which both use the default weight (400).
 - The expanded detail row uses `text-xs text-muted-foreground` — identical to the existing date line. This keeps conversion metadata visually secondary to the primary transaction amount.
 - The amount line stays `text-sm font-semibold` whether showing original-currency or base-currency value. Font size does NOT change for foreign-currency items.
 - No new font sizes introduced — this phase reuses the two sizes already present in `TransactionItem`.
