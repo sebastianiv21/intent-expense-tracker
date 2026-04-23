@@ -231,6 +231,7 @@ export async function loadMoreTransactions(params: {
 export async function exportTransactions(
   params: FilterState,
 ): Promise<TransactionWithCategory[]> {
+  await getAuthenticatedUser(); // auth boundary — consistent with all other actions
   return getTransactions({
     ...params,
     limit: 10_000,
