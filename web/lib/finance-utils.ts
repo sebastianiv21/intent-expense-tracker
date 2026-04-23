@@ -50,8 +50,10 @@ export function getTransactionColor(type: "income" | "expense"): string {
 const formatterCache = new Map<string, Intl.NumberFormat>();
 const compactFormatterCache = new Map<string, Intl.NumberFormat>();
 
+const ZERO_DECIMAL_CURRENCIES = new Set(["COP", "JPY", "KRW", "CLP", "HUF", "TWD"]);
+
 export function getCurrencyDecimals(currency: string): number {
-  return currency === "COP" ? 0 : 2;
+  return ZERO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
 }
 
 function getCurrencyFormatter(currency: string): Intl.NumberFormat {
