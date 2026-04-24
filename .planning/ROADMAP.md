@@ -29,9 +29,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Replace Popover date picker with inline toggled Calendar in transaction-sheet.tsx
-- [ ] 01-02-PLAN.md — Replace Popover date picker with inline toggled Calendar in budgets-page.tsx
-- [ ] 01-03-PLAN.md — Replace both Popover date pickers with inline toggled Calendars in recurring-page.tsx
+- [x] 01-01-PLAN.md — Replace Popover date picker with inline toggled Calendar in transaction-sheet.tsx
+- [x] 01-02-PLAN.md — Replace Popover date picker with inline toggled Calendar in budgets-page.tsx
+- [x] 01-03-PLAN.md — Replace both Popover date pickers with inline toggled Calendars in recurring-page.tsx
 - [ ] 01-04-PLAN.md — Build check and visual verification across all three surfaces
 
 **UI hint**: yes
