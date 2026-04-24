@@ -32,7 +32,7 @@ Plans:
 - [x] 01-01-PLAN.md — Replace Popover date picker with inline toggled Calendar in transaction-sheet.tsx
 - [x] 01-02-PLAN.md — Replace Popover date picker with inline toggled Calendar in budgets-page.tsx
 - [x] 01-03-PLAN.md — Replace both Popover date pickers with inline toggled Calendars in recurring-page.tsx
-- [ ] 01-04-PLAN.md — Build check and visual verification across all three surfaces
+- [x] 01-04-PLAN.md — Build check and visual verification across all three surfaces
 
 **UI hint**: yes
 
