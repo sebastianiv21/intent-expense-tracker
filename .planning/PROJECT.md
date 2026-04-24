@@ -20,9 +20,7 @@ The date picker must fit cleanly within the sheet's available vertical space so 
 
 ### Active
 
-- [ ] **DATE-01**: Date picker calendar fits compactly in the sheet without overflowing or overlapping other elements (mobile and desktop)
-- [ ] **DATE-02**: Selected date row does not render inside the calendar grid rows
-- [ ] **DATE-03**: "Add" / submit button is never obscured by the calendar's last row of days
+_(none — all requirements validated in Phase 1)_
 
 ### Out of Scope
 
@@ -50,7 +48,7 @@ The date picker must fit cleanly within the sheet's available vertical space so 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Compact inline calendar (not popover) | User prefers calendar stays inline, just smaller | — Pending |
+| Compact inline calendar (not popover) | User prefers calendar stays inline, just smaller | Implemented in Phase 1 — inline toggle replacing Popover portal |
 
 ## Evolution
 
@@ -70,4 +68,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-23 after initialization*
+*Last updated: 2026-04-24 — Phase 1 complete*
