@@ -21,11 +21,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
   BUCKET_ORDER,
@@ -440,26 +435,22 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
               </div>
             )}
 
-            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
-                >
-                  <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
-                  {form.date ? (
-                    <span className="text-foreground">
-                      {format(parseISO(form.date), "MMMM d, yyyy")}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[var(--radix-popover-trigger-width)] p-0"
-                align="start"
+            <div>
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
+                onClick={() => setDatePickerOpen((v) => !v)}
               >
+                <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
+                {form.date ? (
+                  <span className="text-foreground">
+                    {format(parseISO(form.date), "MMMM d, yyyy")}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Pick a date</span>
+                )}
+              </Button>
+              {datePickerOpen && (
                 <Calendar
                   mode="single"
                   selected={form.date ? parseISO(form.date) : undefined}
@@ -469,12 +460,17 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                       setDatePickerOpen(false);
                     }
                   }}
-                  className="w-full [--cell-size:2.25rem]"
-                  classNames={{ root: "w-full" }}
+                  className="mt-2 w-full rounded-2xl border border-border bg-background p-2 [--cell-size:1.75rem]"
+                  classNames={{
+                    root: "w-full",
+                    month: "flex w-full flex-col gap-2",
+                    week: "mt-1 flex w-full",
+                  }}
+                  showOutsideDays={false}
                   autoFocus
                 />
-              </PopoverContent>
-            </Popover>
+              )}
+            </div>
 
             <textarea
               placeholder="Add a note..."
