@@ -26,7 +26,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The "Add" submit button is fully visible and not obscured by the last row of calendar days
   4. Calendar cell size is reduced to `--cell-size: 1.75rem` and outside days are hidden (`showOutsideDays={false}`)
   5. The fix is visually verified on both mobile and desktop viewports
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Replace Popover date picker with inline toggled Calendar in transaction-sheet.tsx
+- [ ] 01-02-PLAN.md — Replace Popover date picker with inline toggled Calendar in budgets-page.tsx
+- [ ] 01-03-PLAN.md — Replace both Popover date pickers with inline toggled Calendars in recurring-page.tsx
+- [ ] 01-04-PLAN.md — Build check and visual verification across all three surfaces
+
 **UI hint**: yes
 
 ## Progress
@@ -36,4 +43,4 @@ Phases execute in numeric order: 1
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Calendar Fix | 0/? | Not started | - |
+| 1. Calendar Fix | 0/4 | Not started | - |
