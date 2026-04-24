@@ -902,9 +902,9 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                         ? parseISO(formState.endDate)
                         : undefined
                     }
-                    fromDate={
+                    disabled={
                       formState.startDate
-                        ? parseISO(formState.startDate)
+                        ? { before: parseISO(formState.startDate) }
                         : undefined
                     }
                     onSelect={(day) => {
