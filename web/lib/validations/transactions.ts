@@ -18,8 +18,8 @@ export const createTransactionSchema = z.object({
   description: z.string().max(255).optional(),
   date: dateSchema,
   categoryId: z.string().uuid().optional(),
-  currency: currencyCodeSchema,
-  baseCurrency: currencyCodeSchema,
+  currency: currencyCodeSchema.default("USD"),      // the transaction's currency (D-02)
+  baseCurrency: currencyCodeSchema.default("USD"),  // user's base currency for conversion (Pattern 3)
 });
 
 export const updateTransactionSchema = z.object({

@@ -390,7 +390,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                     fontSizeClass,
                     isIncome ? "text-income" : "text-foreground",
                   )}
-                  value={form.amount}
+                  value={formatAmountDisplay(form.amount, amountDecimalSeparator)}
                   onChange={(e) => {
                     if (getCurrencyDecimals(form.currency) === 0) {
                       // Zero-decimal currency: bypass the heuristic separator
