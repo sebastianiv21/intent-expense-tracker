@@ -7,15 +7,15 @@
 
 ### Date Picker Layout
 
-- [ ] **DATE-01**: Calendar fits compactly inside the "New Awareness" sheet without overflowing or overlapping other elements (mobile and desktop)
-- [ ] **DATE-02**: Selected date label does not render trapped inside the calendar day grid
-- [ ] **DATE-03**: "Add" / submit button is never obscured by the calendar's last row of days
+- [x] **DATE-01**: Calendar fits compactly inside the "New Awareness" sheet without overflowing or overlapping other elements (mobile and desktop)
+- [x] **DATE-02**: Selected date label does not render trapped inside the calendar day grid
+- [x] **DATE-03**: "Add" / submit button is never obscured by the calendar's last row of days
 
 ### Calendar Sizing
 
-- [ ] **SIZE-01**: Calendar cell size uses `--cell-size: 1.75rem` (down from 2.25rem) so the grid fits within the sheet's available height
-- [ ] **SIZE-02**: Calendar inter-row gap is reduced (`mt-1` on week rows, `gap-2` on month wrapper) to reclaim ~52px of vertical space
-- [ ] **SIZE-03**: `showOutsideDays={false}` is set to prevent 6-row months on calendars like April 2026
+- [x] **SIZE-01**: Calendar cell size uses `--cell-size: 1.75rem` (down from 2.25rem) so the grid fits within the sheet's available height
+- [x] **SIZE-02**: Calendar inter-row gap is reduced (`mt-1` on week rows, `gap-2` on month wrapper) to reclaim ~52px of vertical space
+- [x] **SIZE-03**: `showOutsideDays={false}` is set to prevent 6-row months on calendars like April 2026
 
 ## v2 Requirements
 
@@ -35,18 +35,18 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATE-01 | Phase 1 | Pending |
-| DATE-02 | Phase 1 | Pending |
-| DATE-03 | Phase 1 | Pending |
-| SIZE-01 | Phase 1 | Pending |
-| SIZE-02 | Phase 1 | Pending |
-| SIZE-03 | Phase 1 | Pending |
+| DATE-01 | Phase 1 | Complete ✓ |
+| DATE-02 | Phase 1 | Complete ✓ |
+| DATE-03 | Phase 1 | Complete ✓ |
+| SIZE-01 | Phase 1 | Complete ✓ |
+| SIZE-02 | Phase 1 | Complete ✓ |
+| SIZE-03 | Phase 1 | Complete ✓ |
 
 **Coverage:**
 - v1 requirements: 6 total
-- Mapped to phases: 6
+- Completed: 6 ✓
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-23*
-*Last updated: 2026-04-23 after initial definition*
+*Last updated: 2026-04-24 — all v1 requirements completed in Phase 1*
