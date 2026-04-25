@@ -21,6 +21,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
   BUCKET_ORDER,
@@ -567,7 +572,11 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                       if (form.currency !== baseCurrency) {
                         setPreviewRate(null);
                         setPreviewLoading(true);
-                        getExchangeRateForPreview(form.currency, baseCurrency, newDate).then((result) => {
+                        getExchangeRateForPreview(
+                          form.currency,
+                          baseCurrency,
+                          newDate,
+                        ).then((result) => {
                           setPreviewLoading(false);
                           if ("rate" in result) setPreviewRate(result.rate);
                         });
