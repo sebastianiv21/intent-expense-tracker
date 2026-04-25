@@ -1,56 +1,56 @@
 # Retrospective
 
-Living retrospective document. One section per shipped milestone.
+Living record of milestone learnings across the project.
 
 ---
 
-## Milestone: v1.0 — Multi-Currency
+## Milestone: v1.0 — Date Picker Fix
 
-**Shipped:** 2026-04-23
-**Phases:** 4 | **Plans:** 7 | **Tasks:** 11
-**Timeline:** 15 days (2026-04-08 → 2026-04-23) | **Commits:** ~95
+**Shipped:** 2026-04-24
+**Phases:** 1 | **Plans:** 4 | **Tasks:** ~6
+**Duration:** Single session (~5 hours)
+**Commits:** 14 (execution to tag)
 
 ### What Was Built
 
-1. **Schema + provider validation** — fawazahmed0 CDN confirmed for COP support; `currency`, `original_amount`, `exchange_rate` columns added to `transactions`; `exchange_rate_cache` table created with 24h-scoped UNIQUE index; existing rows backfilled to USD @ 1.0
-2. **Exchange rate service** — `getOrFetchExchangeRate(from, to, date)` with cache-first lookup, CDN fallback, same-currency shortcut, and race-safe upsert
-3. **Data layer** — `createTransaction` / `updateTransaction` extended to accept currency, fetch historical rate, persist all 5 multi-currency fields; Zod schemas updated; existing dashboard queries untouched
-4. **Transaction entry UI** — tappable currency badge (COP/USD popover), live conversion preview, per-currency decimal input handling, edit-mode `originalAmount` pre-fill
-5. **Display layer** — `getCurrencyDecimals` hoisted and wired into formatter (0 decimals for COP); `TransactionItem` shows original COP amounts with accent chevron that expands to reveal base amount + rate + date
+- Replaced Radix Popover/Portal date picker with inline toggled shadcn Calendar in `transaction-sheet.tsx` — eliminates overflow/overlap bug in New Awareness sheet
+- Applied same compact inline Calendar fix to `budgets-page.tsx` budget start date picker
+- Fixed both start and end date pickers in `recurring-page.tsx` with independent toggle state; end date `fromDate` → `disabled={{ before }}` (react-day-picker v9 compatibility)
+- Visual verification approved across all three surfaces on mobile + desktop
+- Code review caught deprecated `fromDate` prop — fixed inline before phase close
 
 ### What Worked
 
-- **Strict sequential phase dependencies** — each phase built on a proven foundation; no rework from phase 1 failures rippling forward
-- **Wave-based parallel execution** — Wave 1 and Wave 2 within phases ran in isolated worktrees; no merge conflicts across any wave
-- **Code review gate catching real bugs** — WR-01 (division-by-zero on `invertedRate`), WR-02 (incomplete zero-decimal currency set), WR-03 (compact formatter inconsistency) were all real issues caught before human verification
-- **Plan-level acceptance criteria** — precise grep-verifiable criteria in each PLAN.md made executor agents reliable and verification deterministic
-- **`isForeign` as single control boolean** — all conditional display logic flows from one derived value; easy to reason about and test
+- **Detailed PLAN.md with exact before/after code**: Plans included exact line numbers and the full replacement JSX. Executors made zero wrong edits. No rework.
+- **PATTERNS.md artifact**: Capturing the per-file variation summary (state names, field names, setter patterns, icon colors) in a dedicated patterns file let parallel agents reference the right values without reading each other's work.
+- **Code review gate caught a real bug**: `fromDate` silently ignored at runtime in react-day-picker v9 — code review surfaced it immediately, fixed in the same session before milestone close.
+- **Parallel Wave 1 execution**: Three files modified in parallel across worktrees — no conflicts, clean merge.
 
 ### What Was Inefficient
 
-- **ROADMAP.md progress table not auto-updating** — the progress table showed "Not started" for all phases even after completion; required manual fix at milestone close
-- **`pnpm build` DATABASE_URL error** — executors couldn't run a true build check in the worktree environment (missing env vars); TypeScript `tsc --noEmit` was a reliable substitute but not identical
-- **Phase 1 one-liners missing** — `summary-extract` couldn't parse phases 01-01 and 01-02 SUMMARY.md (different section structure); accomplishments had "One-liner:" blanks in the milestone CLI output
+- **Worktree isolation + bash permissions**: Plans 01-02 and 01-03 agents couldn't commit inside their worktrees due to permission prompts (needed bash to run `git commit`). Orchestrator had to commit the changes manually. Could be avoided by granting bash in project settings or running in sequential mode for simple single-file plans.
+- **01-03 agent committed to main**: The recurring-page agent bypassed worktree isolation and committed directly to main. Didn't cause harm (no conflicts) but violates the intended isolation model.
+- **REQUIREMENTS.md checkboxes not auto-updated**: Phase completion didn't mark requirements `[x]` in REQUIREMENTS.md — had to update manually at milestone close. Traceability table stayed "Pending" throughout.
 
 ### Patterns Established
 
-- `formatCurrency as formatCurrencyRaw` alias pattern for avoiding name collision with `useCurrency().formatCurrency`
-- `ZERO_DECIMAL_CURRENCIES` Set as the single source of truth for ISO zero-decimal currencies (not single-currency `=== "COP"` checks)
-- `isForeign = transaction.currency !== baseCurrency` as the canonical foreign-currency guard throughout UI components
-- Chevron button isolated from outer card — no `onClick` on the card `div`; only the `Button` handles interaction
-- `pl-[52px]` as a documented layout exception (40px icon + 12px gap) for aligning detail rows with description column
+- **Inline Calendar toggle pattern**: `onClick={() => setState((v) => !v)}` on Button, `{state && <Calendar .../>}` rendered below trigger — stateless, no Radix dependency
+- **Compact Calendar props**: `className="mt-2 w-full ... [--cell-size:1.75rem]"` + `classNames={{ root: "w-full", month: "flex w-full flex-col gap-2", week: "mt-1 flex w-full" }}` + `showOutsideDays={false}` — both `className` and `classNames.root` needed for full-width
+- **react-day-picker v9 date restriction**: Use `disabled={{ before: parseISO(date) }}` — `fromDate` exists in types but is a no-op at runtime in v9.14.0
 
 ### Key Lessons
 
-- **Verify env-dependent build checks early** — if the build requires `DATABASE_URL`, set up a `.env.test` stub in the worktree so executors can run `pnpm build` instead of falling back to `tsc --noEmit`
-- **Zero-decimal currency handling is a set, not a comparison** — the moment you add a second zero-decimal currency, `=== "COP"` becomes a latent bug; start with a Set
-- **UI acceptance criteria must be grep-verifiable** — "chevron renders correctly" is unverifiable; "file contains `aria-expanded={expanded}`" is atomic and deterministic
+1. **Always check react-day-picker v9 API**: `fromDate`/`toDate` are deprecated stubs — use `disabled` prop for day-cell restrictions, `startMonth`/`endMonth` for navigation constraints
+2. **Specify bash permissions upfront for worktree agents**: Agents that need `git commit` inside a worktree should be granted bash access before spawning — saves orchestrator cleanup
+3. **PATTERNS.md pays off for multi-file identical fixes**: When the same structural change applies to N files with small variations, a patterns document is worth creating in the plan phase
 
 ### Cost Observations
 
-- Model: claude-sonnet-4-6 throughout
-- Sessions: multiple across 15 days
-- Notable: wave-based worktree isolation added overhead per wave but prevented all merge conflicts
+- Single session, one milestone, one phase
+- Wave 1: 3 parallel executor agents (~2 min each)
+- Code review: 1 agent (~2.5 min)
+- Verifier: 2 runs (~2 min each, second after gap fix)
+- Total subagent calls: ~8 agents
 
 ---
 
@@ -58,10 +58,9 @@ Living retrospective document. One section per shipped milestone.
 
 | Metric | v1.0 |
 |--------|------|
-| Phases | 4 |
-| Plans | 7 |
-| Timeline (days) | 15 |
-| Commits | ~95 |
-| Code review issues caught | 5 (0 critical, 3 warning, 2 info) |
-| Verification gaps (human) | 4 (all approved) |
-| Rework cycles | 0 |
+| Phases | 1 |
+| Plans | 4 |
+| Rework cycles | 1 (fromDate gap closure) |
+| Verification score | 11/11 |
+| Code review critical findings | 1 (resolved same session) |
+| Session count | 1 |

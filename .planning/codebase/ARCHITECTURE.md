@@ -1,157 +1,183 @@
 # Architecture
 
-**Analysis Date:** 2026-04-19
+**Analysis Date:** 2026-04-23
 
 ## Pattern Overview
 
-**Overall:** Next.js App Router monolith with a layered server/client split
+**Overall:** Next.js App Router with Server Components + Server Actions
 
 **Key Characteristics:**
-- Single `web/` package — no monorepo, no separate API service
-- React Server Components (RSC) handle data fetching directly on the server
-- Next.js Server Actions (`"use server"`) are used for all mutations
-- Client components are isolated to interactive UI only (forms, sheets, context providers)
-- No REST API layer beyond the auth handler — data access goes Server Component → query → Drizzle → Neon
+- Pages are React Server Components that fetch data directly (no API layer for reads)
+- Mutations use Next.js Server Actions with Zod validation
+- Database access is direct via Drizzle ORM — no repository abstraction layer
+- Auth is session-based, checked in layouts and query helpers
+- The app is a single Next.js application in `web/` — no separate backend service
 
 ## Layers
 
-**Route Layer (Pages):**
-- Purpose: Render pages by calling queries and composing server components
-- Location: `web/app/(app)/` and `web/app/(auth)/`
-- Contains: Async server components that fetch data with `await`
-- Depends on: `lib/queries/`, `components/`
+**Routing / Pages Layer:**
+- Purpose: Renders UI, orchestrates Server Component data fetching
+- Location: `web/app/`
+- Contains: `page.tsx`, `layout.tsx`, `loading.tsx` files
+- Depends on: queries (read), components (render), actions (indirectly via client components)
 - Used by: Next.js router
 
-**Query Layer:**
-- Purpose: Read data from the database, scoped to the authenticated user
-- Location: `web/lib/queries/`
-- Contains: Async functions that call `db` (Drizzle) directly
-- Depends on: `lib/db.ts`, `lib/schema.ts`, `lib/queries/auth.ts`
-- Used by: Server components (pages and layouts)
-
-**Action Layer:**
-- Purpose: Handle all mutations (create, update, delete) with validation and cache revalidation
-- Location: `web/lib/actions/`
-- Contains: `"use server"` functions that validate input with Zod, write to DB via Drizzle, and call `revalidatePath`
-- Depends on: `lib/db.ts`, `lib/schema.ts`, `lib/validations/`, `lib/queries/auth.ts`
-- Used by: Client components (forms, sheets)
-
 **Component Layer:**
-- Purpose: Reusable UI, both server and client
+- Purpose: Reusable UI — both server and client components
 - Location: `web/components/`
-- Contains: Feature components (page-level views, sheets, cards) and primitives (`ui/`)
-- Depends on: `types/`, `lib/auth-client.ts`, actions (for mutation callbacks)
-- Used by: Pages and layouts
+- Contains: Feature page components (e.g., `budgets-page.tsx`), shared UI primitives (`ui/`), skeleton loaders (`skeletons/`)
+- Depends on: types, lib/finance-utils, lib/actions (for mutations), Context providers
+- Used by: pages
 
-**Database Layer:**
-- Purpose: Schema definition, migration files, and DB client
-- Location: `web/lib/schema.ts`, `web/lib/db.ts`, `web/drizzle/`
-- Contains: Drizzle ORM table definitions and relations; Neon serverless pool connection
-- Depends on: `@neondatabase/serverless`, `drizzle-orm`
+**Queries Layer (read-only data access):**
+- Purpose: Encapsulates all DB read operations; always scoped to authenticated user
+- Location: `web/lib/queries/`
+- Contains: Per-entity query functions (`transactions.ts`, `budgets.ts`, `dashboard.ts`, etc.)
+- Depends on: `lib/db.ts`, `lib/schema.ts`, `lib/queries/auth.ts`
+- Used by: pages (Server Components), server actions (when they need to read after write)
+
+**Actions Layer (write/mutation):**
+- Purpose: Next.js Server Actions for create/update/delete; validated via Zod before DB write
+- Location: `web/lib/actions/`
+- Contains: Per-entity mutation files (`transactions.ts`, `budgets.ts`, `categories.ts`, `recurring.ts`, `financial-profile.ts`)
+- Depends on: `lib/db.ts`, `lib/schema.ts`, `lib/validations/`, `lib/queries/auth.ts`
+- Used by: Client components (`"use client"`)
+
+**Validation Layer:**
+- Purpose: Zod schemas defining input shapes for all mutations
+- Location: `web/lib/validations/`
+- Contains: Per-entity schema files exporting `createXSchema`, `updateXSchema`, and inferred TypeScript types
+- Depends on: nothing internal
+- Used by: `lib/actions/`
+
+**Data / Schema Layer:**
+- Purpose: Single source of truth for the database schema and Drizzle relations
+- Location: `web/lib/schema.ts`
+- Contains: All `pgTable` definitions and `relations`
+- Depends on: nothing internal
+- Used by: `lib/db.ts`, all queries and actions
+
+**Types Layer:**
+- Purpose: Shared TypeScript domain types used across the full stack
+- Location: `web/types/index.ts`
+- Contains: Entity types (`Transaction`, `Category`, `Budget`, etc.), relation composites (`TransactionWithCategory`), `ActionResult<T>`, `FilterState`
+- Depends on: nothing
+- Used by: queries, actions, components, pages
+
+**Utility Layer:**
+- Purpose: Pure functions for finance logic, currency formatting, amount parsing
+- Location: `web/lib/finance-utils.ts`, `web/lib/utils.ts`, `web/lib/currencies.ts`
+- Contains: `formatCurrency`, `formatCurrencyCompact`, `parseAmountInput`, `formatAmountDisplay`, `calculateBucketTarget`, `BUCKET_DEFINITIONS`
+- Depends on: nothing internal
+- Used by: components, queries
 
 ## Data Flow
 
-**Read (Server Component):**
-1. Next.js renders a page as an async server component
-2. Page calls a query function from `lib/queries/` (e.g., `getDashboardData()`)
-3. Query calls `getAuthenticatedUser()` to get `userId` from the session
-4. Query executes Drizzle SQL against the Neon PostgreSQL DB
-5. Data is passed as props to child components for rendering
+**Read Flow (Server Component page):**
 
-**Mutation (Client → Server Action):**
-1. User interacts with a client component (e.g., transaction form in a Sheet)
-2. Client component calls a Server Action imported from `lib/actions/`
-3. Server Action validates input with Zod schema
-4. On success: writes to DB via Drizzle, calls `revalidatePath` to bust RSC cache
-5. Returns `ActionResult<T>` (discriminated union `{ success: true, data }` or `{ success: false, error }`)
-6. Client component reads the result and shows a toast or error message
+1. Next.js renders the page Server Component
+2. Page calls a query function from `lib/queries/` (e.g., `getDashboardData()`)
+3. Query calls `getAuthenticatedUser()` which reads the session via `auth.api.getSession()`
+4. Query runs Drizzle ORM against Neon Postgres via `lib/db.ts`
+5. Typed data is passed as props to child components for rendering
+
+**Mutation Flow (Client Component → Server Action):**
+
+1. User interacts with a client component (e.g., `transaction-sheet.tsx`)
+2. Component calls a server action (e.g., `createTransaction(formData)`)
+3. Server action calls `getAuthenticatedUser()` for auth + `userId` scope
+4. Server action parses and validates input with Zod `safeParse`
+5. On success, runs Drizzle insert/update/delete returning the record
+6. Calls `revalidatePath()` on affected routes to bust Next.js cache
+7. Returns `ActionResult<T>` (`{ success: true, data }` or `{ success: false, error }`)
+8. Client component shows a toast (via `sonner`) and updates UI state
+
+**Auth Flow:**
+
+1. Users sign in via email/password or Google OAuth at `/(auth)/login`
+2. After sign-in, redirected to `/(app)`
+3. New users are redirected to `/onboarding` if no `financialProfile` row exists
+4. `app/(app)/layout.tsx` enforces auth and profile existence before rendering any app page
+5. All queries and actions re-validate the session via `getAuthenticatedUser()`
 
 **State Management:**
-- Server state: owned by RSC cache, invalidated via `revalidatePath`
-- Client state: React `useState` and React Context (e.g., `TransactionSheetContext`)
-- No global client state library (no Zustand, Redux, etc.)
-- Currency is propagated via `CurrencyProvider` context from the `(app)` layout
+- Global UI state: React Context (`TransactionSheetContext`, `CurrencyContext`)
+- Server state: Next.js cache invalidated via `revalidatePath()`
+- No client-side state manager (no Redux, Zustand, etc.)
 
 ## Key Abstractions
 
-**`ActionResult<T>`:**
-- Purpose: Typed discriminated union return from every Server Action
-- Definition: `web/types/index.ts`
-- Pattern: `{ success: true; data?: T } | { success: false; error: string; issues?: ZodIssue[] }`
-
 **`getAuthenticatedUser()`:**
-- Purpose: Centralized session check used by every query and action
-- Location: `web/lib/queries/auth.ts`
-- Pattern: Throws or redirects if no session; returns `{ userId, name }`
+- Purpose: Centralizes session extraction and redirects unauthenticated callers to `/login`
+- File: `web/lib/queries/auth.ts`
+- Pattern: Called at the top of every query and server action to get `userId`
+
+**`ActionResult<T>`:**
+- Purpose: Discriminated union return type for all server actions
+- File: `web/types/index.ts`
+- Pattern: `{ success: true, data?: T } | { success: false, error: string, issues?: ZodIssue[] }`
 
 **`TransactionSheetContext`:**
-- Purpose: Global client-side state for the create/edit transaction sheet
-- Location: `web/components/transaction-sheet-context.tsx`
-- Pattern: Context + `useState`; exposes `openCreate()`, `openEdit(tx)`, `close()`
+- Purpose: Global state for the create/edit transaction sheet modal shared across pages
+- Files: `web/components/transaction-sheet-context.tsx`, `web/components/transaction-sheet.tsx`
+- Pattern: React Context with `openCreate()`, `openEdit(transaction)`, `close()` methods
 
-**`AppShell`:**
-- Purpose: Shared authenticated app chrome wrapping all `(app)` pages
-- Location: `web/components/app-shell.tsx`
-- Contains: `SideNav` (desktop), `BottomNav` (mobile), `TransactionSheet`, `TransactionSheetProvider`
+**`CurrencyProvider` / `useCurrency()`:**
+- Purpose: Propagates user's preferred currency to all client components that format amounts
+- Files: `web/components/currency-provider.tsx`
+- Pattern: React Context wrapping the entire `(app)` layout; provides bound `formatCurrency` and `formatCurrencyCompact`
 
-**`finance-utils`:**
-- Purpose: Domain logic for 50/30/20 budget allocation calculations
-- Location: `web/lib/finance-utils.ts`
-- Contains: `BUCKET_DEFINITIONS`, `calculateBucketTarget`, `calculatePercentage`, amount formatting/parsing utilities
+**50/30/20 Bucket System:**
+- Purpose: Categorizes expenses into Needs/Wants/Future allocation buckets
+- Files: `web/lib/finance-utils.ts` (constants + math), `web/lib/schema.ts` (`allocationBucketEnum`)
+- Pattern: Categories have an optional `allocationBucket` field; dashboard aggregates spending per bucket vs. targets derived from `financialProfile`
 
-## Auth Architecture
+## Entry Points
 
-**Provider:** `better-auth` (`web/lib/auth.ts`)
-- Supports email/password and Google OAuth
-- Account linking enabled for Google
-- DB adapter: Drizzle against Neon, using `user`, `session`, `account`, `verification` tables
+**Root Layout:**
+- Location: `web/app/layout.tsx`
+- Triggers: Every page request
+- Responsibilities: Font setup, global CSS, Sonner `<Toaster>` provider
 
-**Server-side session check:**
-- `auth.api.getSession({ headers })` called in server components and layouts
-- `(app)` layout (`web/app/(app)/layout.tsx`) redirects to `/login` if no session, to `/onboarding` if no `financialProfile`
+**App Layout (authenticated):**
+- Location: `web/app/(app)/layout.tsx`
+- Triggers: Any route under `/(app)/`
+- Responsibilities: Session check → redirect to `/login`; profile check → redirect to `/onboarding`; triggers `processRecurringTransactions()`; provides `CurrencyProvider` and `AppShell`
 
-**Client-side auth:**
-- `authClient` from `web/lib/auth-client.ts` (uses `better-auth/react`)
-- Exposes `signIn`, `signUp`, `signOut`, `useSession`, `getSession`
-- Login and register pages are client components that call `signIn.email()` and `signIn.social()`
+**Auth Layout:**
+- Location: `web/app/(auth)/layout.tsx`
+- Triggers: Routes `/login`, `/register`, `/onboarding`
+- Responsibilities: Centered single-column layout wrapper
 
-**Auth API route:**
-- `web/app/api/auth/[...all]/route.ts` — delegates all auth HTTP traffic to `better-auth` via `toNextJsHandler`
+**Auth API Route:**
+- Location: `web/app/api/auth/[...all]/route.ts`
+- Triggers: All better-auth HTTP requests (sign-in, sign-up, OAuth callback, session)
+- Responsibilities: Proxies to `better-auth` handler via `toNextJsHandler(auth)`
 
-**Post-registration hook:**
-- On user creation, `better-auth` `databaseHooks.user.create.after` seeds default categories for the new user
+**Dashboard Page:**
+- Location: `web/app/(app)/page.tsx`
+- Triggers: GET `/`
+- Responsibilities: Parallel-fetches dashboard data; renders balance card, bucket summaries, recent transactions, upcoming recurring
 
-## Database Schema Overview
+## Error Handling
 
-All tables are in PostgreSQL (Neon). Drizzle ORM is used for all access. Schema defined in `web/lib/schema.ts`.
+**Strategy:** Layered — validation errors surfaced to client; DB errors logged and returned as generic messages
 
-**Core tables:**
-- `user` — auth identity (id, name, email, emailVerified, image)
-- `session` — active sessions with token and expiry; FK → user
-- `account` — OAuth provider accounts; FK → user
-- `verification` — email/token verification records
+**Patterns:**
+- Server actions return `ActionResult<T>` — never throw to the client
+- All DB writes wrapped in `try/catch`; errors logged with `console.error` and returned as `{ success: false, error: string }`
+- `revalidatePath()` is called only after confirmed successful DB writes
+- `processRecurringTransactions()` in the app layout is wrapped in try/catch so failures do not block page render
+- Queries use `getAuthenticatedUser()` which calls `redirect()` on auth failure (does not return an error value)
 
-**App tables:**
-- `financial_profile` — per-user 50/30/20 allocation percentages and monthly income target; PK = userId
-- `categories` — user-defined income/expense categories with optional `allocation_bucket` (needs/wants/future) and emoji icon
-- `transactions` — individual income or expense entries with amount, date, type, optional categoryId
-- `budgets` — spending limits per category, monthly or weekly, with a start date
-- `recurring_transactions` — recurring income/expense templates with frequency, nextDueDate, lastGeneratedDate, isActive flag
+## Cross-Cutting Concerns
 
-**Enums:**
-- `transaction_type`: `expense | income`
-- `budget_period`: `monthly | weekly`
-- `allocation_bucket`: `needs | wants | future`
-- `recurrence_frequency`: `daily | weekly | biweekly | monthly | quarterly | yearly`
+**Logging:** `console.error` only, used in server actions and `lib/auth.ts` hooks. No structured logging library.
 
-**Key relations:**
-- user → financialProfile (one-to-one)
-- user → categories, transactions, budgets, recurringTransactions (one-to-many)
-- categories → transactions, budgets, recurringTransactions (one-to-many, nullable FK with set-null on delete)
+**Validation:** Zod schemas in `lib/validations/` for all mutations; schema types are exported and used by actions. No runtime validation on read queries.
 
-**Migrations:**
-- Located in `web/drizzle/` as numbered SQL files (`0000_lyrical_demogoblin.sql`, etc.)
+**Authentication:** `better-auth` with Drizzle adapter; session read via `auth.api.getSession({ headers })` in both layouts and the `getAuthenticatedUser()` helper. Google OAuth and email/password both supported.
 
 ---
 
-*Architecture analysis: 2026-04-19*
+*Architecture analysis: 2026-04-23*

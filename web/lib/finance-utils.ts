@@ -50,21 +50,14 @@ export function getTransactionColor(type: "income" | "expense"): string {
 const formatterCache = new Map<string, Intl.NumberFormat>();
 const compactFormatterCache = new Map<string, Intl.NumberFormat>();
 
-const ZERO_DECIMAL_CURRENCIES = new Set(["COP", "JPY", "KRW", "CLP", "HUF", "TWD"]);
-
-export function getCurrencyDecimals(currency: string): number {
-  return ZERO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
-}
-
 function getCurrencyFormatter(currency: string): Intl.NumberFormat {
   let formatter = formatterCache.get(currency);
   if (!formatter) {
-    const decimals = getCurrencyDecimals(currency);
     formatter = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
     formatterCache.set(currency, formatter);
   }
@@ -74,13 +67,11 @@ function getCurrencyFormatter(currency: string): Intl.NumberFormat {
 function getCompactCurrencyFormatter(currency: string): Intl.NumberFormat {
   let formatter = compactFormatterCache.get(currency);
   if (!formatter) {
-    const decimals = getCurrencyDecimals(currency);
     formatter = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
       notation: "compact",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: decimals === 0 ? 0 : 1,
+      maximumFractionDigits: 1,
     });
     compactFormatterCache.set(currency, formatter);
   }
@@ -123,7 +114,7 @@ function inferDecimalSeparator(input: string): AmountDecimalSeparator {
   if (matches.length === 1) {
     const match = matches[0];
     const digitsAfter = input.length - (match.index ?? 0) - 1;
-    if (digitsAfter >= 3) return null; // 3+ digits after separator = thousands, not decimal
+    if (digitsAfter === 3) return null;
     return match[0] as "." | ",";
   }
 

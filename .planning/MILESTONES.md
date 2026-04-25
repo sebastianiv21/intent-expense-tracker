@@ -1,17 +1,14 @@
 # Milestones
 
-## v1.0 Multi-Currency (Shipped: 2026-04-23)
+## v1.0 Date Picker Fix (Shipped: 2026-04-25)
 
-**Phases completed:** 4 phases, 7 plans, 11 tasks
+**Phases completed:** 1 phases, 4 plans, 5 tasks
 
 **Key accomplishments:**
 
-- One-liner:
-- One-liner:
-- Cache-first exchange rate lookup against Neon's exchange_rate_cache table, falling back to fawazahmed0 CDN on miss, with same-currency shortcut and race-safe insert
-- Multi-currency persistence wired: createTransaction fetches live exchange rates and stores originalAmount, exchangeRate, currency, and base-converted amount; updateTransaction conditionally re-fetches on currency/date change
-- Multi-currency UI wired into TransactionSheet: tappable currency badge (USD/COP popover), live conversion preview, per-currency decimal handling, edit-mode originalAmount pre-fill, and currency+baseCurrency in submit payload
-- `getCurrencyFormatter` now delegates decimal places to `getCurrencyDecimals(currency)`, making COP format as `COL$50,000` (0 decimals) while USD remains `$1.00` (2 decimals)
-- TransactionItem now shows COP transactions in original pesos (e.g., -COL$50,000) with an accent-colored chevron that expands to reveal base-amount, inverted rate, and date; USD transactions are visually unchanged
+- Radix Popover/Portal date picker replaced with inline toggled shadcn Calendar using compact sizing ([--cell-size:1.75rem], showOutsideDays=false) to fix calendar overflow/overlap bug in the New Awareness transaction sheet
+- Replaced Radix Popover portal date picker in budgets-page.tsx with toggled inline Calendar using compact sizing ([--cell-size:1.75rem])
+- Replaced both Radix Popover portal date pickers in recurring-page.tsx with toggled inline Calendars using compact sizing ([--cell-size:1.75rem]) and independent toggle state per picker
+- Human confirmed inline calendar renders correctly on all three surfaces (mobile + desktop)
 
 ---

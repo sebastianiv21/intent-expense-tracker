@@ -10,7 +10,6 @@ import {
   createTransactionSchema,
   updateTransactionSchema,
 } from "@/lib/validations/transactions";
-import { getOrFetchExchangeRate } from "@/lib/exchange-rates";
 import type {
   ActionResult,
   FilterState,
@@ -34,28 +33,14 @@ export async function createTransaction(
     };
   }
 
-  const { amount, type, description, date, categoryId, currency, baseCurrency } = parsed.data;
-
-  // Fetch exchange rate — throws on failure (D-01), returns 1.0 for same-currency (D-06)
-  let exchangeRate: number;
-  try {
-    exchangeRate = await getOrFetchExchangeRate(currency, baseCurrency, date);
-  } catch {
-    return { success: false, error: "Couldn't fetch exchange rate — please try again." };
-  }
-
-  const originalAmount = amount;
-  const convertedAmount = originalAmount * exchangeRate;
+  const { amount, type, description, date, categoryId } = parsed.data;
 
   try {
     const result = await db
       .insert(transactions)
       .values({
         userId,
-        amount: convertedAmount.toFixed(2),        // base-currency value (DATA-03: all dashboard queries read this)
-        originalAmount: originalAmount.toFixed(2),  // as entered in transaction currency
-        exchangeRate: exchangeRate.toString(),       // full precision — never toFixed() for rates (numeric(20,10))
-        currency,
+        amount: amount.toFixed(2),
         type,
         description: description ?? null,
         date,
@@ -88,55 +73,20 @@ export async function updateTransaction(
     };
   }
 
-  // Pre-read required to detect currency/date change (D-05)
-  // Single row lookup guarded by userId — consistent with auth pattern
-  const existing = await db
-    .select()
-    .from(transactions)
-    .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
-    .limit(1);
+  const updateValues: Record<string, string | null> = {};
 
-  if (!existing[0]) {
-    return { success: false, error: "Transaction not found" };
+  if (parsed.data.amount !== undefined) {
+    updateValues.amount = parsed.data.amount.toFixed(2);
   }
-
-  const newCurrency = parsed.data.currency ?? existing[0].currency;
-  const newDate = parsed.data.date ?? existing[0].date;
-  const currencyChanged = newCurrency !== existing[0].currency;
-  const dateChanged = newDate !== existing[0].date;
-
-  // Use Record with broad value type to accommodate number fields alongside strings
-  const updateValues: Record<string, string | number | null> = {};
-
-  if (currencyChanged || dateChanged) {
-    // Re-fetch rate when currency or date changes (D-05)
-    // baseCurrency is required in updateTransactionSchema — always the user's base currency
-    const baseCurrency = parsed.data.baseCurrency;
-    let exchangeRate: number;
-    try {
-      exchangeRate = await getOrFetchExchangeRate(newCurrency, baseCurrency, newDate);
-    } catch {
-      return { success: false, error: "Couldn't fetch exchange rate — please try again." };
-    }
-    // CRITICAL: Drizzle numeric → string at runtime; always Number() before arithmetic
-    const originalAmount = parsed.data.amount ?? Number(existing[0].originalAmount);
-    updateValues.currency = newCurrency;
-    updateValues.exchangeRate = exchangeRate.toString();
-    updateValues.originalAmount = originalAmount.toFixed(2);
-    updateValues.amount = (originalAmount * exchangeRate).toFixed(2);
-  } else if (parsed.data.amount !== undefined) {
-    // Amount changed but not currency/date — preserve stored rate, recompute base amount
-    const rate = Number(existing[0].exchangeRate);
-    updateValues.originalAmount = parsed.data.amount.toFixed(2);
-    updateValues.amount = (parsed.data.amount * rate).toFixed(2);
+  if (parsed.data.type !== undefined) {
+    updateValues.type = parsed.data.type;
   }
-
-  // Remaining non-currency fields follow existing pattern
-  if (parsed.data.type !== undefined) updateValues.type = parsed.data.type;
   if (parsed.data.description !== undefined) {
     updateValues.description = parsed.data.description ?? null;
   }
-  if (parsed.data.date !== undefined) updateValues.date = parsed.data.date;
+  if (parsed.data.date !== undefined) {
+    updateValues.date = parsed.data.date;
+  }
   if (parsed.data.categoryId !== undefined) {
     updateValues.categoryId = parsed.data.categoryId;
   }
@@ -159,26 +109,6 @@ export async function updateTransaction(
   } catch (err) {
     console.error("Failed to update transaction:", err);
     return { success: false, error: "Failed to update transaction" };
-  }
-}
-
-/**
- * Thin server action wrapper over getOrFetchExchangeRate.
- * Used by TransactionSheet to fetch the rate on currency selection for the conversion preview.
- * Returns { rate } on success or { error } on failure — does NOT use ActionResult<T>
- * because this is a query helper, not a mutation.
- */
-export async function getExchangeRateForPreview(
-  from: string,
-  to: string,
-  date: string,
-): Promise<{ rate: number } | { error: string }> {
-  await getAuthenticatedUser(); // consistent with all existing actions
-  try {
-    const rate = await getOrFetchExchangeRate(from, to, date);
-    return { rate };
-  } catch {
-    return { error: "Couldn't fetch exchange rate" };
   }
 }
 
@@ -232,7 +162,6 @@ export async function loadMoreTransactions(params: {
 export async function exportTransactions(
   params: FilterState,
 ): Promise<TransactionWithCategory[]> {
-  await getAuthenticatedUser(); // auth boundary — consistent with all other actions
   return getTransactions({
     ...params,
     limit: 10_000,

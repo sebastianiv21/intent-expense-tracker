@@ -1,165 +1,193 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-04-19
+**Analysis Date:** 2026-04-23
+
+## Tech Debt
+
+**BUCKET_META constant duplicated across four components:**
+- Issue: The `BUCKET_META` record mapping `AllocationBucket` to icon, color, border class, and text class is defined separately in four files with slightly different values.
+- Files: `web/components/transaction-sheet.tsx:45`, `web/components/budgets-page.tsx:73`, `web/components/recurring-page.tsx:92`, and the `wants` color differs (`#c4714a` vs `#c97a5a` between files).
+- Impact: Color inconsistency in UI; any brand color change requires editing four locations.
+- Fix approach: Extract to `lib/finance-utils.ts` or a dedicated `lib/bucket-meta.ts` constant and import everywhere.
+
+**`getAmountFontSize` function duplicated in five places:**
+- Issue: An identical helper mapping digit count to Tailwind font-size class is copy-pasted in every component that renders an amount input.
+- Files: `web/components/transaction-sheet.tsx:80`, `web/components/budgets-page.tsx:106`, `web/components/recurring-page.tsx:125`, `web/components/financial-profile-sheet.tsx:29`, `web/app/(auth)/onboarding/page.tsx:44`.
+- Impact: Maintenance burden; any resize threshold change requires five edits.
+- Fix approach: Move to `lib/finance-utils.ts` and export as `getAmountFontSize`.
+
+**Pervasive unsafe type casts from Drizzle query results:**
+- Issue: Every query and action casts raw Drizzle `returning()` results directly to domain types using `as Transaction`, `as Category`, etc., bypassing type safety.
+- Files: All `lib/queries/*.ts` and `lib/actions/*.ts` files — e.g., `web/lib/queries/dashboard.ts:207-212`, `web/lib/actions/transactions.ts:54`, `web/lib/queries/budgets.ts:23-24`.
+- Impact: Silent runtime mismatches if Drizzle schema diverges from `@/types`; no compile-time protection against missing columns.
+- Fix approach: Use `$inferSelect` from Drizzle table definitions instead of hand-authored types, or at minimum add runtime validation at the query boundary.
+
+**`updateTransaction` uses `Record<string, string | null>` for update payload:**
+- Issue: In `lib/actions/transactions.ts:76` and similar update actions (budgets, categories, recurring), update values are built into a loosely-typed `Record<string, string | null>` that bypasses Drizzle's column type system.
+- Files: `web/lib/actions/transactions.ts:76`, `web/lib/actions/recurring.ts:99`, `web/lib/actions/budgets.ts:67`, `web/lib/actions/categories.ts:68`.
+- Impact: Type errors in update payloads are not caught at compile time; boolean fields like `isActive` require the `string | boolean | null` union hack in recurring actions.
+- Fix approach: Build typed update objects using `Partial<typeof table.$inferInsert>` or Drizzle's `.set()` method directly.
+
+**`next.config.ts` is effectively empty:**
+- Issue: The Next.js config at `web/next.config.ts` has no meaningful options (no `headers`, no `rewrites`, no `images` config).
+- Files: `web/next.config.ts`.
+- Impact: Missing security headers (CSP, HSTS, X-Frame-Options, etc.); no cache-control tuning.
+- Fix approach: Add security headers via `next.config.ts` `headers()` function.
+
+**`BUCKET_META` icon values are hardcoded Lucide component references:**
+- Issue: `BUCKET_META` stores icon components as `typeof Home` typed values. This creates a hard coupling between display logic and component identity inside both `transaction-sheet.tsx` and `budgets-page.tsx`.
+- Files: `web/components/transaction-sheet.tsx:45`, `web/components/budgets-page.tsx:73`, `web/components/recurring-page.tsx:92`.
+- Impact: Circular dependency risk; cannot serialize or lazily import buckets.
+- Fix approach: Store icon name strings and resolve components at render time, or split `BUCKET_META` into data-only and render-only layers.
+
+## Known Bugs
+
+**Weekly budgets compared against full-month spending:**
+- Symptoms: When a budget has `period = "weekly"`, the spending query in `getBudgetsWithSpending` fetches all transactions for the selected calendar month, not the current week. The `period` field is stored but never used to slice the date range.
+- Files: `web/lib/queries/budgets.ts:27-62`.
+- Trigger: Create a weekly budget; the "spent" figure will include the entire month.
+- Workaround: None. The period selector in the UI appears to work but has no backend effect on the comparison window.
+
+**Google OAuth new-user flow may skip onboarding:**
+- Symptoms: After Google sign-in, the callback URL is hardcoded to `/onboarding`. If a returning user signs in via Google again (account linking), they are redirected to `/onboarding` even if a `financial_profile` already exists. The `AppLayout` guard then immediately redirects them to `/`.
+- Files: `web/app/(auth)/register/page.tsx:39`, `web/app/(app)/layout.tsx:32-34`.
+- Trigger: Existing Google-auth user signs in via the register page.
+- Workaround: The double redirect is harmless but causes a flash.
+
+**`processRecurringTransactions` silently eats errors at the layout level:**
+- Symptoms: If recurring transaction processing fails (e.g., DB error mid-loop), `generated` returns `0` and nothing is surfaced to the user. Partially processed batches leave `nextDueDate` advanced on some records but not others.
+- Files: `web/app/(app)/layout.tsx:37-41`, `web/lib/actions/recurring.ts:243-246`.
+- Trigger: DB connectivity issues during layout render.
+- Workaround: Each iteration is wrapped in a DB transaction, so individual failures are atomic, but the outer loop failure leaves the batch incomplete.
+
+**`exportTransactions` hardcodes a 10,000 row limit with no user feedback:**
+- Symptoms: If a user has more than 10,000 transactions, the export silently truncates.
+- Files: `web/lib/actions/transactions.ts:163-170`.
+- Trigger: Large account with > 10,000 transactions.
+- Workaround: None visible to the user.
+
+## Security Considerations
+
+**Google OAuth credentials use non-null assertion without runtime guard:**
+- Risk: `process.env.GOOGLE_CLIENT_ID!` and `process.env.GOOGLE_CLIENT_SECRET!` in `lib/auth.ts:22-23` will produce a runtime `undefined` value passed to `better-auth` rather than throwing a clear startup error if the env vars are absent.
+- Files: `web/lib/auth.ts:22-23`.
+- Current mitigation: `drizzle.config.ts` and `db.ts` do throw on missing `DATABASE_URL`, setting a partial precedent.
+- Recommendations: Add explicit startup guards for `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` matching the `DATABASE_URL` pattern.
+
+**No HTTP security headers configured:**
+- Risk: Missing Content-Security-Policy, X-Frame-Options, Referrer-Policy, and Permissions-Policy headers. A Next.js app with a financial context is a higher-value target for clickjacking.
+- Files: `web/next.config.ts`.
+- Current mitigation: None. Neon and better-auth provide their own session/token security.
+- Recommendations: Add security headers via the `headers()` export in `next.config.ts`.
+
+**Password policy enforced only via HTML `minLength` attribute:**
+- Risk: The register form uses `minLength={8}` on the password `<input>`, but there is no server-side or Zod-level password length/complexity validation. The HTML attribute is easily bypassed.
+- Files: `web/app/(auth)/register/page.tsx:111`.
+- Current mitigation: `better-auth` may enforce its own minimum server-side (unverified in current config).
+- Recommendations: Add explicit password validation in server-side signup logic or configure `better-auth` password rules.
+
+**`categoryId` ownership not verified on transaction creation:**
+- Risk: When creating or updating a transaction, the `categoryId` is validated as a valid UUID format but is not checked to confirm it belongs to the authenticated user. A user could assign a `categoryId` from another user's account.
+- Files: `web/lib/actions/transactions.ts:22-58`, `web/lib/actions/recurring.ts:32-81`, `web/lib/actions/budgets.ts:14-49`.
+- Current mitigation: Category data is never returned for unauthorized users in queries (all queries filter by `userId`), so the impact is limited to data tagging, not data exposure.
+- Recommendations: Add a `db.select` ownership check before inserting with a foreign `categoryId`.
+
+## Performance Bottlenecks
+
+**`processRecurringTransactions` runs synchronously on every page load in AppLayout:**
+- Problem: Every request to any authenticated route triggers a sequential DB read + N×(insert + update) loop inside `web/app/(app)/layout.tsx:38`. For users with many overdue recurring items, this adds unbounded latency to every navigation.
+- Files: `web/app/(app)/layout.tsx:37-41`, `web/lib/actions/recurring.ts:183-247`.
+- Cause: Processing is triggered in the layout render rather than a background job or cron.
+- Improvement path: Move to a dedicated cron/webhook endpoint (e.g., Vercel Cron) called on a schedule, not on user requests.
+
+**Dashboard runs 5 parallel DB queries every render (no caching):**
+- Problem: `getDashboardData` fires 5 concurrent queries on every page load with no Next.js `cache()` wrapper or `unstable_cache`.
+- Files: `web/lib/queries/dashboard.ts:71-139`.
+- Cause: Server Components are not cached by default in Next.js app router when using dynamic data.
+- Improvement path: Wrap in `unstable_cache` with a per-user tag; invalidate via `revalidateTag` from server actions.
+
+**No compound index on `(userId, date)` for transactions:**
+- Problem: Queries filtering by `userId` AND `date` range (dashboard, insights) use two separate single-column indexes: `transactions_userId_idx` and `transactions_date_idx`. PostgreSQL will only use one.
+- Files: `web/lib/schema.ts:183-185`.
+- Cause: Indexes were added individually rather than as a covering composite.
+- Improvement path: Add `index("transactions_userId_date_idx").on(table.userId, table.date)` in schema and generate a migration.
+
+**No compound index on `(userId, isActive, nextDueDate)` for recurring:**
+- Problem: `processRecurringTransactions` queries recurring by `userId + isActive + nextDueDate` but only `recurring_userId_idx` exists.
+- Files: `web/lib/schema.ts:227`.
+- Improvement path: Add composite index on `(userId, isActive, nextDueDate)`.
+
+**`getInsights` issues two sequential DB queries rather than one:**
+- Problem: `getInsights` runs a totals query then a `spendingByCategory` query sequentially (no `Promise.all`).
+- Files: `web/lib/queries/insights.ts:28-60`.
+- Cause: Sequential `await` calls.
+- Improvement path: Wrap both in `Promise.all`.
+
+## Fragile Areas
+
+**`inferDecimalSeparator` heuristic in `parseAmountInput`:**
+- Files: `web/lib/finance-utils.ts:110-128`.
+- Why fragile: The function infers whether a separator character is a decimal or thousands separator by counting trailing digits. Inputs like `"1.000"` are ambiguous and the heuristic returns `null` (treating the dot as a thousands separator), which may surprise users from locales where `.` is the thousands separator.
+- Safe modification: The heuristic is tested indirectly by the amount input UI; any change must be verified across `onboarding/page.tsx`, `transaction-sheet.tsx`, `financial-profile-sheet.tsx`, `budgets-page.tsx`, and `recurring-page.tsx`.
+- Test coverage: No automated tests exist for this function.
+
+**`computeNextDueDate` has no case for `"monthly"` frequency:**
+- Files: `web/lib/actions/recurring.ts:15-30`.
+- Why fragile: The `switch` statement handles `daily`, `weekly`, `biweekly`, `quarterly`, `yearly`, but `"monthly"` falls through to the `default` branch which also returns `addMonths(date, 1)`. While functionally correct today, adding new frequency values could accidentally use the monthly default.
+- Safe modification: Add an explicit `case "monthly":` branch to make intent clear.
+
+**`AppLayout` session fetch is duplicated from `getAuthenticatedUser`:**
+- Files: `web/app/(app)/layout.tsx:18-24`, `web/lib/queries/auth.ts:1-15`.
+- Why fragile: `AppLayout` makes its own `auth.api.getSession` call rather than using `getAuthenticatedUser()`, creating two separate session fetches per request and diverging guard logic.
+- Safe modification: Replace layout's inline session check with `getAuthenticatedUser()`.
+
+**`formatCurrency` always uses `"en-US"` locale regardless of user's currency:**
+- Files: `web/lib/finance-utils.ts:56`, `web/lib/finance-utils.ts:68`.
+- Why fragile: Currencies like JPY, CLP, or KRW have no decimal places, but the formatter explicitly sets `minimumFractionDigits: 2`. This will display `¥1,234.00` instead of `¥1,234` for Japanese Yen.
+- Safe modification: Remove the fixed fraction digit overrides and rely on the `Intl.NumberFormat` defaults for the given currency code.
+
+## Scaling Limits
+
+**All-time transaction count is unbounded with no archiving strategy:**
+- Current capacity: The `transactions` table has no row limit; `exportTransactions` caps at 10,000 rows.
+- Limit: `getTransactions` with `limit: 50` is fine for UI, but aggregation queries in `getDashboardData` and `getInsights` do full table scans filtered only by `userId`. Performance will degrade as rows grow into the tens of thousands per user.
+- Scaling path: Add date-range partitioning or archiving strategy; use materialized summaries for dashboard aggregates.
+
+**Single Neon connection pool for all server-side requests:**
+- Current capacity: One `Pool` instance in `web/lib/db.ts` shared across all serverless invocations.
+- Limit: Neon serverless handles connection multiplexing, but the `ws` polyfill path in `db.ts:13-15` may not behave optimally under high concurrency in edge runtimes.
+- Scaling path: Switch to Neon HTTP driver (`neon()`) for simple queries; reserve pool for transactions.
+
+## Dependencies at Risk
+
+**`better-auth` at `^1.5.5` is a relatively new and fast-moving library:**
+- Risk: The library's API surface (especially `databaseHooks`, `drizzleAdapter`) has changed between minor versions. Pin to an exact version or lock at patch level.
+- Impact: Auth breakage on pnpm update.
+- Migration plan: Lock to `1.5.5` in `package.json`; monitor changelog before upgrading.
+
+**`next` at `16.1.6` (pre-release series):**
+- Risk: Next.js 16 is the current stable series but `16.1.6` may include breaking changes from `15.x` patterns (e.g., `searchParams` is now a `Promise` in server components, which the codebase handles with `await searchParams` — correct, but fragile against future changes).
+- Files: `web/app/(app)/transactions/page.tsx:58`, `web/app/(app)/budgets/page.tsx:15`.
+- Impact: API surface changes may require coordinated updates across all page files.
+
+## Missing Critical Features
+
+**No automated recurring transaction processing job:**
+- Problem: Recurring transactions are only processed when a user loads an authenticated page (`AppLayout`). If a user doesn't log in, transactions are never generated. The `processRecurringTransactions` function also adds latency to every page load.
+- Blocks: Reliable financial tracking for users who log in infrequently; accurate balance for dormant accounts.
+
+**No validation that budget `categoryId` belongs to the authenticated user:**
+- Problem: `createBudget` accepts any valid UUID as `categoryId` without confirming ownership. See Security Considerations above.
+- Blocks: Full data integrity for multi-user isolation.
+
+## Test Coverage Gaps
+
+**Zero test files in the entire codebase:**
+- What's not tested: All server actions, query functions, validation schemas, finance utilities including the `inferDecimalSeparator` heuristic, and all UI components.
+- Files: Entire `web/` directory.
+- Risk: Regressions in critical paths (authentication, transaction CRUD, recurring processing) are caught only in production. The `inferDecimalSeparator` function in `web/lib/finance-utils.ts:110-128` has complex branching logic with no tests.
+- Priority: High — especially for `lib/actions/`, `lib/queries/`, and `lib/finance-utils.ts`.
 
 ---
 
-## Technical Debt
-
-### Duplicated `BUCKET_META` constant — `HIGH`
-- Issue: An identical `BUCKET_META` record mapping `AllocationBucket` to label, icon, color, and Tailwind classes is defined independently in four different files.
-- Files:
-  - `web/components/transaction-sheet.tsx` (line 45)
-  - `web/components/recurring-page.tsx` (line 92)
-  - `web/components/budgets-page.tsx` (line 73)
-  - `web/components/financial-profile-sheet.tsx` (line 29 area)
-- Impact: Color or label changes must be made in four places. Already diverging — `transaction-sheet.tsx` uses `"#c4714a"` for "wants" while `recurring-page.tsx` also uses `"#c4714a"` but `BUCKET_DEFINITIONS` in `finance-utils.ts` has `"#c97a5a"`. Inconsistent theming will silently emerge.
-- Fix approach: Export `BUCKET_META` from `web/lib/finance-utils.ts` alongside `BUCKET_DEFINITIONS` and import it in all four consumers.
-
-### Duplicated `getAmountFontSize` helper — `MEDIUM`
-- Issue: An identical font-size-by-digit-count function is copy-pasted in five files.
-- Files:
-  - `web/app/(auth)/onboarding/page.tsx` (line 44)
-  - `web/components/financial-profile-sheet.tsx` (line 29)
-  - `web/components/recurring-page.tsx` (line 125)
-  - `web/components/budgets-page.tsx` (line 106)
-  - `web/components/transaction-sheet.tsx` (line 80)
-- Impact: Any change to breakpoints requires touching five files. Low breakage risk but high maintenance cost.
-- Fix approach: Export `getAmountFontSize` from `web/lib/finance-utils.ts`.
-
-### Oversized "page" client components — `MEDIUM`
-- Issue: Core page components bundle full data-fetching state, form state, inline sheet UIs, and display logic into single files.
-  - `web/components/recurring-page.tsx` — 966 lines
-  - `web/components/budgets-page.tsx` — 808 lines
-  - `web/components/categories-page.tsx` — 696 lines
-  - `web/components/transaction-sheet.tsx` — 516 lines
-- Impact: Hard to navigate, test, or extend. Sheet / form sub-components cannot be reused independently. As features grow these files will become unmaintainable.
-- Fix approach: Extract inline sheet forms (create/edit/delete) into dedicated sub-components under `web/components/`.
-
-### Schema: inconsistent `userId` column type — `MEDIUM`
-- Issue: Better-auth tables (`session`, `account`) define `userId` as `text`, while all application tables (`financialProfile`, `categories`, `transactions`, `budgets`, `recurringTransactions`) define it as `varchar(255)`. Foreign key relationships between auth tables and app tables rely on matching values at the application layer without a database-enforced FK from app tables to `user.id`.
-- Files: `web/lib/schema.ts` (lines 66, 79, 115, 150, 168, 192, 208)
-- Impact: No DB-level referential integrity guarantees between app data and auth users. Orphaned rows possible on user deletion since no `onDelete` cascade exists from app tables to `user`.
-- Fix approach: Add explicit `.references(() => user.id, { onDelete: "cascade" })` on `userId` columns in all app tables and align type to `text` to match the `user.id` PK.
-
-### `updateValues` typed as `Record<string, T>` in actions — `LOW`
-- Issue: All update actions (`transactions`, `categories`, `budgets`, `recurring`, `financial-profile`) build a `Record<string, string | null>` object and pass it to `.set()`, bypassing Drizzle's column-aware type system.
-- Files: `web/lib/actions/transactions.ts` (line 76), `web/lib/actions/budgets.ts` (line 67), `web/lib/actions/categories.ts` (line 68), `web/lib/actions/recurring.ts` (line 99), `web/lib/actions/financial-profile.ts` (line 92)
-- Impact: A typo in a key name compiles and only fails at runtime.
-- Fix approach: Use Drizzle's `InferInsertModel` partial type or construct the update object directly from validated schema fields.
-
----
-
-## Security Concerns
-
-### No Next.js middleware for auth enforcement — `HIGH`
-- Issue: There is no `web/middleware.ts` file. Route protection for the `(app)` group is handled only inside `web/app/(app)/layout.tsx` via a server component redirect. This means the auth check runs after the page begins rendering, not at the edge before the request is handled.
-- Impact: Slightly more attack surface than edge middleware; no centralized enforcement point. Any new route added under `(app)` must remember to inherit this layout — easy to forget.
-- Fix approach: Add `middleware.ts` at the web root using `better-auth`'s session helper to enforce auth at the edge for all `(app)` routes.
-
-### App tables lack database-level FK to `user` — `HIGH`
-- Issue: `categories`, `transactions`, `budgets`, `recurringTransactions`, and `financialProfile` all store a `userId varchar(255)` but have no database foreign key referencing `user.id`.
-- Files: `web/lib/schema.ts`
-- Impact: Rows belonging to a deleted user are not automatically removed. No cascading deletes. Data leakage risk if a user id is reused or a query condition is accidentally omitted.
-- Fix approach: See Technical Debt entry above.
-
-### `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` used with non-null assertion — `LOW`
-- Issue: `web/lib/auth.ts` accesses both env vars with `process.env.GOOGLE_CLIENT_ID!`. If missing at runtime, the auth server initialises silently and Google OAuth will fail cryptically.
-- File: `web/lib/auth.ts` (lines 21–22)
-- Impact: Poor startup-time failure mode; no clear error if env is misconfigured.
-- Fix approach: Add a startup check that throws a descriptive error if either var is absent, similar to the `DATABASE_URL` check in `web/lib/db.ts`.
-
----
-
-## Performance Risks
-
-### `processRecurringTransactions` runs synchronously on every app page load — `HIGH`
-- Issue: `web/app/(app)/layout.tsx` calls `await processRecurringTransactions()` on every navigation within the app group. This function performs a DB select plus N sequential `db.transaction()` calls (one per overdue recurring item × number of missed periods).
-- Files: `web/app/(app)/layout.tsx` (line 38), `web/lib/actions/recurring.ts` (line 183)
-- Impact: Every page load incurs DB latency proportional to the number of overdue recurring transactions. With a large backlog (e.g., daily items missed for months) this can block rendering for multiple seconds and exhaust Neon serverless connection slots.
-- Fix approach: Move processing to a background job or cron endpoint; in the layout, only check `nextDueDate` and render a stale indicator rather than blocking on generation.
-
-### Unbounded transaction export — `MEDIUM`
-- Issue: `exportTransactions` in `web/lib/actions/transactions.ts` (line 167) loads up to `10_000` rows into memory in a single query, then returns the full array to the client.
-- File: `web/lib/actions/transactions.ts`
-- Impact: A user with many transactions triggers a large memory allocation on the server and a large payload transfer. Will degrade or timeout under Neon's serverless connection timeout.
-- Fix approach: Stream CSV generation server-side using a `Response` with a `ReadableStream` or paginate the export.
-
-### `getTransactionTotals` runs a separate full-table aggregation alongside `getTransactions` — `LOW`
-- Issue: `web/app/(app)/transactions/page.tsx` fires both `getTransactions` and `getTransactionTotals` in parallel, each scanning the `transactions` table with the same filter conditions.
-- Files: `web/app/(app)/transactions/page.tsx` (line 62), `web/lib/queries/transactions.ts`
-- Impact: Two passes over the same filtered data instead of one. Minor at low scale, noticeable as row count grows.
-- Fix approach: Merge both into a single query using a window function or SQL aggregate alongside the paginated rows.
-
-### Currency formatter cache unbounded — `LOW`
-- Issue: `web/lib/finance-utils.ts` caches `Intl.NumberFormat` instances in module-level `Map` objects (`formatterCache`, `compactFormatterCache`). The number of distinct currencies is small so this is not a practical issue today.
-- File: `web/lib/finance-utils.ts` (lines 50–51)
-- Impact: Negligible at current scale; acceptable as-is.
-
----
-
-## Missing Infrastructure
-
-### Zero automated tests — `HIGH`
-- Issue: No `*.test.ts`, `*.test.tsx`, `*.spec.ts`, or `*.spec.tsx` files exist anywhere in the codebase. No test runner config (`jest.config.*`, `vitest.config.*`) is present.
-- Impact: All regressions are caught manually. Financial calculation logic (`finance-utils.ts`), action error paths, and recurring transaction date arithmetic have no coverage. The `processRecurringTransactions` while-loop is particularly risky to change without tests.
-- Fix approach: Add Vitest, write unit tests for `web/lib/finance-utils.ts` and `web/lib/actions/recurring.ts` as a first pass.
-
-### No error boundaries or `error.tsx` files — `HIGH`
-- Issue: The Next.js `(app)` group and all sub-routes have no `error.tsx` files. Any unhandled server error in a page component will produce Next.js's default error screen.
-- Files: All routes under `web/app/(app)/`
-- Impact: Poor user experience on unexpected errors. No ability to recover gracefully or display contextual messages.
-- Fix approach: Add `web/app/(app)/error.tsx` (and optionally `web/app/global-error.tsx`) using the Next.js `"use client"` error boundary pattern.
-
-### No structured logging or error tracking — `MEDIUM`
-- Issue: Error handling in all server actions is `console.error(...)` only. No external monitoring service (Sentry, Datadog, etc.) is configured.
-- Files: All files in `web/lib/actions/`
-- Impact: Production errors are invisible unless actively tailing logs. Silent failures (like category seed failure in `web/lib/auth.ts` line 53) may go unnoticed.
-- Fix approach: Integrate Sentry or a lightweight logger; at minimum ensure server action errors surface in a queryable log.
-
-### No CI pipeline — `MEDIUM`
-- Issue: No `.github/workflows/`, `Makefile`, or CI config file exists in the repository.
-- Impact: No automated lint, type-check, or build validation on PRs. Broken builds only discovered locally.
-- Fix approach: Add a GitHub Actions workflow running `tsc --noEmit`, `eslint`, and `next build`.
-
----
-
-## Scalability Concerns
-
-### Recurring transaction processing is user-scoped, not system-scoped — `MEDIUM`
-- Issue: `processRecurringTransactions` only processes items for the currently authenticated user. Items for users who have not logged in recently will fall further and further behind.
-- File: `web/lib/actions/recurring.ts` (line 193)
-- Impact: Long-absent users return to a large backlog that generates many transactions at once, causing UI confusion and a slow first page load.
-- Fix approach: Decouple processing from user sessions; run as a scheduled server-side job that processes all users.
-
-### No pagination on categories or budgets queries — `LOW`
-- Issue: `getCategories()` and `getBudgets()` load all records for the user with no limit or pagination.
-- Files: `web/lib/queries/categories.ts`, `web/lib/queries/budgets.ts`
-- Impact: Acceptable for a personal finance app where category/budget counts are naturally small. Could become noticeable if a power user creates hundreds of categories.
-- Fix approach: Not urgent; add server-side limits if usage data indicates excessive row counts.
-
----
-
-## Code Quality Issues
-
-### `toNumber` helper duplicated between query files — `LOW`
-- Issue: A local `toNumber(value: unknown): number` helper is defined in `web/lib/queries/dashboard.ts` (line 51). The same conversion logic is also inlined as `Number(...)` calls throughout `web/lib/queries/insights.ts`.
-- Files: `web/lib/queries/dashboard.ts`, `web/lib/queries/insights.ts`
-- Impact: Minor inconsistency. Not a bug risk.
-- Fix approach: Export `toNumber` from a shared utils module and use it consistently.
-
-### Bucket percentage targets recalculated inline in insights — `LOW`
-- Issue: `web/lib/queries/insights.ts` `getAllocationSummary` (lines 121–140) manually multiplies `incomeTarget * percentage / 100` inline without reusing `calculateBucketTarget` from `finance-utils.ts`.
-- File: `web/lib/queries/insights.ts`
-- Impact: If the target calculation formula changes, `getAllocationSummary` will silently diverge from the rest of the app.
-- Fix approach: Import and use `calculateBucketTarget` from `web/lib/finance-utils.ts`.
-
-### `next: "16.1.6"` pinned as exact version — `LOW`
-- Issue: The `next` and `eslint-config-next` versions are pinned without a caret (`^`) while all other deps use `^`.
-- File: `web/package.json` (lines 35, 55)
-- Impact: Patch security fixes to Next.js will not be automatically picked up on `npm install`.
-- Fix approach: Use `^16.1.6` or stay current by running `npm update next`.
-
----
-
-*Concerns audit: 2026-04-19*
+*Concerns audit: 2026-04-23*

@@ -21,27 +21,18 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
   BUCKET_ORDER,
   formatAmountDisplay,
-  formatCurrency,
   getAmountInputLength,
-  getCurrencyDecimals,
   parseAmountInput,
   parseStoredAmount,
 } from "@/lib/finance-utils";
 import {
   createTransaction,
-  getExchangeRateForPreview,
   updateTransaction,
 } from "@/lib/actions/transactions";
-import { useCurrency } from "@/components/currency-provider";
 import type { AllocationBucket, Category, TransactionType } from "@/types";
 
 // ─── Bucket config ────────────────────────────────────────────────────────────
@@ -121,13 +112,10 @@ interface FormState {
   date: string;
   description: string;
   selectedBucket: AllocationBucket;
-  currency: string; // ISO 4217 code; defaults to baseCurrency on create, transaction.currency on edit
 }
 
 type EditableTransaction = {
   amount: string;
-  originalAmount: string | null; // pre-fill edit form with this value, not amount (CONTEXT.md discretion)
-  currency: string | null;       // pre-fill edit form currency badge
   type: TransactionType;
   categoryId: string | null;
   date: string;
@@ -139,12 +127,10 @@ function buildInitialState(
   mode: "create" | "edit",
   transaction: EditableTransaction | null | undefined,
   categories: Category[],
-  baseCurrency: string, // required by D-03 (default) and edit pre-fill (CONTEXT.md discretion)
 ): FormState {
   if (mode === "edit" && transaction) {
     return {
-      amount: transaction.originalAmount ?? transaction.amount ?? "", // CRITICAL: originalAmount, not amount (CONTEXT.md discretion)
-      currency: transaction.currency ?? baseCurrency,
+      amount: transaction.amount ?? "",
       type: transaction.type ?? "expense",
       categoryId: transaction.categoryId ?? null,
       date: transaction.date?.slice(0, 10) ?? today(),
@@ -154,7 +140,6 @@ function buildInitialState(
   }
   return {
     amount: "",
-    currency: baseCurrency, // D-03: always default to user's base currency; form does NOT remember last-used
     type: "expense",
     categoryId: firstCategoryId(categories, "expense", "needs"),
     date: today(),
@@ -172,9 +157,8 @@ type TransactionSheetProps = {
 export function TransactionSheet({ categories }: TransactionSheetProps) {
   const router = useRouter();
   const { isOpen, mode, transaction, close } = useTransactionSheet();
-  const { currency: baseCurrency } = useCurrency();
   const [form, setForm] = useState<FormState>(() =>
-    buildInitialState(mode, transaction, categories, baseCurrency),
+    buildInitialState(mode, transaction, categories),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -182,20 +166,14 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
   const [amountDecimalSeparator, setAmountDecimalSeparator] = useState<
     "." | "," | null
   >(null);
-  const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
-  const [previewRate, setPreviewRate] = useState<number | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Reset form whenever the sheet opens
   useEffect(() => {
     if (isOpen) {
-      setForm(buildInitialState(mode, transaction, categories, baseCurrency));
+      setForm(buildInitialState(mode, transaction, categories));
       setError(null);
       setDatePickerOpen(false);
       setAmountDecimalSeparator(null);
-      setCurrencyPickerOpen(false);
-      setPreviewRate(null);
-      setPreviewLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -232,26 +210,9 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
     );
   }, [categories, form.type, form.selectedBucket]);
 
-  async function handleCurrencySelect(newCurrency: string): Promise<void> {
-    updateField("currency", newCurrency);
-    setCurrencyPickerOpen(false);
-    setPreviewRate(null);
-    // No preview needed for same-currency transactions (D-06)
-    if (newCurrency === baseCurrency) return;
-    setPreviewLoading(true);
-    const result = await getExchangeRateForPreview(newCurrency, baseCurrency, form.date);
-    setPreviewLoading(false);
-    if ("rate" in result) {
-      setPreviewRate(result.rate);
-    } else {
-      // Rate fetch failed — surface error in the existing alert block; preview stays hidden
-      setError("Couldn't fetch exchange rate — please try again.");
-    }
-  }
-
   async function handleSubmit(): Promise<void> {
     const amountNum = parseStoredAmount(form.amount);
-    if (Number.isNaN(amountNum) || amountNum <= 0) return;
+    if (!amountNum || amountNum <= 0) return;
 
     setSaving(true);
     setError(null);
@@ -263,8 +224,6 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
         description: form.description.trim() || undefined,
         date: form.date,
         categoryId: form.categoryId ?? undefined,
-        currency: form.currency,
-        baseCurrency,
       };
 
       const result =
@@ -331,45 +290,20 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
               style={{ background: amountGlow }}
             >
               <div className="flex items-center justify-center">
-                <Popover open={currencyPickerOpen} onOpenChange={setCurrencyPickerOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="Select currency"
-                      className={cn(
-                        "mr-2 min-h-[44px] rounded-xl border px-3 py-2 font-mono font-bold transition-colors",
-                        fontSizeClass,
-                        currencyPickerOpen
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border bg-muted text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {form.currency}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-32 p-1" align="start">
-                    {(["USD", "COP"] as const).map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => handleCurrencySelect(c)}
-                        className={cn(
-                          "w-full rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors",
-                          c === form.currency
-                            ? "bg-primary/10 text-primary"
-                            : "text-foreground hover:bg-muted",
-                        )}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </PopoverContent>
-                </Popover>
+                <span
+                  className={cn(
+                    "mr-2 font-mono font-extrabold transition-all duration-200",
+                    fontSizeClass,
+                    isIncome ? "text-income" : "text-primary",
+                  )}
+                >
+                  $
+                </span>
                 <Input
                   id="amount"
                   type="text"
-                  inputMode={getCurrencyDecimals(form.currency) === 0 ? "numeric" : "decimal"}
-                  placeholder={getCurrencyDecimals(form.currency) === 0 ? "0" : "0.00"}
+                  inputMode="decimal"
+                  placeholder="0.00"
                   aria-label="Transaction amount"
                   className={cn(
                     "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
@@ -377,45 +311,20 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                     fontSizeClass,
                     isIncome ? "text-income" : "text-foreground",
                   )}
-                  value={formatAmountDisplay(form.amount, amountDecimalSeparator)}
+                  value={formatAmountDisplay(
+                    form.amount,
+                    amountDecimalSeparator,
+                  )}
                   onChange={(e) => {
-                    if (getCurrencyDecimals(form.currency) === 0) {
-                      // Zero-decimal currency: bypass the heuristic separator
-                      // detection — the thousands comma in "50,000" confuses
-                      // inferDecimalSeparator when a 5th digit is appended.
-                      updateField("amount", e.target.value.replace(/[^0-9]/g, ""));
-                      return;
-                    }
                     const parsed = parseAmountInput(
                       e.target.value,
                       amountDecimalSeparator,
                     );
-                    let { normalizedValue } = parsed;
-                    // Clamp decimal places to what the currency supports (e.g. 2 for USD)
-                    if (normalizedValue.includes(".")) {
-                      const [int, dec] = normalizedValue.split(".");
-                      normalizedValue = `${int}.${dec.slice(0, getCurrencyDecimals(form.currency))}`;
-                    }
-                    updateField("amount", normalizedValue);
+                    updateField("amount", parsed.normalizedValue);
                     setAmountDecimalSeparator(parsed.decimalSeparator);
                   }}
                 />
               </div>
-              {form.currency !== baseCurrency && (
-                <p
-                  aria-live="polite"
-                  className={cn(
-                    "mt-2 text-center text-sm tabular-nums",
-                    previewLoading ? "text-muted-foreground/50" : "text-muted-foreground",
-                  )}
-                >
-                  {previewLoading
-                    ? "Fetching rate\u2026"
-                    : previewRate !== null && parseStoredAmount(form.amount) > 0
-                      ? `\u2248 ${formatCurrency(parseStoredAmount(form.amount) * previewRate, baseCurrency)} ${baseCurrency}`
-                      : null}
-                </p>
-              )}
             </div>
 
             <div className="relative flex rounded-2xl bg-border p-1">
@@ -526,51 +435,42 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
               </div>
             )}
 
-            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
-                >
-                  <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
-                  {form.date ? (
-                    <span className="text-foreground">
-                      {format(parseISO(form.date), "MMMM d, yyyy")}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[var(--radix-popover-trigger-width)] p-0"
-                align="start"
+            <div>
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
+                onClick={() => setDatePickerOpen((v) => !v)}
               >
+                <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
+                {form.date ? (
+                  <span className="text-foreground">
+                    {format(parseISO(form.date), "MMMM d, yyyy")}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Pick a date</span>
+                )}
+              </Button>
+              {datePickerOpen && (
                 <Calendar
                   mode="single"
                   selected={form.date ? parseISO(form.date) : undefined}
                   onSelect={(day) => {
                     if (day) {
-                      const newDate = format(day, "yyyy-MM-dd");
-                      updateField("date", newDate);
+                      updateField("date", format(day, "yyyy-MM-dd"));
                       setDatePickerOpen(false);
-                      // Re-fetch preview rate when date changes and a foreign currency is selected
-                      if (form.currency !== baseCurrency) {
-                        setPreviewRate(null);
-                        setPreviewLoading(true);
-                        getExchangeRateForPreview(form.currency, baseCurrency, newDate).then((result) => {
-                          setPreviewLoading(false);
-                          if ("rate" in result) setPreviewRate(result.rate);
-                        });
-                      }
                     }
                   }}
-                  className="w-full [--cell-size:2.25rem]"
-                  classNames={{ root: "w-full" }}
+                  className="mt-2 w-full rounded-2xl border border-border bg-background p-2 [--cell-size:1.75rem]"
+                  classNames={{
+                    root: "w-full",
+                    month: "flex w-full flex-col gap-2",
+                    week: "mt-1 flex w-full",
+                  }}
+                  showOutsideDays={false}
                   autoFocus
                 />
-              </PopoverContent>
-            </Popover>
+              )}
+            </div>
 
             <textarea
               placeholder="Add a note..."

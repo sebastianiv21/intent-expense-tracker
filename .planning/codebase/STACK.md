@@ -1,122 +1,108 @@
 # Technology Stack
 
-**Analysis Date:** 2026-04-19
+**Analysis Date:** 2026-04-23
 
 ## Languages
 
 **Primary:**
-- TypeScript ^5 — all application code in `web/`
-- TSX — React component files throughout `web/app/` and `web/components/`
+- TypeScript 5.x - All application code in `web/`
+- TSX - React component files throughout `web/app/` and `web/components/`
 
 **Secondary:**
-- CSS — global styles in `web/app/globals.css` via Tailwind CSS v4 utility classes
+- CSS - Global styles in `web/app/globals.css` (Tailwind v4 utility classes + CSS variables)
+- SQL - Drizzle migration files in `web/drizzle/`
 
 ## Runtime
 
 **Environment:**
-- Node.js (version not pinned via `.nvmrc` or `engines` field; `@types/node ^20` implies Node 20+)
+- Node.js 20.x (detected v20.11.1)
 
 **Package Manager:**
-- pnpm (lockfile `web/pnpm-lock.yaml` present; workspace config in `web/pnpm-workspace.yaml`)
-- Lockfile: present
+- pnpm (workspace-aware)
+- Lockfile: `web/pnpm-lock.yaml` present
+- Workspace config: `web/pnpm-workspace.yaml`
 
 ## Frameworks
 
 **Core:**
-- Next.js 16.1.6 — App Router, React Server Components, server actions; config at `web/next.config.ts`
-- React 19.2.3 — UI rendering
-- React DOM 19.2.3 — DOM bindings
+- Next.js 16.1.6 - Full-stack React framework; App Router with route groups `(app)` and `(auth)`
+- React 19.2.3 - UI rendering; Server Components used by default, Client Components where needed
 
 **UI Component Library:**
-- shadcn/ui (default style, neutral base color) — component registry at `web/components.json`
-  - Radix UI primitives: `@radix-ui/react-avatar`, `dialog`, `dropdown-menu`, `label`, `popover`, `progress`, `select`, `separator`, `slot`, `tabs`, `toggle`
-  - Icon set: `lucide-react ^0.577.0`
+- shadcn/ui - Component scaffolding; config at `web/components.json`; style: default, baseColor: neutral, cssVariables enabled
+- Radix UI primitives - Underlying accessible headless components (avatar, dialog, dropdown-menu, label, popover, progress, select, separator, slot, tabs, toggle)
 
 **Styling:**
-- Tailwind CSS ^4 — utility-first CSS; PostCSS integration via `@tailwindcss/postcss ^4`
-- `tailwind-merge ^3.5.0` — merge conflicting Tailwind classes safely
-- `class-variance-authority ^0.7.1` — variant-based component styling (CVA)
-- `tw-animate-css ^1.4.0` — animation utilities
+- Tailwind CSS 4.x - Utility-first CSS; processed via `@tailwindcss/postcss`; dark mode enabled by default (`dark` class on `<body>`)
+- tw-animate-css 1.4.0 - Animation utilities
 
 **Data / ORM:**
-- Drizzle ORM ^0.45.1 — type-safe SQL query builder; schema at `web/lib/schema.ts`
-- `drizzle-orm/neon-serverless` adapter — Neon PostgreSQL serverless driver
+- Drizzle ORM 0.45.1 - Type-safe SQL query builder and schema definition
+- drizzle-kit 0.31.9 - Migration generation, push, and studio (dev tool)
 
-**Authentication:**
-- better-auth ^1.5.5 — auth framework; server config at `web/lib/auth.ts`, client at `web/lib/auth-client.ts`
+**Auth:**
+- better-auth 1.5.5 - Authentication framework; config at `web/lib/auth.ts`
 
 **Validation:**
-- Zod ^4.3.6 — schema validation; used in `web/lib/validations/`
+- Zod 4.3.6 - Schema validation; used in `web/lib/validations/`
 
-**Date Handling:**
-- date-fns ^4.1.0 — date utilities
-- react-day-picker ^9.14.0 — calendar/date picker component
-
-**Charts:**
-- Recharts ^3.8.0 — composable charting library
-
-**Notifications:**
-- Sonner ^2.0.7 — toast notification system
-
-**Fonts:**
-- `@fontsource/plus-jakarta-sans ^5.2.8` — self-hosted Plus Jakarta Sans
-
-## Build / Dev Tooling
-
-**Linter:**
-- ESLint ^9 — config at `web/eslint.config.mjs` using `eslint-config-next` (core-web-vitals + TypeScript rules)
-
-**Formatter:**
-- No dedicated formatter config detected (Prettier not present; formatting relies on ESLint rules)
-
-**Compiler:**
-- TypeScript `target: ES2017`, `module: esnext`, `moduleResolution: bundler`, strict mode enabled; config at `web/tsconfig.json`
-- Path alias: `@/*` maps to `web/`
-
-**Database Migrations:**
-- drizzle-kit ^0.31.9 — migration generation and push; config at `web/drizzle.config.ts`
-  - `db:generate` — generate migration files to `web/drizzle/`
-  - `db:push` — push schema directly to DB
-  - `db:migrate` — run migrations
-  - `db:studio` — open Drizzle Studio GUI
-
-**PostCSS:**
-- `postcss.config.mjs` using `@tailwindcss/postcss`
+**Build/Dev:**
+- ESLint 9.x with `eslint-config-next` (Core Web Vitals + TypeScript rules) - config at `web/eslint.config.mjs`
+- PostCSS with `@tailwindcss/postcss` - config at `web/postcss.config.mjs`
+- TypeScript compiler - config at `web/tsconfig.json`; strict mode enabled; path alias `@/*` → `./`
 
 ## Key Dependencies
 
 **Critical:**
-- `@neondatabase/serverless ^1.0.2` — Neon PostgreSQL serverless driver; used in `web/lib/db.ts`
-- `ws ^8.20.0` — WebSocket polyfill for Neon in Node.js environments (non-edge)
-- `better-auth ^1.5.5` — handles sessions, email/password, and Google OAuth
-- `drizzle-orm ^0.45.1` — only ORM layer; no fallback query client
-- `zod ^4.3.6` — runtime validation for all form/action data
+- `next` 16.1.6 - Application framework; drives routing, server components, API routes
+- `drizzle-orm` 0.45.1 - Database access layer; schema at `web/lib/schema.ts`
+- `better-auth` 1.5.5 - Session management, OAuth, email/password auth
+- `@neondatabase/serverless` 1.0.2 - Neon PostgreSQL driver for serverless/edge environments
+- `zod` 4.3.6 - Runtime validation for all form inputs and server action params
 
 **Infrastructure:**
-- `clsx ^2.1.1` — conditional className builder (used alongside tailwind-merge)
+- `ws` 8.20.0 - WebSocket polyfill required by `@neondatabase/serverless` in Node.js (non-edge) environments
+- `drizzle-kit` 0.31.9 - Schema migrations; scripts: `db:generate`, `db:push`, `db:migrate`, `db:studio`
+
+**UI Utilities:**
+- `lucide-react` 0.577.0 - Icon library (set as shadcn iconLibrary)
+- `class-variance-authority` 0.7.1 - Component variant management
+- `clsx` 2.1.1 + `tailwind-merge` 3.5.0 - Conditional class merging (used in `web/lib/utils.ts`)
+- `sonner` 2.0.7 - Toast notifications; configured globally in `web/app/layout.tsx`
+- `recharts` 3.8.0 - Charts for the insights page
+- `react-day-picker` 9.14.0 - Date picker component
+- `date-fns` 4.1.0 - Date manipulation utilities
+
+**Fonts:**
+- `@fontsource/plus-jakarta-sans` 5.2.8 - Local font package
+- `next/font/google` (Plus Jakarta Sans + Geist Mono) - Google Fonts loaded via Next.js font optimization; applied in `web/app/layout.tsx`
 
 ## Configuration
 
-**Environment:**
-- Configured via `.env` file (not committed; no `.env.example` found)
-- Key vars required: `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXT_PUBLIC_BETTER_AUTH_URL`
+**Environment (required vars — see `web/.env.example`):**
+- `DATABASE_URL` - Neon PostgreSQL connection string (required at startup; validated in `web/lib/db.ts`)
+- `BETTER_AUTH_SECRET` - Signing secret for better-auth sessions
+- `BETTER_AUTH_URL` - Server-side base URL for auth
+- `NEXT_PUBLIC_BETTER_AUTH_URL` - Client-side base URL for auth client (`web/lib/auth-client.ts`)
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - Google OAuth credentials
 
 **Build:**
-- `web/next.config.ts` — minimal Next.js config (no custom rewrites or headers currently set)
-- `web/tsconfig.json` — TypeScript compiler options
-- `web/drizzle.config.ts` — Drizzle Kit schema and credentials
+- `web/next.config.ts` - Minimal Next.js config (no custom options set)
+- `web/tsconfig.json` - TypeScript strict mode; path alias `@/*` → `./`; target ES2017
+- `web/drizzle.config.ts` - Drizzle dialect: postgresql; schema: `./lib/schema.ts`; output: `./drizzle`
 
 ## Platform Requirements
 
 **Development:**
-- Node.js 20+, pnpm
-- Neon PostgreSQL database accessible via `DATABASE_URL`
-- Google OAuth credentials for social sign-in
+- Node.js 20.x
+- pnpm
+- PostgreSQL-compatible database (Neon recommended)
+- Google OAuth app credentials for social login
 
 **Production:**
-- Edge-compatible deployment target (Neon serverless driver supports edge runtimes)
-- Vercel or similar Next.js-compatible host recommended
+- Serverless/edge-compatible Node.js host (Vercel recommended based on `@neondatabase/serverless` + edge WebSocket handling pattern)
+- Neon PostgreSQL (serverless driver configured with WebSocket support for Node.js)
 
 ---
 
-*Stack analysis: 2026-04-19*
+*Stack analysis: 2026-04-23*

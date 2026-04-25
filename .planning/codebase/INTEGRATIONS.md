@@ -1,84 +1,94 @@
 # External Integrations
 
-**Analysis Date:** 2026-04-19
+**Analysis Date:** 2026-04-23
 
 ## APIs & External Services
 
-**Google OAuth:**
-- Service: Google Identity (OAuth 2.0)
-- Purpose: Social sign-in provider for user authentication
-- SDK/Client: `better-auth` built-in `socialProviders.google` — configured in `web/lib/auth.ts`
-- Auth env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-- Account linking enabled; Google is a trusted provider (auto-links accounts with same email)
+**Authentication - Social Providers:**
+- Google OAuth 2.0 - Social sign-in via better-auth `socialProviders.google`
+  - SDK/Client: `better-auth` 1.5.5 (built-in Google provider)
+  - Auth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` env vars
+  - Config: `web/lib/auth.ts`
+  - Account linking enabled; Google is a trusted provider (email-verified accounts can link)
+
+**Fonts:**
+- Google Fonts (via Next.js font optimization) - Plus Jakarta Sans and Geist Mono loaded at build time
+  - Implementation: `next/font/google` in `web/app/layout.tsx`
+  - No API key required; fonts downloaded at build time
 
 ## Data Storage
 
-**Database:**
-- Type: PostgreSQL (serverless)
-- Provider: Neon (`@neondatabase/serverless ^1.0.2`)
-- Connection: `DATABASE_URL` environment variable (required; throws at startup if missing — see `web/lib/db.ts`)
-- Client: Drizzle ORM (`drizzle-orm/neon-serverless`), connection pooling via `Pool` from `@neondatabase/serverless`
-- WebSocket support: `ws ^8.20.0` polyfill injected when `WebSocket` global is absent (Node.js environments); not needed on edge runtimes
-- Schema file: `web/lib/schema.ts`
-- Migration output directory: `web/drizzle/`
+**Databases:**
+- Neon PostgreSQL (serverless)
+  - Connection: `DATABASE_URL` env var (Neon connection string)
+  - Client: `@neondatabase/serverless` 1.0.2 — Pool-based connection via `web/lib/db.ts`
+  - ORM: Drizzle ORM 0.45.1 with `drizzle-orm/neon-serverless` adapter
+  - WebSocket: `ws` package polyfills WebSocket in Node.js environments; edge runtimes use native WebSocket
+  - Schema: `web/lib/schema.ts`
+  - Migrations: `web/drizzle/` (3 migration files; managed via `drizzle-kit`)
 
 **File Storage:**
-- None detected — no S3, GCS, or Cloudinary integration present
+- Not detected — no S3, GCS, or similar integration present
 
 **Caching:**
-- None detected — no Redis, Upstash, or in-memory cache layer present
+- None — no Redis, Upstash, or cache layer detected
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- Library: `better-auth ^1.5.5`
-- Server config: `web/lib/auth.ts`
-- Client config: `web/lib/auth-client.ts` (browser-side React hooks/utilities)
-- API route handler: `web/app/api/auth/[...all]/route.ts` (catches all auth requests via `toNextJsHandler`)
-- Database adapter: `drizzleAdapter` with `pg` provider
-- Strategies supported:
-  - Email + password (enabled)
-  - Google OAuth (enabled via `socialProviders.google`)
-- Session model stored in PostgreSQL `session` table with user-agent and IP address fields
-- Post-registration hook: seeds default expense/income categories for every new user (`web/lib/seed-data.ts`)
-- Base URL env var: `NEXT_PUBLIC_BETTER_AUTH_URL` (used by client to resolve auth API base path)
+- better-auth 1.5.5 — Self-hosted auth framework (no third-party auth SaaS)
+  - Config: `web/lib/auth.ts`
+  - Client: `web/lib/auth-client.ts` (React client using `better-auth/react`)
+  - API route: `web/app/api/auth/[...all]/route.ts` — catches all auth requests via `toNextJsHandler`
+  - Strategies: Email/password (enabled), Google OAuth
+  - Database adapter: Drizzle adapter (`better-auth/adapters/drizzle`) with `pg` provider
+  - Auth tables: `user`, `session`, `account`, `verification` (defined in `web/lib/schema.ts`)
+  - Post-signup hook: Seeds default expense/income categories for new users (`web/lib/auth.ts` → `web/lib/seed-data.ts`)
+
+**Session Management:**
+- better-auth session tokens stored in the `session` table in Neon PostgreSQL
+- Client-side session access via `useSession` hook exported from `web/lib/auth-client.ts`
 
 ## Monitoring & Observability
 
 **Error Tracking:**
-- None detected — no Sentry, Datadog, or equivalent integration present
+- None detected — no Sentry, Datadog, or similar integration
 
 **Logs:**
-- `console.error` used for auth hook failures (e.g., category seeding errors in `web/lib/auth.ts`)
-- No structured logging framework detected
+- `console.error` used for server-side errors (e.g., category seeding failures in `web/lib/auth.ts`)
+- No structured logging framework
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Not explicitly configured in repository; Next.js + Neon serverless is compatible with Vercel, Cloudflare Pages, or any Node 20+ host
+- Not explicitly configured — no `vercel.json`, `netlify.toml`, or Dockerfile detected
+- `@neondatabase/serverless` with WebSocket polyfill pattern strongly suggests Vercel (serverless functions)
+- `terraform/` directory exists but contains no `.tf` files (empty placeholder)
 
 **CI Pipeline:**
-- No CI configuration files detected (no `.github/workflows/`, no `Makefile`)
+- None detected — no GitHub Actions, CircleCI, or similar configuration
 
 ## Environment Configuration
 
-**Required env vars:**
-- `DATABASE_URL` — Neon PostgreSQL connection string (server-side only); validated at startup in `web/lib/db.ts`
-- `GOOGLE_CLIENT_ID` — Google OAuth client ID (server-side only); used in `web/lib/auth.ts`
-- `GOOGLE_CLIENT_SECRET` — Google OAuth client secret (server-side only); used in `web/lib/auth.ts`
-- `NEXT_PUBLIC_BETTER_AUTH_URL` — Public base URL for the auth API (exposed to browser); used in `web/lib/auth-client.ts`
+**Required env vars (see `web/.env.example`):**
+- `DATABASE_URL` — Neon PostgreSQL connection string
+- `BETTER_AUTH_SECRET` — Session signing secret for better-auth
+- `BETTER_AUTH_URL` — Server-side base URL (e.g., `http://localhost:3000`)
+- `NEXT_PUBLIC_BETTER_AUTH_URL` — Client-side base URL (same value, exposed to browser)
+- `GOOGLE_CLIENT_ID` — Google OAuth app client ID
+- `GOOGLE_CLIENT_SECRET` — Google OAuth app client secret
 
 **Secrets location:**
-- `.env` file at `web/` root (not committed; no `.env.example` present in repository)
+- `web/.env` file (gitignored); `web/.env.example` committed as template
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- `GET /api/auth/[...all]` and `POST /api/auth/[...all]` — better-auth wildcard handler at `web/app/api/auth/[...all]/route.ts`; handles login, logout, session refresh, OAuth callbacks, and email verification flows
+- None detected — no webhook endpoint routes beyond the auth catch-all
 
 **Outgoing:**
-- Google OAuth callback is handled internally by better-auth; no custom outgoing webhook endpoints detected
+- None detected — no outbound HTTP calls to third-party webhook URLs
 
 ---
 
-*Integration audit: 2026-04-19*
+*Integration audit: 2026-04-23*

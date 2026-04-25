@@ -1,161 +1,283 @@
-# Feature Landscape: Multi-Currency Support
+# Feature Landscape: Compact Inline Calendar in a Constrained Sheet
 
-**Domain:** Personal expense tracker — multi-currency milestone
-**Researched:** 2026-04-19
-**Context:** Existing single-currency app (USD or COP base) adding per-transaction currency entry with
-automatic historical rate conversion. User transacts in COP and USD. One user, no collaboration.
-
----
-
-## Table Stakes
-
-Features users expect. Missing = multi-currency feels incomplete or broken.
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Per-transaction currency selector | Every multi-currency app requires this — without it users cannot record what they actually spent | Low | Dropdown or inline selector adjacent to amount field |
-| Currency selector defaults to base currency | The overwhelming majority of transactions are in base — friction if user must re-select every time | Low | Confirmed by Expenses.cash: "last used currency" also works, discussed below |
-| Historical rate fetched for transaction date | Apps like Toshl and Lunch Money strongly distinguish this from "today's rate"; users trust it more | Medium | Rate must reflect the actual day of purchase, especially for backdated entries |
-| Converted amount shown in transaction list | Users expect the list to be scannable in one currency — mixing raw foreign amounts breaks comprehension | Low | Show converted amount in base currency; original currency noted secondary |
-| Original + converted amounts in transaction detail | Standard in every app surveyed (Toshl, Lunch Money, PocketSmith, Expenses.cash) | Low | Format: COL$50,000 → $12.50 USD — users expect both values visible |
-| Exchange rate displayed in transaction detail | Needed for trust and auditability — "why did this convert to X?" | Low | Show rate as a single line: @ 4,000 COP/USD |
-| Dashboard/budget totals in base currency only | All charting and summaries must collapse to one number — anything else confuses budget math | Low | No mixed-currency totals anywhere in the UI |
-| Rate fetched automatically (no manual lookup) | Users will not copy-paste from Google; if they have to, the feature is broken | Medium | ExchangeRate-API historical endpoint covers this |
+**Domain:** Single-date picker inside a mobile bottom sheet / desktop centered sheet
+**Researched:** 2026-04-23
+**Confidence:** HIGH — based on direct inspection of installed react-day-picker v9.14.0 CSS source,
+the shadcn/ui `Calendar` component source, and the `TransactionSheet` implementation in this codebase.
 
 ---
 
-## Differentiators
+## Summary
 
-Features that set the product apart. Not expected for v1, but add meaningful value.
+The "New Awareness" sheet uses a `<Popover>` to host the `<Calendar>`. The popover floats inside
+the sheet's scrollable area; when the sheet is near its `max-h-[90vh]` ceiling, the popover content
+overflows the sheet's bottom, pushing past the "Add" button. The project goal (DATE-01/02/03) is to
+make the calendar fit inline — no popover, no scroll — inside the fixed vertical space of the sheet.
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| "Last used currency" memory | If a user buys in COP regularly, defaulting to COP after the first COP entry saves taps and reduces friction — Expenses.cash does this | Low | Simple: store last-used currency in localStorage or user session; fall back to base currency on first use |
-| Inline rate preview during entry | Show the converted amount live as user types the foreign amount (e.g., "50,000 COP = $12.50 USD") — Toshl shows this during entry | Medium | Requires rate to be available before form submit; works well if rate is cached |
-| Rate freshness indicator | A subtle "rate from Apr 18, 2026" label in transaction detail tells the user the rate is historical, not today's — builds trust for backdated entries | Low | A single date-stamped label on the rate line; no extra fetch needed |
-| Budget bucket impact shown during entry | "This will use $12.50 of your $200 Wants budget" — gives intent context at the moment of entry | Medium | Requires converting the amount before submit; needs cached rate |
+Two layers of sizing control are available:
+
+1. **shadcn-level:** The `Calendar` component introduces a `--cell-size` CSS custom property
+   (default `2rem` / 32 px). Every cell is `aspect-square h-full w-full min-w-[--cell-size]`.
+   The nav buttons are `h-[--cell-size] w-[--cell-size]`. Reducing this single variable shrinks
+   every cell and nav button proportionally.
+
+2. **react-day-picker CSS-variable level:** The underlying `rdp-root` exposes `--rdp-day-height`,
+   `--rdp-day-width`, `--rdp-day_button-height`, `--rdp-day_button-width`, `--rdp-nav-height`,
+   `--rdp-nav_button-height/width`, and `--rdp-weekday-padding`. These are the fallback layer when
+   the shadcn classNames system does not override a value.
+
+The total calendar height at `--cell-size: 2rem` is approximately:
+
+  - Nav/caption row: 2rem (32 px)
+  - `gap-4` below caption: 1rem (16 px)
+  - Weekday header: ~1.5rem (24 px, driven by `--rdp-weekday-padding: 0.5rem 0`)
+  - 6 week rows × (2rem cell + `mt-2` gap): 6 × (32 + 8) = 240 px
+  - Root padding `p-3`: 2 × 12 = 24 px
+  - **Total worst-case (6-row month): ~336 px**
+
+At `--cell-size: 1.75rem` the same calculation yields ~295 px. At `1.5rem` ~255 px.
+
+The current implementation renders the calendar inside a `<PopoverContent>` that appears **below**
+the date trigger button. Since the sheet itself scrolls (`overflow-y-auto`), the popover does not
+scroll with the container — it escapes the sheet boundary and overlaps fixed UI below it. Switching
+to an inline (non-popover) pattern eliminates this class of bug entirely.
 
 ---
 
-## Anti-Features
+## Table Stakes (must fix)
 
-Features to explicitly NOT build in this milestone. Not because they are bad ideas generally,
-but because they add complexity that this single-user, historical-rate-focused app does not need yet.
+These are the minimum changes needed to satisfy DATE-01/02/03.
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Manual rate override per transaction | PROJECT.md explicitly out-of-scope; adds a reconciliation surface area, complicates data model, and is rarely used by personal trackers | Trust the automatic historical rate; Lunch Money's research confirms users accept auto rates when they are genuinely historical (not today's rate applied retroactively) |
-| Real-time / sub-24h rate refresh | 1,500 req/month API budget makes this dangerous; daily rates are accurate enough for personal spending, not FX trading | 24h cache with DB storage — already decided in PROJECT.md |
-| Per-currency reports or breakdowns | "How much did I spend in COP vs USD?" is an interesting question but not what this tracker is for — it tracks intent (needs/wants/future), not currency geography | All reporting stays in base currency only |
-| Multi-currency account balances | This is a transaction tracker, not a net-worth tool. Accounts in foreign currencies add a separate data model (accounts, balances, reconciliation) | Keep the model: transactions only, each with a stored rate |
-| Currency trend charts / rate history | Adds complexity with no direct budgeting value for this user's case | Not in scope; Pocketsmith offers this for users who need it |
-| Retroactive rate correction | Rewriting historical conversions invalidates past reports and makes the data model harder to reason about | Existing transactions stay at rate 1.0 (base currency); new ones get accurate rates going forward |
-| Crypto or non-ISO-4217 currencies | Non-standard codes break the ExchangeRate-API free tier and add edge-case handling | Standard fiat only (COP, USD, EUR etc.) |
-| Currency auto-detection by location | Requires location permission, adds device API complexity, and the user pattern is known (COP in Colombia, USD otherwise) — not worth the infrastructure | Simple explicit selector; "last used" memory covers the common case |
+| # | Requirement | Why It Is Broken Today | Fix Direction |
+|---|-------------|------------------------|---------------|
+| 1 | Calendar fits inside sheet without overflow | Popover floats outside the sheet's stacking context; at 90 vh the popover bottom overlaps the footer "Add" button | Replace `<Popover>` + trigger button with a conditionally-rendered inline `<Calendar>` block |
+| 2 | Selected-date label does not render inside the grid | The current date button shows `"MMMM d, yyyy"` text in the trigger; no separate row exists today — the issue is a stray element rendering mid-grid when the popover opens in a position that visually traps the trigger label | Inline calendar makes the trigger label a permanent display row above the grid, cleanly separated |
+| 3 | "Add" button is never obscured | Overlapping caused by popover escaping the scroll container | Inline calendar stays in document flow; footer with "Add" stays pinned at bottom via `border-t bg-card` |
+| 4 | Cells are touch-comfortable on mobile (min 44 px tap target) | At `--cell-size: 2rem` (32 px) the visual cell is under the 44 px WCAG touch target | Keep `--cell-size: 2rem` or use `2.5rem` for cells; rely on `min-w-[--cell-size]` sizing. Note: the button is `aspect-square w-full` so actual rendered size depends on column distribution across the full calendar width, which on a 375 px phone at 7 columns is ~48 px per cell — adequate. |
+| 5 | Calendar collapses when a date is chosen | Without a popover, the calendar stays visible permanently; UX degrades | Add a local `showCalendar` boolean state; toggle it when the trigger row is tapped and collapse it `onSelect` |
 
 ---
 
-## Feature Dependencies
+## Patterns
 
+Standard techniques for compact inline calendars in constrained spaces (sheets, drawers, sidebars),
+ordered by implementation effort.
+
+### Pattern 1 — Reduce `--cell-size` (lowest effort, biggest impact)
+
+**What:** Override `--cell-size` on the `<Calendar>` via `className`.
+
+```tsx
+<Calendar
+  className="[--cell-size:1.75rem]"   // down from default 2rem
+  classNames={{ root: "w-full" }}
+  ...
+/>
 ```
-Currency selector (per transaction)
-  → Rate fetch (ExchangeRate-API, keyed on currency + date)
-      → DB rate cache (24h TTL, prevents API overuse)
-          → Converted amount stored on transaction row
-              → Transaction list (shows converted amount)
-              → Transaction detail (shows original + converted + rate + rate date)
-              → Dashboard totals (sums converted amounts in base currency)
-              → Budget bucket progress (sums converted amounts per bucket)
+
+**Height saved:** ~40 px on a 6-row month (reduces from ~336 px to ~295 px).
+
+**When to use:** When the calendar is in a popover and you just need it slightly shorter.
+Not sufficient alone to eliminate the overflow when the calendar is inline in a full sheet.
+
+**Tradeoff:** Below 1.75 rem the tap-target shrinks below 28 px visual; since the rendered column
+width on a 375 px phone is ~(375 − 24 px padding) / 7 ≈ 50 px, `--cell-size` only sets a minimum —
+actual hit area is fine down to 1.5 rem.
+
+---
+
+### Pattern 2 — Remove `p-3` padding and `gap-4` on the month wrapper (low effort)
+
+**What:** The `Calendar` component sets `p-3` on the root and `gap-4` on the `.month` element
+(via the shadcn `classNames.month = "flex w-full flex-col gap-4"`). These two together contribute
+~40 px (24 px padding + 16 px gap) of non-data vertical space.
+
+```tsx
+<Calendar
+  className="p-0"                        // remove root padding
+  classNames={{
+    root: "w-full",
+    month: "flex w-full flex-col gap-2", // reduce gap-4 → gap-2
+  }}
+  ...
+/>
 ```
 
-Inline rate preview during entry (differentiator) depends on rate cache being populated
-before form submit — requires an on-change API call or pre-fetching today's rate on mount.
+**Height saved:** ~24 px.
 
 ---
 
-## Currency Selector Default: Last-Used vs Base Currency
+### Pattern 3 — Tighten week-row gap (low effort)
 
-This is the one UX decision with meaningful tradeoffs. Research findings:
+**What:** The `week` classNames entry is `"mt-2 flex w-full"` (8 px between each row × 6 rows = 48 px
+of inter-row spacing). Reducing to `mt-1` saves 24 px.
 
-**Base currency default:**
-- Safe for most users — the majority of transactions are in base
-- No state to maintain; always predictable
-- Recommended when: user rarely transacts in foreign currency
+```tsx
+classNames={{
+  week: "mt-1 flex w-full",
+}}
+```
 
-**Last-used currency default:**
-- Reduces tap count when batching foreign-currency entries (e.g., entering a week of COP receipts)
-- Confirmed pattern in Expenses.cash
-- Risk: user forgets the default is COP and enters a USD amount in COP by accident
-
-**Recommendation for this project:** Default to base currency always. The user's pattern is
-primarily USD (or COP as base), with COP (or USD) as the occasional exception. A stale
-"last used" default introduces silent data entry errors that are hard to catch. The currency
-selector must be visible and prominent enough that switching to COP is fast but deliberate.
-If user feedback after launch shows repeated friction from re-selecting COP, add last-used
-memory at that point.
+**Height saved:** ~24 px.
 
 ---
 
-## Exchange Rate Display: How Much to Show in Transaction Detail
+### Pattern 4 — Reduce weekday padding via CSS variable (low effort)
 
-Consensus from surveyed apps (Toshl, Lunch Money, Expenses.cash, Splitwise):
+**What:** react-day-picker's `.rdp-weekday` has `padding: var(--rdp-weekday-padding)` which defaults
+to `0.5rem 0` (8 px top and bottom = 16 px total on the header row). Setting it to `0.25rem 0` saves
+8 px.
 
-Minimum viable: `COL$50,000 → $12.50 USD @ 4,000`
-Full transparency: `COL$50,000 → $12.50 USD @ 4,000 COP/USD (rate from Apr 18, 2026)`
+In Tailwind 4 you can inject arbitrary CSS variables on an element with `[--rdp-weekday-padding:...]`:
 
-The "rate from [date]" addition is low-cost and high-trust value, especially for backdated
-entries where the rate used was genuinely historical. Include it. It also distinguishes
-this app from tools that silently apply today's rate to old transactions — a known frustration
-in Splitwise and early YNAB workarounds.
+```tsx
+<Calendar
+  className="[--rdp-weekday-padding:0.25rem_0]"
+  ...
+/>
+```
 
----
-
-## Dashboard and Budget Totals: Display Rules
-
-Across all apps surveyed, the consensus is unambiguous:
-
-1. All aggregate numbers (budget bucket totals, remaining budgets, category totals, income vs
-   expense summary) MUST display in base currency only.
-2. Individual transaction rows in a list may show the original currency amount as a secondary
-   label (smaller, muted) alongside the converted amount.
-3. Never mix raw foreign amounts into totals — this is described as a known failure mode in
-   apps like Monarch Money (which adds 1,000 JPY + $1,000 USD as if they are the same).
-
-For the transaction list specifically, the recommended pattern is:
-- Primary: converted amount in base currency (prominent)
-- Secondary: original amount in foreign currency if different from base (smaller, right-aligned
-  or below the primary, only shown when currency != base currency)
+**Height saved:** ~8 px.
 
 ---
 
-## MVP Recommendation
+### Pattern 5 — Toggle-reveal inline calendar (recommended implementation pattern)
 
-Prioritize (table stakes only for v1 of this milestone):
+**What:** Replace the `<Popover>` with a collapsible inline block. The trigger row is a permanent
+display element (shows current date). Tapping it toggles `showCalendar`. The calendar renders inline
+in document flow, pushing content downward within the sheet's `overflow-y-auto` scroll area. The
+footer "Add" button stays pinned by being outside the scroll container.
 
-1. Schema: add `currency_code` and `exchange_rate` columns to transactions table
-2. Currency selector in transaction form (defaults to base currency)
-3. Rate fetch + 24h DB cache (ExchangeRate-API historical endpoint)
-4. Store original currency + rate at transaction creation time
-5. Transaction list: display converted amount in base currency (existing display unchanged
-   for base-currency transactions; foreign transactions show converted primary)
-6. Transaction detail: show original amount, arrow, converted amount, rate, rate date
-7. Dashboard/budget totals: sum converted amounts (existing math unchanged for rate=1.0 rows)
+```tsx
+// State
+const [showCalendar, setShowCalendar] = useState(false);
 
-Defer to post-launch:
-- Inline rate preview during entry (nice, but requires extra fetch on-change)
-- "Last used currency" memory (revisit after usage data)
-- Rate freshness indicator in detail (low cost, could include in v1 if capacity allows)
-- Budget bucket impact preview during entry (meaningful but adds round-trip complexity)
+// Trigger row (always visible)
+<button
+  type="button"
+  onClick={() => setShowCalendar((v) => !v)}
+  className="flex h-12 w-full items-center justify-start rounded-2xl border border-border bg-background px-4"
+>
+  <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
+  <span>{format(parseISO(form.date), "MMMM d, yyyy")}</span>
+  <ChevronDownIcon className={cn("ml-auto h-4 w-4 transition-transform", showCalendar && "rotate-180")} />
+</button>
+
+// Inline calendar (conditionally shown)
+{showCalendar && (
+  <Calendar
+    mode="single"
+    selected={parseISO(form.date)}
+    onSelect={(day) => {
+      if (day) {
+        updateField("date", format(day, "yyyy-MM-dd"));
+        setShowCalendar(false);   // auto-collapse on selection
+      }
+    }}
+    className="p-0 [--cell-size:1.75rem]"
+    classNames={{
+      root: "w-full",
+      month: "flex w-full flex-col gap-2",
+      week: "mt-1 flex w-full",
+    }}
+    autoFocus
+  />
+)}
+```
+
+**Why this pattern wins:**
+- Calendar is in document flow — it never escapes the sheet boundary.
+- The sheet's `overflow-y-auto` on the scroll area handles any remaining height pressure gracefully.
+- Auto-collapse on selection matches native mobile date pickers (iOS, Android).
+- The trigger row is always visible, so the selected date is always readable (fixes DATE-02).
+- The "Add" button lives in a separate pinned footer div, always visible (fixes DATE-03).
+
+---
+
+### Pattern 6 — `showOutsideDays={false}` to reduce 6-row months (low effort, optional)
+
+**What:** Months that start on Saturday/Sunday require a 6th partial row. Setting
+`showOutsideDays={false}` hides outside-month days, but does NOT reduce the row count — react-day-picker
+still renders the empty row structure. This pattern does NOT save height.
+
+**Verdict:** Do not use for height reduction. Only use if the design intentionally hides grey
+outside-month dates.
+
+---
+
+### Pattern 7 — `captionLayout="dropdown"` for faster navigation (medium effort, optional)
+
+**What:** Replace the prev/next chevrons with month/year dropdowns. This does not reduce calendar
+height, but on mobile it eliminates repeated tapping to reach past months.
+
+**When to use:** If user testing shows navigation friction. Not needed for the layout overflow bug.
+
+---
+
+## Anti-patterns
+
+### Anti-pattern 1 — Keeping the Popover and clamping with max-height
+
+**What goes wrong:** Adding `max-h-[280px] overflow-hidden` to `<PopoverContent>` clips the calendar
+grid. The last row of days is cut off. Users cannot see or click days in week 5 or 6.
+
+**Why it happens:** Engineers reach for `overflow-hidden` or `max-height` to stop overflow without
+rethinking the containment model.
+
+**Instead:** Use Pattern 5 (toggle-reveal inline). The calendar is in normal flow and the sheet
+container scrolls.
+
+---
+
+### Anti-pattern 2 — Setting `overflow-hidden` on the sheet scroll container
+
+**What goes wrong:** `overflow-hidden` on the `div.flex-1.overflow-y-auto` container kills the
+scroll entirely. All form content below the calendar fold becomes unreachable.
+
+**Instead:** Keep `overflow-y-auto` on the scroll region. Let the calendar push other content down
+and let the user scroll.
+
+---
+
+### Anti-pattern 3 — Using `transform: scale()` to shrink the calendar
+
+**What goes wrong:** Scaling the calendar DOM element down visually makes it fit, but the hit areas
+(click/touch targets) remain at the original size, causing misaligned interactions. Text becomes blurry
+on low-DPI displays.
+
+**Instead:** Reduce `--cell-size` (Pattern 1) or reduce gaps (Patterns 2–3), which resize the actual
+layout boxes.
+
+---
+
+### Anti-pattern 4 — Switching to a different calendar library
+
+**What goes wrong:** Replacing react-day-picker with a different library (e.g., react-calendar,
+flatpickr) requires re-implementing all accessibility, keyboard navigation, and DayPicker v9 props
+that the rest of the app relies on. The PROJECT.md explicitly constraints to "existing shadcn/ui
+Calendar + Tailwind CSS — no new calendar library."
+
+**Instead:** Use the CSS variable and classNames APIs that react-day-picker v9 and the shadcn Calendar
+wrapper already expose.
+
+---
+
+### Anti-pattern 5 — Removing `autoFocus` from the inline calendar
+
+**What goes wrong:** Without `autoFocus`, keyboard users cannot navigate the calendar after it opens.
+Screen readers also lose the focus context.
+
+**Instead:** Keep `autoFocus` on the inline `<Calendar>` so that when it mounts, focus moves into
+the grid.
 
 ---
 
 ## Sources
 
-- [Toshl Finance multi-currency features](https://toshl.com/currencies/) — historical rates, inline preview, dual display
-- [Expenses.cash multi-currency FAQ](https://expenses.cash/faq/multi-currency) — last-used currency default behavior
-- [PocketSmith multi-currency tour](https://www.pocketsmith.com/tour/multi-currency/) — native vs converted balance patterns
-- [ClearSpent multi-currency features](https://www.clearspent.com/features/multi-currency) — base-currency-only aggregates
-- [Lunch Money multi-currency](https://lunchmoney.app/features/multicurrency/) — historical rate storage per transaction
-- [Wise Design: Money Input](https://wise.design/components/money-input) — currency selector component patterns
-- [Monarch Money currency limitations](https://help.monarch.com/hc/en-us/articles/360048393552-International-Accounts-and-Currency) — cautionary tale on mixing currencies in totals
-- [Workday: UX of Currency Display](https://medium.com/workday-design/the-ux-of-currency-display-whats-in-a-sign-6447cbc4fb88) — currency code clarity requirements
+- react-day-picker v9.14.0 CSS variable definitions: installed at
+  `web/node_modules/.pnpm/react-day-picker@9.14.0_react@19.2.3/node_modules/react-day-picker/src/style.css`
+  (verified directly — HIGH confidence)
+- shadcn/ui Calendar component: `web/components/ui/calendar.tsx` (project source — HIGH confidence)
+- TransactionSheet component: `web/components/transaction-sheet.tsx` (project source — HIGH confidence)
+- Sheet layout constraints: `SheetContent` `max-h-[90vh]`, scroll wrapper `flex-1 overflow-y-auto`,
+  pinned footer `border-t bg-card` — all visible in the component source (HIGH confidence)

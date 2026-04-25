@@ -1,192 +1,229 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-04-19
+**Analysis Date:** 2026-04-23
 
 ## Directory Layout
 
 ```
-project-root/
-├── web/                        # Next.js application (only app code lives here)
-│   ├── app/                    # Next.js App Router root
-│   │   ├── (app)/              # Authenticated app route group
-│   │   │   ├── layout.tsx      # Auth guard + AppShell wrapper
-│   │   │   ├── page.tsx        # Dashboard (/)
-│   │   │   ├── transactions/   # /transactions page
-│   │   │   ├── budgets/        # /budgets page
-│   │   │   ├── categories/     # /categories page
-│   │   │   ├── insights/       # /insights page
-│   │   │   ├── profile/        # /profile page
-│   │   │   └── recurring/      # /recurring page
-│   │   ├── (auth)/             # Unauthenticated route group
-│   │   │   ├── login/          # /login page
-│   │   │   ├── register/       # /register page
-│   │   │   └── onboarding/     # /onboarding page (financial profile setup)
+intent-expense-tracker/          # Monorepo root
+├── web/                         # Next.js application (the only app)
+│   ├── app/                     # Next.js App Router routes
+│   │   ├── (app)/               # Authenticated route group
+│   │   │   ├── layout.tsx       # Auth guard + CurrencyProvider + AppShell
+│   │   │   ├── page.tsx         # Dashboard (/)
+│   │   │   ├── loading.tsx      # Dashboard skeleton
+│   │   │   ├── budgets/         # /budgets route
+│   │   │   ├── categories/      # /categories route
+│   │   │   ├── insights/        # /insights route
+│   │   │   ├── profile/         # /profile route
+│   │   │   ├── recurring/       # /recurring route
+│   │   │   └── transactions/    # /transactions route
+│   │   ├── (auth)/              # Unauthenticated route group
+│   │   │   ├── layout.tsx       # Centered auth layout
+│   │   │   ├── login/           # /login route
+│   │   │   ├── register/        # /register route
+│   │   │   └── onboarding/      # /onboarding route (first-time setup)
 │   │   ├── api/
-│   │   │   └── auth/[...all]/  # better-auth HTTP handler
-│   │   ├── layout.tsx          # Root layout (fonts, Toaster)
-│   │   └── globals.css         # Global Tailwind styles
-│   ├── components/             # Shared React components
-│   │   ├── ui/                 # shadcn/ui primitives
-│   │   ├── skeletons/          # Loading skeleton components
-│   │   └── *.tsx               # Feature components (app-level)
-│   ├── lib/                    # Server-side logic and utilities
-│   │   ├── actions/            # Next.js Server Actions (mutations)
-│   │   ├── queries/            # DB read functions (used by server components)
-│   │   ├── validations/        # Zod schemas for action input validation
-│   │   ├── schema.ts           # Drizzle ORM table/relation definitions
-│   │   ├── db.ts               # Neon DB pool + Drizzle client
-│   │   ├── auth.ts             # better-auth server config
-│   │   ├── auth-client.ts      # better-auth React client (client component use)
-│   │   ├── finance-utils.ts    # 50/30/20 bucket logic, amount formatting
-│   │   ├── currencies.ts       # Supported currencies list and helpers
-│   │   ├── seed-data.ts        # Default categories seeded on user creation
-│   │   └── utils.ts            # General utility (cn helper, etc.)
+│   │   │   └── auth/[...all]/   # better-auth catch-all handler
+│   │   ├── globals.css          # Global Tailwind CSS + CSS variables
+│   │   └── layout.tsx           # Root layout (fonts, Toaster)
+│   ├── components/              # React components
+│   │   ├── ui/                  # shadcn/ui primitives
+│   │   ├── skeletons/           # Loading skeleton components
+│   │   └── *.tsx                # Feature and shared components
+│   ├── lib/                     # Business logic and data access
+│   │   ├── actions/             # Next.js Server Actions (mutations)
+│   │   ├── queries/             # Read-only DB query functions
+│   │   ├── validations/         # Zod schemas for mutations
+│   │   ├── schema.ts            # Drizzle ORM schema (single source of truth)
+│   │   ├── db.ts                # Neon Postgres DB client
+│   │   ├── auth.ts              # better-auth configuration
+│   │   ├── auth-client.ts       # better-auth browser client
+│   │   ├── finance-utils.ts     # 50/30/20 logic, currency formatting
+│   │   ├── currencies.ts        # Supported currency list + DEFAULT_CURRENCY
+│   │   ├── seed-data.ts         # Default category definitions seeded on signup
+│   │   └── utils.ts             # General utilities (cn helper etc.)
 │   ├── types/
-│   │   └── index.ts            # All shared TypeScript types
-│   ├── drizzle/                # Database migrations
-│   │   ├── meta/               # Drizzle migration metadata
-│   │   └── *.sql               # Numbered SQL migration files
-│   └── public/                 # Static assets (icons, favicon)
-├── specs/                      # Product specs and checklists by feature
-├── docs/                       # Project documentation
-├── .planning/                  # GSD planning documents
-│   └── codebase/               # Auto-generated codebase maps
-└── .factory/                   # GSD command definitions
+│   │   └── index.ts             # All shared TypeScript domain types
+│   ├── drizzle/                 # Drizzle migration files
+│   │   └── *.sql                # SQL migration files
+│   ├── public/                  # Static assets
+│   ├── drizzle.config.ts        # Drizzle Kit config (migrations)
+│   ├── next.config.ts           # Next.js config
+│   ├── tsconfig.json            # TypeScript config (@/* path alias)
+│   └── package.json
+├── docs/                        # Project documentation
+├── specs/                       # Feature specs / planning docs
+└── terraform/                   # Infrastructure as code
 ```
 
 ## Directory Purposes
 
 **`web/app/(app)/`:**
-- Purpose: All authenticated pages of the application
-- Contains: Async server components (pages) and a shared layout
-- Key files: `layout.tsx` (auth guard + AppShell), `page.tsx` (dashboard)
-- Pattern: Each subdirectory is a route with its own `page.tsx`; some have `loading.tsx`
+- Purpose: All authenticated feature routes
+- Contains: `page.tsx` (Server Component), `loading.tsx` (Suspense skeleton), no `layout.tsx` per feature
+- Key files: `web/app/(app)/layout.tsx` — the single auth + profile guard for all app routes
 
 **`web/app/(auth)/`:**
-- Purpose: Unauthenticated flows (login, register, onboarding)
-- Contains: Client component pages for auth forms
-- Key files: `login/page.tsx`, `register/page.tsx`, `onboarding/page.tsx`
-
-**`web/app/api/auth/[...all]/`:**
-- Purpose: Catch-all route that delegates all `/api/auth/*` requests to better-auth
-- Key files: `route.ts` — exports `GET` and `POST` via `toNextJsHandler(auth)`
+- Purpose: Login, registration, and onboarding flows
+- Contains: One `page.tsx` per route; shared centered layout
 
 **`web/components/`:**
-- Purpose: All React components shared across pages
-- Contains: Feature components (one per concept), shadcn/ui primitives, skeleton loaders
-- Pattern: Flat file structure — one file per component, named in kebab-case (e.g., `transaction-sheet.tsx`)
-- Sub-directories: `ui/` for shadcn primitives, `skeletons/` for loading states
+- Purpose: All React components. Feature page components live here, not in `app/`
+- Pattern: Pages in `app/` are thin — they import a matching `*-page.tsx` component from `components/` for anything complex
+- Key files: `app-shell.tsx`, `transaction-sheet.tsx`, `transaction-sheet-context.tsx`, `currency-provider.tsx`
+
+**`web/components/ui/`:**
+- Purpose: shadcn/ui primitives (Button, Sheet, Input, Card, etc.)
+- Generated: Yes (via shadcn CLI), but committed and editable
+- Do not add custom business logic here
+
+**`web/components/skeletons/`:**
+- Purpose: Skeleton loading states for each major page, used by `loading.tsx` files
+- Naming: `<feature>-skeleton.tsx`
 
 **`web/lib/actions/`:**
-- Purpose: All database mutations — one file per domain entity
-- Files: `transactions.ts`, `categories.ts`, `budgets.ts`, `recurring.ts`, `financial-profile.ts`
-- Pattern: Every function is `"use server"`, validates with Zod, returns `ActionResult<T>`, calls `revalidatePath`
+- Purpose: All write operations (create, update, delete) as Next.js Server Actions
+- Pattern: Every file starts with `"use server"`. Returns `ActionResult<T>`.
+- One file per domain entity: `transactions.ts`, `budgets.ts`, `categories.ts`, `recurring.ts`, `financial-profile.ts`
 
 **`web/lib/queries/`:**
-- Purpose: All database reads — one file per domain entity
-- Files: `dashboard.ts`, `transactions.ts`, `categories.ts`, `budgets.ts`, `recurring.ts`, `financial-profile.ts`, `insights.ts`, `auth.ts`
-- Pattern: Async functions called directly from server components; always call `getAuthenticatedUser()` first
+- Purpose: All read operations. Called from Server Components (pages/layouts).
+- Pattern: No `"use server"` directive — plain async functions. Always call `getAuthenticatedUser()` first.
+- One file per domain entity plus `auth.ts` and `dashboard.ts`
 
 **`web/lib/validations/`:**
-- Purpose: Zod schemas for validating Server Action inputs
-- Files: `transactions.ts`, `categories.ts`, `budgets.ts`, `recurring.ts`, `financial-profile.ts`
-- Pattern: Schemas are imported by the corresponding action file and called with `.safeParse()`
+- Purpose: Zod schemas for each entity's create/update inputs
+- Pattern: Export `createXSchema`, `updateXSchema`, and inferred types `CreateXInput`, `UpdateXInput`
+- One file per domain entity
+
+**`web/types/index.ts`:**
+- Purpose: Central type registry — all domain entity types and shared utility types
+- All types are manually maintained (not auto-generated from schema)
 
 **`web/drizzle/`:**
-- Purpose: Database migration history
-- Contains: Numbered `.sql` files and a `meta/` directory with Drizzle snapshot metadata
-- Generated: Yes (via `drizzle-kit`)
+- Purpose: SQL migration files generated by Drizzle Kit
+- Generated: Yes — run `pnpm drizzle-kit generate` then `pnpm drizzle-kit migrate`
 - Committed: Yes
-
-**`web/types/`:**
-- Purpose: All shared TypeScript types used across server and client code
-- Key file: `index.ts` — defines entity types (`Transaction`, `Category`, etc.), relation types (`TransactionWithCategory`), `ActionResult<T>`, `FilterState`
 
 ## Key File Locations
 
 **Entry Points:**
-- `web/app/layout.tsx` — root HTML shell, fonts, global Toaster
-- `web/app/(app)/layout.tsx` — auth guard, financial profile check, AppShell, CurrencyProvider
-- `web/app/(app)/page.tsx` — dashboard page (default route after login)
+- `web/app/layout.tsx`: Root HTML shell, fonts, Toaster
+- `web/app/(app)/layout.tsx`: Auth guard + app chrome
+- `web/app/(auth)/layout.tsx`: Auth page wrapper
+- `web/app/api/auth/[...all]/route.ts`: better-auth handler
 
 **Configuration:**
-- `web/lib/db.ts` — Neon pool configuration, reads `DATABASE_URL`
-- `web/lib/auth.ts` — better-auth config (providers, DB adapter, hooks)
-- `web/lib/auth-client.ts` — client-side auth, reads `NEXT_PUBLIC_BETTER_AUTH_URL`
+- `web/lib/schema.ts`: Database schema (edit here to add/change tables)
+- `web/drizzle.config.ts`: Drizzle Kit migration config
+- `web/tsconfig.json`: TypeScript config with `@/*` path alias
+- `web/next.config.ts`: Next.js config
 
 **Core Logic:**
-- `web/lib/schema.ts` — single source of truth for DB schema and Drizzle relations
-- `web/lib/finance-utils.ts` — 50/30/20 allocation logic and amount formatting/parsing
-- `web/types/index.ts` — all domain types
+- `web/lib/db.ts`: Neon Postgres pool + Drizzle client singleton
+- `web/lib/auth.ts`: better-auth setup (providers, hooks, DB adapter)
+- `web/lib/auth-client.ts`: Browser-side better-auth client
+- `web/lib/finance-utils.ts`: 50/30/20 budget math, currency formatting, amount input parsing
+- `web/lib/currencies.ts`: Currency list and `DEFAULT_CURRENCY` constant
 
-**Database:**
-- `web/lib/schema.ts` — table definitions
-- `web/drizzle/*.sql` — migration files
+**Domain Actions:**
+- `web/lib/actions/transactions.ts`
+- `web/lib/actions/budgets.ts`
+- `web/lib/actions/categories.ts`
+- `web/lib/actions/recurring.ts`
+- `web/lib/actions/financial-profile.ts`
+
+**Domain Queries:**
+- `web/lib/queries/transactions.ts`
+- `web/lib/queries/budgets.ts`
+- `web/lib/queries/categories.ts`
+- `web/lib/queries/dashboard.ts`
+- `web/lib/queries/insights.ts`
+- `web/lib/queries/recurring.ts`
+- `web/lib/queries/financial-profile.ts`
+- `web/lib/queries/auth.ts`
 
 ## Naming Conventions
 
 **Files:**
-- Components: kebab-case, e.g., `transaction-sheet.tsx`, `hero-balance-card.tsx`
-- Server actions: domain-noun, e.g., `lib/actions/transactions.ts`
-- Queries: domain-noun, e.g., `lib/queries/dashboard.ts`
-- Pages: always `page.tsx` inside a route directory
+- All source files: `kebab-case.tsx` / `kebab-case.ts`
+- Page components: `page.tsx` (Next.js convention)
+- Layout components: `layout.tsx`
+- Loading skeletons: `loading.tsx` (Next.js Suspense) and `<feature>-skeleton.tsx` in `components/skeletons/`
+- Feature page components: `<feature>-page.tsx` in `components/`
 
 **Directories:**
-- Route groups: parenthesized, e.g., `(app)`, `(auth)`
-- Dynamic segments: bracketed, e.g., `[...all]`
+- Route groups: `(group-name)` — parentheses excluded from URL
+- Dynamic segments: `[param]` e.g. `[...all]`
+- All directories: lowercase kebab-case
 
-**Exports:**
-- Actions: named exports, verb-first, e.g., `createTransaction`, `updateBudget`
-- Queries: named exports, verb-first, e.g., `getTransactions`, `getDashboardData`
-- Components: named exports for most; default exports for pages and layouts
+**Variables / Functions:**
+- Components: PascalCase (`TransactionSheet`, `BucketCard`)
+- Functions: camelCase (`createTransaction`, `getAuthenticatedUser`)
+- Constants: UPPER_SNAKE_CASE (`BUCKET_DEFINITIONS`, `DEFAULT_CURRENCY`)
+- Types: PascalCase (`ActionResult`, `TransactionWithCategory`)
+- Zod schemas: camelCase with `Schema` suffix (`createTransactionSchema`)
 
 ## Where to Add New Code
 
-**New authenticated page (e.g., `/reports`):**
-- Create: `web/app/(app)/reports/page.tsx` (async server component)
-- Add loading state: `web/app/(app)/reports/loading.tsx`
-- Add nav link to: `web/components/side-nav.tsx` and `web/components/bottom-nav.tsx`
+**New Feature Route:**
+1. Create `web/app/(app)/<feature>/page.tsx` — Server Component that fetches via a query
+2. Create `web/app/(app)/<feature>/loading.tsx` — imports skeleton from `components/skeletons/`
+3. Create `web/components/skeletons/<feature>-skeleton.tsx`
+4. Create `web/components/<feature>-page.tsx` for complex client-side UI
 
-**New feature component:**
-- Implementation: `web/components/{feature-name}.tsx`
-- If interactive (client): add `"use client"` at top; call actions directly
-- If purely presentational with server data: keep as server component, pass data as props
+**New DB Entity:**
+1. Add table to `web/lib/schema.ts`
+2. Run `pnpm drizzle-kit generate` to create migration SQL in `web/drizzle/`
+3. Add TypeScript type to `web/types/index.ts`
+4. Create `web/lib/queries/<entity>.ts`
+5. Create `web/lib/actions/<entity>.ts` (with `"use server"`)
+6. Create `web/lib/validations/<entity>.ts`
 
-**New domain entity (mutations):**
-- Action file: `web/lib/actions/{entity}.ts` — add `"use server"` functions
-- Query file: `web/lib/queries/{entity}.ts` — add read functions
-- Validation: `web/lib/validations/{entity}.ts` — add Zod schemas
-- Types: add to `web/types/index.ts`
+**New Server Action (mutation):**
+- Place in `web/lib/actions/<entity>.ts`
+- Start file with `"use server"`
+- Call `getAuthenticatedUser()` first
+- Validate input with Zod `safeParse`
+- Return `ActionResult<T>` from `@/types`
+- Call `revalidatePath()` after successful writes
 
-**New DB table:**
-1. Add table definition to `web/lib/schema.ts`
-2. Run `drizzle-kit generate` to produce a migration in `web/drizzle/`
-3. Run `drizzle-kit migrate` to apply
-4. Add corresponding TypeScript type to `web/types/index.ts`
+**New Query (read):**
+- Place in `web/lib/queries/<entity>.ts`
+- Call `getAuthenticatedUser()` first to get `userId`
+- Always scope queries with `eq(table.userId, userId)`
 
-**Shared UI primitive:**
-- Add to: `web/components/ui/{component}.tsx` (shadcn/ui pattern)
+**New shadcn/ui Component:**
+- Run `pnpm dlx shadcn@latest add <component>`
+- Output goes to `web/components/ui/`
+
+**Shared Utility:**
+- Finance math or currency formatting: `web/lib/finance-utils.ts`
+- General React/DOM utils: `web/lib/utils.ts`
 
 ## Special Directories
 
-**`web/drizzle/`:**
-- Purpose: Migration SQL files and snapshot metadata
-- Generated: Yes, by `drizzle-kit generate`
-- Committed: Yes — migration files are versioned
-
-**`web/components/ui/`:**
-- Purpose: shadcn/ui base primitives (Button, Input, Sheet, etc.)
-- Generated: Partially (scaffolded by shadcn CLI, then customized)
+**`.planning/`:**
+- Purpose: GSD planning documents (codebase maps, phase plans)
+- Generated: Manually by GSD tooling
 - Committed: Yes
 
-**`.planning/codebase/`:**
-- Purpose: Auto-generated codebase map documents for GSD tooling
-- Generated: Yes, by `/gsd-map-codebase`
+**`.claude/`:**
+- Purpose: Claude Code configuration and worktrees
+- Generated: Yes
+- Committed: Partially (commands directory)
 
-**`specs/`:**
-- Purpose: Human-authored feature specs with contracts and checklists
-- Organized by: numbered spec folders (`001-core-mvp`, `002-transaction-sheet-redesign`, etc.)
+**`web/.next/`:**
+- Purpose: Next.js build output and dev cache
+- Generated: Yes
+- Committed: No (`.gitignore`)
+
+**`web/drizzle/meta/`:**
+- Purpose: Drizzle Kit migration metadata (snapshot JSON)
+- Generated: Yes by `drizzle-kit generate`
+- Committed: Yes
 
 ---
 
-*Structure analysis: 2026-04-19*
+*Structure analysis: 2026-04-23*

@@ -31,11 +31,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -837,26 +832,22 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
               )}
 
               {/* Start Date picker */}
-              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
-                  >
-                    <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
-                    {formState.startDate ? (
-                      <span className="text-foreground">
-                        {format(parseISO(formState.startDate), "MMMM d, yyyy")}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">Start date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[var(--radix-popover-trigger-width)] p-0"
-                  align="start"
+              <div>
+                <Button
+                  variant="outline"
+                  className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
+                  onClick={() => setDatePickerOpen((v) => !v)}
                 >
+                  <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
+                  {formState.startDate ? (
+                    <span className="text-foreground">
+                      {format(parseISO(formState.startDate), "MMMM d, yyyy")}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Start date</span>
+                  )}
+                </Button>
+                {datePickerOpen && (
                   <Calendar
                     mode="single"
                     selected={
@@ -873,39 +864,37 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                         setDatePickerOpen(false);
                       }
                     }}
-                    className="w-full [--cell-size:2.25rem]"
-                    classNames={{ root: "w-full" }}
+                    className="mt-2 w-full rounded-2xl border border-border bg-background p-2 [--cell-size:1.75rem]"
+                    classNames={{
+                      root: "w-full",
+                      month: "flex w-full flex-col gap-2",
+                      week: "mt-1 flex w-full",
+                    }}
+                    showOutsideDays={false}
                     autoFocus
                   />
-                </PopoverContent>
-              </Popover>
+                )}
+              </div>
 
               {/* End Date picker */}
-              <Popover
-                open={endDatePickerOpen}
-                onOpenChange={setEndDatePickerOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
-                  >
-                    <CalendarIcon className="mr-3 h-4 w-4 text-muted-foreground" />
-                    {formState.endDate ? (
-                      <span className="text-foreground">
-                        {format(parseISO(formState.endDate), "MMMM d, yyyy")}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">
-                        End date (optional)
-                      </span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[var(--radix-popover-trigger-width)] p-0"
-                  align="start"
+              <div>
+                <Button
+                  variant="outline"
+                  className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
+                  onClick={() => setEndDatePickerOpen((v) => !v)}
                 >
+                  <CalendarIcon className="mr-3 h-4 w-4 text-muted-foreground" />
+                  {formState.endDate ? (
+                    <span className="text-foreground">
+                      {format(parseISO(formState.endDate), "MMMM d, yyyy")}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      End date (optional)
+                    </span>
+                  )}
+                </Button>
+                {endDatePickerOpen && (
                   <Calendar
                     mode="single"
                     selected={
@@ -913,9 +902,9 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                         ? parseISO(formState.endDate)
                         : undefined
                     }
-                    fromDate={
+                    disabled={
                       formState.startDate
-                        ? parseISO(formState.startDate)
+                        ? { before: parseISO(formState.startDate) }
                         : undefined
                     }
                     onSelect={(day) => {
@@ -927,12 +916,17 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                         setEndDatePickerOpen(false);
                       }
                     }}
-                    className="w-full [--cell-size:2.25rem]"
-                    classNames={{ root: "w-full" }}
+                    className="mt-2 w-full rounded-2xl border border-border bg-background p-2 [--cell-size:1.75rem]"
+                    classNames={{
+                      root: "w-full",
+                      month: "flex w-full flex-col gap-2",
+                      week: "mt-1 flex w-full",
+                    }}
+                    showOutsideDays={false}
                     autoFocus
                   />
-                </PopoverContent>
-              </Popover>
+                )}
+              </div>
 
               {error && (
                 <p
