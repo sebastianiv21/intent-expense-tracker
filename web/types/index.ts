@@ -30,10 +30,13 @@ export type Transaction = {
   id: string;
   userId: string;
   categoryId: string | null;
-  amount: string;
+  amount: string;           // base-currency value (existing — all dashboard queries read this)
   type: TransactionType;
   description: string | null;
   date: string;
+  currency: string;         // ISO 4217 code (e.g. "USD", "COP")
+  originalAmount: string;   // amount as entered in transaction currency; Drizzle numeric → string at runtime
+  exchangeRate: string;     // full-precision rate; Drizzle numeric(20,10) → string at runtime
   createdAt: Date;
   updatedAt: Date;
 };
