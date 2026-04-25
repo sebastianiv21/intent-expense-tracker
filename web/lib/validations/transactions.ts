@@ -1,8 +1,16 @@
 import { z } from "zod";
+import { SUPPORTED_CURRENCIES } from "@/lib/currencies";
 
 const dateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
+
+const currencyCodeSchema = z
+  .string()
+  .length(3)
+  .refine((code) => SUPPORTED_CURRENCIES.some((c) => c.code === code), {
+    message: "Unsupported currency code",
+  });
 
 export const createTransactionSchema = z.object({
   amount: z.coerce.number().positive("Amount must be greater than 0"),
@@ -10,6 +18,8 @@ export const createTransactionSchema = z.object({
   description: z.string().max(255).optional(),
   date: dateSchema,
   categoryId: z.string().uuid().optional(),
+  currency: currencyCodeSchema.default("USD"),      // the transaction's currency (D-02)
+  baseCurrency: currencyCodeSchema.default("USD"),  // user's base currency for conversion (Pattern 3)
 });
 
 export const updateTransactionSchema = z.object({
@@ -18,6 +28,8 @@ export const updateTransactionSchema = z.object({
   description: z.string().max(255).optional(),
   date: dateSchema.optional(),
   categoryId: z.string().uuid().nullable().optional(),
+  currency: currencyCodeSchema.optional(),
+  baseCurrency: currencyCodeSchema, // required — needed for correct exchange-rate recalculation
 });
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
