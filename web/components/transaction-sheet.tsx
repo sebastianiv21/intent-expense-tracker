@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CalendarIcon,
   CheckCircle,
   Coffee,
   Home,
@@ -20,7 +19,7 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Calendar } from "@/components/ui/calendar";
+import { InlineDatePicker } from "@/components/ui/inline-date-picker";
 import {
   Popover,
   PopoverContent,
@@ -309,7 +308,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
         side="bottom"
         className="max-h-[90vh] rounded-t-3xl border border-border bg-card p-0 [&>button]:hidden lg:left-1/2 lg:w-[min(100%-2rem,58rem)] lg:-translate-x-1/2 lg:rounded-3xl"
       >
-        <div className="flex max-h-[90vh] flex-col">
+        <div className="flex max-h-[90vh] flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
             <SheetTitle className="text-2xl font-bold">
@@ -329,7 +328,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
             </button>
           </div>
 
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
             <div
               className="relative rounded-2xl px-4 py-5 text-center transition-all duration-300"
               style={{ background: amountGlow }}
@@ -545,54 +544,26 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
             )}
 
             <div>
-              <Button
-                variant="outline"
-                className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
-                onClick={() => setDatePickerOpen((v) => !v)}
-              >
-                <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
-                {form.date ? (
-                  <span className="text-foreground">
-                    {format(parseISO(form.date), "MMMM d, yyyy")}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Pick a date</span>
-                )}
-              </Button>
-              {datePickerOpen && (
-                <Calendar
-                  mode="single"
-                  selected={form.date ? parseISO(form.date) : undefined}
-                  onSelect={(day) => {
-                    if (day) {
-                      const newDate = format(day, "yyyy-MM-dd");
-                      updateField("date", newDate);
-                      setDatePickerOpen(false);
-                      // Re-fetch preview rate when date changes and a foreign currency is selected
-                      if (form.currency !== baseCurrency) {
-                        setPreviewRate(null);
-                        setPreviewLoading(true);
-                        getExchangeRateForPreview(
-                          form.currency,
-                          baseCurrency,
-                          newDate,
-                        ).then((result) => {
-                          setPreviewLoading(false);
-                          if ("rate" in result) setPreviewRate(result.rate);
-                        });
-                      }
-                    }
-                  }}
-                  className="mt-2 w-full rounded-2xl border border-border bg-background p-2 [--cell-size:1.75rem]"
-                  classNames={{
-                    root: "w-full",
-                    month: "flex w-full flex-col gap-2",
-                    week: "mt-1 flex w-full",
-                  }}
-                  showOutsideDays={false}
-                  autoFocus
-                />
-              )}
+              <InlineDatePicker
+                value={form.date}
+                open={datePickerOpen}
+                onOpenChange={setDatePickerOpen}
+                onChange={(isoDate) => {
+                  updateField("date", isoDate);
+                  if (form.currency !== baseCurrency) {
+                    setPreviewRate(null);
+                    setPreviewLoading(true);
+                    getExchangeRateForPreview(
+                      form.currency,
+                      baseCurrency,
+                      isoDate,
+                    ).then((result) => {
+                      setPreviewLoading(false);
+                      if ("rate" in result) setPreviewRate(result.rate);
+                    });
+                  }
+                }}
+              />
             </div>
 
             <textarea

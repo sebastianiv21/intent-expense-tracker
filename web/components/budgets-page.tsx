@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, addMonths, parseISO, subMonths } from "date-fns";
 import {
-  CalendarIcon,
   Check,
   CheckCircle,
   ChevronLeft,
@@ -17,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { InlineDatePicker } from "@/components/ui/inline-date-picker";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -544,7 +543,7 @@ export function BudgetsPage({
           side="bottom"
           className="max-h-[90vh] rounded-t-3xl border border-border bg-card p-0 [&>button]:hidden lg:left-1/2 lg:w-[min(100%-2rem,58rem)] lg:-translate-x-1/2 lg:rounded-3xl"
         >
-          <div className="flex max-h-[90vh] flex-col">
+          <div className="flex max-h-[90vh] flex-col overflow-hidden">
             <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <SheetTitle className="text-2xl font-bold">
@@ -566,7 +565,7 @@ export function BudgetsPage({
               </div>
             </SheetHeader>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 space-y-4">
               {/* Amount */}
               <div
                 className="relative rounded-2xl px-4 py-5 text-center"
@@ -728,49 +727,15 @@ export function BudgetsPage({
               )}
 
               {/* Date picker */}
-              <div>
-                <Button
-                  variant="outline"
-                  className="h-12 w-full justify-start rounded-2xl border border-border bg-background font-normal hover:bg-background/80"
-                  onClick={() => setDatePickerOpen((v) => !v)}
-                >
-                  <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
-                  {formState.startDate ? (
-                    <span className="text-foreground">
-                      {format(parseISO(formState.startDate), "MMMM d, yyyy")}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">Start date</span>
-                  )}
-                </Button>
-                {datePickerOpen && (
-                  <Calendar
-                    mode="single"
-                    selected={
-                      formState.startDate
-                        ? parseISO(formState.startDate)
-                        : undefined
-                    }
-                    onSelect={(day) => {
-                      if (day) {
-                        setFormState((prev) => ({
-                          ...prev,
-                          startDate: format(day, "yyyy-MM-dd"),
-                        }));
-                        setDatePickerOpen(false);
-                      }
-                    }}
-                    className="mt-2 w-full rounded-2xl border border-border bg-background p-2 [--cell-size:1.75rem]"
-                    classNames={{
-                      root: "w-full",
-                      month: "flex w-full flex-col gap-2",
-                      week: "mt-1 flex w-full",
-                    }}
-                    showOutsideDays={false}
-                    autoFocus
-                  />
-                )}
-              </div>
+              <InlineDatePicker
+                value={formState.startDate}
+                open={datePickerOpen}
+                onOpenChange={setDatePickerOpen}
+                placeholder="Start date"
+                onChange={(isoDate) =>
+                  setFormState((prev) => ({ ...prev, startDate: isoDate }))
+                }
+              />
 
               {error && (
                 <p
