@@ -1,4 +1,4 @@
-import { format, subDays, subMonths, subYears } from "date-fns";
+import { format } from "date-fns";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, financialProfile, transactions } from "@/lib/schema";
@@ -6,24 +6,19 @@ import { getAuthenticatedUser } from "@/lib/queries/auth";
 import { BUCKET_DEFINITIONS } from "@/lib/finance-utils";
 import type { AllocationBucket, FinancialProfile } from "@/types";
 
-const PERIOD_MAP = {
-  week: () => ({ start: subDays(new Date(), 7), end: new Date() }),
-  month: () => ({
-    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    end: new Date(),
-  }),
-  "3months": () => ({ start: subMonths(new Date(), 3), end: new Date() }),
-  "6months": () => ({ start: subMonths(new Date(), 6), end: new Date() }),
-  year: () => ({ start: subYears(new Date(), 1), end: new Date() }),
-} as const;
+// Resolve a "yyyy-MM" month into an inclusive [startDate, endDate] range of
+// "yyyy-MM-dd" strings for filtering the `date` column. Day 0 of the next
+// month is the last day of the target month.
+function monthRange(month: string) {
+  const startDate = `${month}-01`;
+  const [year, monthNum] = month.split("-").map(Number);
+  const endDate = format(new Date(year, monthNum, 0), "yyyy-MM-dd");
+  return { startDate, endDate };
+}
 
-export async function getInsights(params: {
-  period: "week" | "month" | "3months" | "6months" | "year";
-}) {
+export async function getInsights(params: { month: string }) {
   const { userId } = await getAuthenticatedUser();
-  const range = PERIOD_MAP[params.period]();
-  const startDate = format(range.start, "yyyy-MM-dd");
-  const endDate = format(range.end, "yyyy-MM-dd");
+  const { startDate, endDate } = monthRange(params.month);
 
   const totals = await db
     .select({
@@ -77,9 +72,7 @@ export async function getInsights(params: {
 
 export async function getAllocationSummary(params: { month: string }) {
   const { userId } = await getAuthenticatedUser();
-  const startDate = `${params.month}-01`;
-  const [year, month] = params.month.split("-").map(Number);
-  const endDate = format(new Date(year, month, 0), "yyyy-MM-dd");
+  const { startDate, endDate } = monthRange(params.month);
 
   const profileResult = await db
     .select()

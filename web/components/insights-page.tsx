@@ -2,9 +2,17 @@
 
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { Cell, Pie, Bar, XAxis, YAxis, Tooltip } from "recharts";
-import { format } from "date-fns";
-import { Home, Coffee, PiggyBank, type LucideIcon } from "lucide-react";
+import { format, addMonths, subMonths } from "date-fns";
+import {
+  Home,
+  Coffee,
+  PiggyBank,
+  ChevronLeft,
+  ChevronRight,
+  type LucideIcon,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -45,14 +53,8 @@ type InsightsPageProps = {
     targets: Record<AllocationBucket, number>;
     actual: Record<AllocationBucket, number>;
   };
+  initialMonth: string;
 };
-
-const PERIODS = [
-  { label: "This Month", value: "month" },
-  { label: "3 Months", value: "3months" },
-  { label: "6 Months", value: "6months" },
-  { label: "Year", value: "year" },
-] as const;
 
 const ANIMATION = {
   complianceChart: { begin: 100, duration: 800, easing: "ease-out" },
@@ -65,11 +67,15 @@ const BUCKET_ICONS: Record<AllocationBucket, LucideIcon> = {
   future: PiggyBank,
 };
 
-export function InsightsPage({ insights, allocation }: InsightsPageProps) {
+export function InsightsPage({
+  insights,
+  allocation,
+  initialMonth,
+}: InsightsPageProps) {
+  const router = useRouter();
   const { formatCurrencyCompact } = useCurrency();
-  const [period, setPeriod] =
-    useState<(typeof PERIODS)[number]["value"]>("month");
-  const isPeriodLocked = true;
+  const [month, setMonth] = useState(initialMonth);
+  const monthDate = new Date(`${month}-01T00:00:00`);
 
   const bucketSplitLabel = useMemo(() => {
     if (allocation.income <= 0) return "Bucket compliance";
@@ -121,19 +127,34 @@ export function InsightsPage({ insights, allocation }: InsightsPageProps) {
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {PERIODS.map((option) => (
-          <Button
-            key={option.value}
-            variant={period === option.value ? "default" : "outline"}
-            size="sm"
-            className="min-h-[44px]"
-            onClick={() => setPeriod(option.value)}
-            disabled={isPeriodLocked}
-          >
-            {option.label}
-          </Button>
-        ))}
+      <div className="flex items-center justify-between rounded-xl border border-border bg-card p-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            const newMonth = format(subMonths(monthDate, 1), "yyyy-MM");
+            setMonth(newMonth);
+            router.push(`/insights?month=${newMonth}`);
+          }}
+          aria-label="Previous month"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <p className="text-sm font-medium text-foreground">
+          {format(monthDate, "MMMM yyyy")}
+        </p>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            const newMonth = format(addMonths(monthDate, 1), "yyyy-MM");
+            setMonth(newMonth);
+            router.push(`/insights?month=${newMonth}`);
+          }}
+          aria-label="Next month"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
