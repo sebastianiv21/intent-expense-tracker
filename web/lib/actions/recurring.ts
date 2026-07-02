@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { format, addDays, addWeeks, addMonths, addYears } from "date-fns";
+import { format, parseISO, addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { and, eq, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { financialProfile, recurringTransactions, transactions } from "@/lib/schema";
 import { getAuthenticatedUser } from "@/lib/queries/auth";
+import { getOrFetchExchangeRate } from "@/lib/exchange-rates";
 import {
   createRecurringSchema,
   updateRecurringSchema,
@@ -27,6 +28,32 @@ function computeNextDueDate(date: Date, frequency: string) {
     default:
       return addMonths(date, 1);
   }
+}
+
+// First occurrence on or after `today` — advances a past start date forward so we never
+// backfill missed occurrences from before the item existed (product decision: forward-only).
+function firstDueOnOrAfter(
+  startDate: string,
+  frequency: string,
+  today: string,
+): string {
+  let due = startDate;
+  while (due < today) {
+    // parseISO (local midnight) round-trips stably with format; `new Date(iso)` parses
+    // as UTC and compounds a ~1-day drift each iteration.
+    due = format(computeNextDueDate(parseISO(due), frequency), "yyyy-MM-dd");
+  }
+  return due;
+}
+
+// Resolves the user's base currency from their financial profile (defaults to USD).
+async function getBaseCurrency(userId: string): Promise<string> {
+  const rows = await db
+    .select({ currency: financialProfile.currency })
+    .from(financialProfile)
+    .where(eq(financialProfile.userId, userId))
+    .limit(1);
+  return rows[0]?.currency ?? "USD";
 }
 
 export async function createRecurring(
@@ -51,20 +78,39 @@ export async function createRecurring(
     startDate,
     endDate,
     categoryId,
+    currency,
+    baseCurrency,
   } = parsed.data;
+
+  const today = format(new Date(), "yyyy-MM-dd");
+
+  // Convert to base currency for storage. Reference date is clamped to today because the
+  // historical-rate API 404s on future start dates; per-generation dates re-fetch anyway.
+  let exchangeRate: number;
+  try {
+    exchangeRate = await getOrFetchExchangeRate(currency, baseCurrency, today);
+  } catch {
+    return {
+      success: false,
+      error: "Couldn't fetch exchange rate — please try again.",
+    };
+  }
 
   try {
     const result = await db
       .insert(recurringTransactions)
       .values({
         userId,
-        amount: amount.toFixed(2),
+        amount: (amount * exchangeRate).toFixed(2),
+        originalAmount: amount.toFixed(2),
+        currency,
+        exchangeRate: exchangeRate.toString(),
         type,
         description: description ?? null,
         frequency,
         startDate,
         endDate: endDate ?? null,
-        nextDueDate: startDate,
+        nextDueDate: firstDueOnOrAfter(startDate, frequency, today),
         categoryId: categoryId ?? null,
         isActive: true,
       })
@@ -96,10 +142,51 @@ export async function updateRecurring(
     };
   }
 
+  // Pre-read required to compare start date (schedule) and existing currency/rate.
+  const existing = await db
+    .select()
+    .from(recurringTransactions)
+    .where(
+      and(
+        eq(recurringTransactions.id, id),
+        eq(recurringTransactions.userId, userId),
+      ),
+    )
+    .limit(1);
+
+  if (!existing[0]) {
+    return { success: false, error: "Recurring transaction not found" };
+  }
+
+  const today = format(new Date(), "yyyy-MM-dd");
   const updateValues: Record<string, string | boolean | null> = {};
 
-  if (parsed.data.amount !== undefined) {
-    updateValues.amount = parsed.data.amount.toFixed(2);
+  // Recompute stored base amount / rate only when amount or currency changes.
+  if (parsed.data.amount !== undefined || parsed.data.currency !== undefined) {
+    const newCurrency = parsed.data.currency ?? existing[0].currency;
+    const baseCurrency =
+      parsed.data.baseCurrency ?? (await getBaseCurrency(userId));
+    const originalAmount =
+      parsed.data.amount ?? Number(existing[0].originalAmount);
+
+    let exchangeRate: number;
+    try {
+      exchangeRate = await getOrFetchExchangeRate(
+        newCurrency,
+        baseCurrency,
+        today,
+      );
+    } catch {
+      return {
+        success: false,
+        error: "Couldn't fetch exchange rate — please try again.",
+      };
+    }
+
+    updateValues.currency = newCurrency;
+    updateValues.originalAmount = originalAmount.toFixed(2);
+    updateValues.exchangeRate = exchangeRate.toString();
+    updateValues.amount = (originalAmount * exchangeRate).toFixed(2);
   }
   if (parsed.data.type !== undefined) {
     updateValues.type = parsed.data.type;
@@ -112,13 +199,37 @@ export async function updateRecurring(
   }
   if (parsed.data.startDate !== undefined) {
     updateValues.startDate = parsed.data.startDate;
-    updateValues.nextDueDate = parsed.data.startDate;
+    // Only reschedule when the start date actually changed — editing other fields must
+    // not rewind nextDueDate (which would re-generate every past period as duplicates).
+    if (parsed.data.startDate !== existing[0].startDate) {
+      const frequency = parsed.data.frequency ?? existing[0].frequency;
+      updateValues.nextDueDate = firstDueOnOrAfter(
+        parsed.data.startDate,
+        frequency,
+        today,
+      );
+    }
   }
   if (parsed.data.endDate !== undefined) {
     updateValues.endDate = parsed.data.endDate ?? null;
   }
   if (parsed.data.isActive !== undefined) {
     updateValues.isActive = parsed.data.isActive;
+    // Resuming a paused item: roll the schedule forward to the next occurrence on/after
+    // today so periods that elapsed while paused are skipped, not backfilled on the next
+    // processing run. (Guard: don't override a nextDueDate a start-date change just set.)
+    if (
+      parsed.data.isActive === true &&
+      existing[0].isActive === false &&
+      updateValues.nextDueDate === undefined
+    ) {
+      const frequency = parsed.data.frequency ?? existing[0].frequency;
+      updateValues.nextDueDate = firstDueOnOrAfter(
+        existing[0].nextDueDate,
+        frequency,
+        today,
+      );
+    }
   }
   if (parsed.data.categoryId !== undefined) {
     updateValues.categoryId = parsed.data.categoryId ?? null;
@@ -214,34 +325,68 @@ export async function processRecurringTransactions(): Promise<{
       let currentDueDate = item.nextDueDate;
 
       while (currentDueDate <= today) {
-        const nextDate = new Date(currentDueDate);
+        const nextDate = parseISO(currentDueDate);
         const computedNext = computeNextDueDate(nextDate, item.frequency);
         const nextDue = format(computedNext, "yyyy-MM-dd");
         const shouldDeactivate = item.endDate && item.endDate < nextDue;
 
-        // Use a transaction to ensure atomicity of insert + update
-        await db.transaction(async (tx) => {
-          await tx.insert(transactions).values({
-            userId,
-            amount: item.amount,
-            originalAmount: item.amount,   // recurring transactions are base-currency (rate = 1.0)
-            currency: baseCur,             // user's actual base currency from financial profile
-            exchangeRate: "1.0",
-            type: item.type,
-            description: item.description,
-            date: currentDueDate,
-            categoryId: item.categoryId,
-          });
+        // Convert the item's currency to base at this due date's rate. Same-currency
+        // short-circuits to 1.0 (no fetch); on fetch failure fall back to the last known
+        // rate stored on the item — this is a background job with no user to retry.
+        let rate = 1.0;
+        if (item.currency !== baseCur) {
+          try {
+            rate = await getOrFetchExchangeRate(
+              item.currency,
+              baseCur,
+              currentDueDate,
+            );
+          } catch {
+            rate = Number(item.exchangeRate);
+          }
+        }
+        const convertedAmount = (Number(item.originalAmount) * rate).toFixed(2);
 
-          await tx
+        // Claim-then-insert to avoid double-generation under concurrent requests.
+        // The guarded UPDATE (nextDueDate = currentDueDate) is a compare-and-swap: only
+        // one racing request can advance the row from this due date, and only that request
+        // inserts. The loser matches 0 rows and bails. Both writes share one transaction so
+        // a failed insert rolls back the claim.
+        const claimed = await db.transaction(async (tx) => {
+          const advanced = await tx
             .update(recurringTransactions)
             .set({
               nextDueDate: nextDue,
               lastGeneratedDate: currentDueDate,
               isActive: shouldDeactivate ? false : item.isActive,
             })
-            .where(eq(recurringTransactions.id, item.id));
+            .where(
+              and(
+                eq(recurringTransactions.id, item.id),
+                eq(recurringTransactions.nextDueDate, currentDueDate),
+              ),
+            )
+            .returning({ id: recurringTransactions.id });
+
+          if (advanced.length === 0) return false; // another request already advanced it
+
+          await tx.insert(transactions).values({
+            userId,
+            amount: convertedAmount,       // base-currency value at this due date
+            originalAmount: item.originalAmount, // as entered, in item.currency
+            currency: item.currency,
+            exchangeRate: rate.toString(),
+            type: item.type,
+            description: item.description,
+            date: currentDueDate,
+            categoryId: item.categoryId,
+          });
+
+          return true;
         });
+
+        // Lost the claim — another concurrent run owns this item; stop processing it.
+        if (!claimed) break;
 
         generated += 1;
         currentDueDate = nextDue;

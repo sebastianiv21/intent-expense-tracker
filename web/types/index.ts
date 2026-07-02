@@ -56,6 +56,9 @@ export type RecurringTransaction = {
   userId: string;
   categoryId: string | null;
   amount: string;
+  currency: string;
+  originalAmount: string;
+  exchangeRate: string;
   type: TransactionType;
   description: string | null;
   frequency: RecurrenceFrequency;

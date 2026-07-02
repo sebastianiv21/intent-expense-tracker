@@ -1,6 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { getBucketColor, getTransactionColor } from "@/lib/finance-utils";
 import { useCurrency } from "@/components/currency-provider";
 import type { RecurringTransactionWithCategory } from "@/types";
@@ -39,7 +39,7 @@ export function UpcomingRecurringList({ items }: UpcomingRecurringListProps) {
                     "Recurring"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Next {format(new Date(recurring.nextDueDate), "MMM d")}
+                  Next {format(parseISO(recurring.nextDueDate), "MMM d")}
                 </p>
               </div>
             </div>
