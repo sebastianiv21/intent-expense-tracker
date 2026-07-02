@@ -31,6 +31,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { InlineDatePicker } from "@/components/ui/inline-date-picker";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -40,7 +45,9 @@ import {
   calculatePercentage,
   BUCKET_ORDER,
   formatAmountDisplay,
+  formatCurrency,
   getAmountInputLength,
+  getCurrencyDecimals,
   parseAmountInput,
   parseStoredAmount,
 } from "@/lib/finance-utils";
@@ -51,6 +58,7 @@ import {
   deleteRecurring,
   updateRecurring,
 } from "@/lib/actions/recurring";
+import { getExchangeRateForPreview } from "@/lib/actions/transactions";
 import type {
   AllocationBucket,
   Category,
@@ -72,6 +80,7 @@ type RecurringFormState = {
   startDate: string;
   endDate: string;
   categoryId: string;
+  currency: string; // ISO 4217 code; defaults to baseCurrency on create, item.currency on edit
 };
 
 const FREQUENCIES: Array<{ label: string; value: RecurrenceFrequency }> = [
@@ -125,7 +134,7 @@ function getAmountFontSize(len: number): string {
 
 export function RecurringPage({ recurring, categories }: RecurringPageProps) {
   const [status, setStatus] = useState<"active" | "paused">("active");
-  const { formatCurrencyCompact } = useCurrency();
+  const { currency: baseCurrency, formatCurrencyCompact } = useCurrency();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] =
     useState<RecurringTransactionWithCategory | null>(null);
@@ -137,11 +146,15 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     startDate: format(new Date(), "yyyy-MM-dd"),
     endDate: "",
     categoryId: "",
+    currency: baseCurrency,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [endDatePickerOpen, setEndDatePickerOpen] = useState(false);
+  const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
+  const [previewRate, setPreviewRate] = useState<number | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
     null,
   );
@@ -225,10 +238,14 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
       startDate: format(new Date(), "yyyy-MM-dd"),
       endDate: "",
       categoryId: "",
+      currency: baseCurrency,
     });
     setError("");
     setDatePickerOpen(false);
     setEndDatePickerOpen(false);
+    setCurrencyPickerOpen(false);
+    setPreviewRate(null);
+    setPreviewLoading(false);
     setAmountDecimalSeparator(null);
     setSheetOpen(true);
   }
@@ -242,19 +259,43 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
         : "needs",
     );
     setFormState({
-      amount: Number(item.amount).toString(),
+      amount: Number(item.originalAmount).toString(),
       type: item.type,
       description: item.description ?? "",
       frequency: item.frequency,
       startDate: item.startDate,
       endDate: item.endDate ?? "",
       categoryId: item.categoryId ?? "",
+      currency: item.currency ?? baseCurrency,
     });
     setError("");
     setDatePickerOpen(false);
     setEndDatePickerOpen(false);
+    setCurrencyPickerOpen(false);
+    setPreviewRate(null);
+    setPreviewLoading(false);
     setAmountDecimalSeparator(null);
     setSheetOpen(true);
+  }
+
+  async function handleCurrencySelect(newCurrency: string): Promise<void> {
+    setFormState((prev) => ({ ...prev, currency: newCurrency }));
+    setCurrencyPickerOpen(false);
+    setPreviewRate(null);
+    // No preview for same-currency items
+    if (newCurrency === baseCurrency) return;
+    setPreviewLoading(true);
+    const result = await getExchangeRateForPreview(
+      newCurrency,
+      baseCurrency,
+      format(new Date(), "yyyy-MM-dd"),
+    );
+    setPreviewLoading(false);
+    if ("rate" in result) {
+      setPreviewRate(result.rate);
+    } else {
+      setError("Couldn't fetch exchange rate — please try again.");
+    }
   }
 
   function switchFilterBucket(bucket: AllocationBucket) {
@@ -277,6 +318,8 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
       startDate: formState.startDate,
       endDate: formState.endDate || undefined,
       categoryId: formState.categoryId || undefined,
+      currency: formState.currency,
+      baseCurrency,
     };
 
     try {
@@ -472,7 +515,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {item.frequency} • Next{" "}
-                            {format(new Date(item.nextDueDate), "MMM d")}
+                            {format(parseISO(item.nextDueDate), "MMM d")}
                           </p>
                         </div>
                       </div>
@@ -601,18 +644,57 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                 }}
               >
                 <div className="flex items-center justify-center">
-                  <span
-                    className={cn(
-                      "mr-2 font-mono font-extrabold text-primary transition-all duration-200",
-                      getAmountFontSize(getAmountInputLength(formState.amount)),
-                    )}
+                  <Popover
+                    open={currencyPickerOpen}
+                    onOpenChange={setCurrencyPickerOpen}
                   >
-                    $
-                  </span>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Select currency"
+                        className={cn(
+                          "mr-2 min-h-[44px] rounded-xl border px-3 py-2 font-mono font-bold transition-colors",
+                          getAmountFontSize(
+                            getAmountInputLength(formState.amount),
+                          ),
+                          currencyPickerOpen
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-muted text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {formState.currency}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-32 p-1" align="start">
+                      {(["USD", "COP"] as const).map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => handleCurrencySelect(c)}
+                          className={cn(
+                            "w-full rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors",
+                            c === formState.currency
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-muted",
+                          )}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
                   <Input
                     type="text"
-                    inputMode="decimal"
-                    placeholder="0.00"
+                    inputMode={
+                      getCurrencyDecimals(formState.currency) === 0
+                        ? "numeric"
+                        : "decimal"
+                    }
+                    placeholder={
+                      getCurrencyDecimals(formState.currency) === 0
+                        ? "0"
+                        : "0.00"
+                    }
                     aria-label="Amount"
                     className={cn(
                       "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
@@ -624,18 +706,56 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                       amountDecimalSeparator,
                     )}
                     onChange={(e) => {
+                      if (getCurrencyDecimals(formState.currency) === 0) {
+                        // Zero-decimal currency: skip separator heuristics, digits only
+                        setFormState((prev) => ({
+                          ...prev,
+                          amount: e.target.value.replace(/[^0-9]/g, ""),
+                        }));
+                        return;
+                      }
                       const parsed = parseAmountInput(
                         e.target.value,
                         amountDecimalSeparator,
                       );
+                      let { normalizedValue } = parsed;
+                      // Clamp decimals to what the currency supports
+                      if (normalizedValue.includes(".")) {
+                        const [int, dec] = normalizedValue.split(".");
+                        normalizedValue = `${int}.${dec.slice(
+                          0,
+                          getCurrencyDecimals(formState.currency),
+                        )}`;
+                      }
                       setFormState((prev) => ({
                         ...prev,
-                        amount: parsed.normalizedValue,
+                        amount: normalizedValue,
                       }));
                       setAmountDecimalSeparator(parsed.decimalSeparator);
                     }}
                   />
                 </div>
+                {formState.currency !== baseCurrency && (
+                  <p
+                    aria-live="polite"
+                    className={cn(
+                      "mt-2 text-center text-sm tabular-nums",
+                      previewLoading
+                        ? "text-muted-foreground/50"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {previewLoading
+                      ? "Fetching rate…"
+                      : previewRate !== null &&
+                          parseStoredAmount(formState.amount) > 0
+                        ? `≈ ${formatCurrency(
+                            parseStoredAmount(formState.amount) * previewRate,
+                            baseCurrency,
+                          )} ${baseCurrency}`
+                        : null}
+                  </p>
+                )}
               </div>
 
               {/* Description */}

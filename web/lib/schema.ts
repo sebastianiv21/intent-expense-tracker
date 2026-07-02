@@ -216,6 +216,11 @@ export const recurringTransactions = pgTable(
       onDelete: "set null",
     }),
     amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+    originalAmount: numeric("original_amount", { precision: 10, scale: 2 }).notNull(),
+    exchangeRate: numeric("exchange_rate", { precision: 20, scale: 10 })
+      .notNull()
+      .default("1.0"),
     type: transactionTypeEnum("type").notNull(),
     description: varchar("description", { length: 255 }),
     frequency: recurrenceFrequencyEnum("frequency").notNull(),

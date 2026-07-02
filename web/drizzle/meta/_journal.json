@@ -29,6 +29,13 @@
       "when": 1776695963863,
       "tag": "0003_multi-currency-schema",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782945020353,
+      "tag": "0004_easy_bruce_banner",
+      "breakpoints": true
     }
   ]
 }
