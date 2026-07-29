@@ -196,6 +196,7 @@ export async function updateRecurring(
         existing[0].nextDueDate,
         frequency,
         today,
+        existing[0].startDate,
       );
     }
   }

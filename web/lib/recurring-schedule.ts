@@ -2,7 +2,16 @@
 // so it can be exercised without a database — that file is "use server" and may only
 // export async functions.
 
-import { addDays, addMonths, addWeeks, addYears, format, parseISO } from "date-fns";
+import {
+  addDays,
+  addMonths,
+  addWeeks,
+  format,
+  getDaysInMonth,
+  parseISO,
+  setDate,
+  startOfMonth,
+} from "date-fns";
 
 export type RecurrenceFrequency =
   | "daily"
@@ -16,6 +25,8 @@ export type ScheduleInput = {
   nextDueDate: string;
   frequency: string;
   endDate?: string | null;
+  /** Day-of-month anchor for month-based frequencies. Falls back to `nextDueDate`. */
+  startDate?: string;
 };
 
 export type Occurrence = {
@@ -27,7 +38,18 @@ export type Occurrence = {
   deactivate: boolean;
 };
 
-export function computeNextDueDate(date: Date, frequency: string): Date {
+// Steps a month-based frequency while keeping `anchorDay`, clamping only for the target
+// month. Clamping off the *previous* due date would make February's clamp permanent.
+function addMonthsOnAnchor(date: Date, months: number, anchorDay: number): Date {
+  const shifted = addMonths(startOfMonth(date), months);
+  return setDate(shifted, Math.min(anchorDay, getDaysInMonth(shifted)));
+}
+
+export function computeNextDueDate(
+  date: Date,
+  frequency: string,
+  anchorDay: number = date.getDate(),
+): Date {
   switch (frequency) {
     case "daily":
       return addDays(date, 1);
@@ -36,30 +58,39 @@ export function computeNextDueDate(date: Date, frequency: string): Date {
     case "biweekly":
       return addWeeks(date, 2);
     case "quarterly":
-      return addMonths(date, 3);
+      return addMonthsOnAnchor(date, 3, anchorDay);
     case "yearly":
-      return addYears(date, 1);
+      return addMonthsOnAnchor(date, 12, anchorDay);
     default:
-      return addMonths(date, 1);
+      return addMonthsOnAnchor(date, 1, anchorDay);
   }
 }
 
 // parseISO (local midnight) round-trips stably with format; `new Date(iso)` parses
 // as UTC and compounds a ~1-day drift each iteration.
-export function advanceDueDate(date: string, frequency: string): string {
-  return format(computeNextDueDate(parseISO(date), frequency), "yyyy-MM-dd");
+export function advanceDueDate(
+  date: string,
+  frequency: string,
+  anchor?: string,
+): string {
+  const anchorDay = anchor ? parseISO(anchor).getDate() : undefined;
+  return format(
+    computeNextDueDate(parseISO(date), frequency, anchorDay),
+    "yyyy-MM-dd",
+  );
 }
 
 // First occurrence on or after `today` — advances a past start date forward so we never
 // backfill missed occurrences from before the item existed (product decision: forward-only).
 export function firstDueOnOrAfter(
-  startDate: string,
+  from: string,
   frequency: string,
   today: string,
+  anchor: string = from,
 ): string {
-  let due = startDate;
+  let due = from;
   while (due < today) {
-    due = advanceDueDate(due, frequency);
+    due = advanceDueDate(due, frequency, anchor);
   }
   return due;
 }
@@ -74,9 +105,10 @@ export function planOccurrences(
 ): Occurrence[] {
   const occurrences: Occurrence[] = [];
   let dueDate = item.nextDueDate;
+  const anchor = item.startDate ?? item.nextDueDate;
 
   while (dueDate <= today) {
-    const nextDue = advanceDueDate(dueDate, item.frequency);
+    const nextDue = advanceDueDate(dueDate, item.frequency, anchor);
     const deactivate = Boolean(item.endDate && item.endDate < nextDue);
     occurrences.push({ dueDate, nextDue, deactivate });
     if (deactivate) break;
