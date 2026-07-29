@@ -40,20 +40,79 @@ describe("advanceDueDate", () => {
     expect(advanceDueDate("2026-11-01", "daily")).toBe("2026-11-02");
   });
 
-  // Known limitation: the schedule carries no day-of-month anchor, so a monthly item that
-  // starts on the 31st is clamped to 28 February and then stays on the 28th forever. Fixing
-  // it means anchoring generation on the item's start date rather than on the previous due
-  // date — a behaviour change to the stored schedule, not a one-line fix.
-  it.skip("keeps the original day-of-month anchor after a short month", () => {
-    expect(advanceDueDate(advanceDueDate("2026-01-31", "monthly"), "monthly")).toBe(
+  it("keeps the original day-of-month anchor after a short month", () => {
+    const anchor = "2026-01-31";
+    const february = advanceDueDate(anchor, "monthly", anchor);
+    expect(february).toBe("2026-02-28");
+    expect(advanceDueDate(february, "monthly", anchor)).toBe("2026-03-31");
+  });
+
+  it("holds the 31st anchor across a full year", () => {
+    const anchor = "2026-01-31";
+    const dates: string[] = [];
+    let due = anchor;
+    for (let i = 0; i < 12; i += 1) {
+      due = advanceDueDate(due, "monthly", anchor);
+      dates.push(due);
+    }
+    expect(dates).toEqual([
+      "2026-02-28",
       "2026-03-31",
+      "2026-04-30",
+      "2026-05-31",
+      "2026-06-30",
+      "2026-07-31",
+      "2026-08-31",
+      "2026-09-30",
+      "2026-10-31",
+      "2026-11-30",
+      "2026-12-31",
+      "2027-01-31",
+    ]);
+  });
+
+  it("recovers the anchor from a leap February too", () => {
+    const anchor = "2028-01-31";
+    const february = advanceDueDate(anchor, "monthly", anchor);
+    expect(february).toBe("2028-02-29");
+    expect(advanceDueDate(february, "monthly", anchor)).toBe("2028-03-31");
+  });
+
+  it("keeps a 29th or 30th anchor through February", () => {
+    const thirtieth = "2026-01-30";
+    expect(advanceDueDate(thirtieth, "monthly", thirtieth)).toBe("2026-02-28");
+    expect(advanceDueDate("2026-02-28", "monthly", thirtieth)).toBe("2026-03-30");
+
+    const twentyNinth = "2026-01-29";
+    expect(advanceDueDate(twentyNinth, "monthly", twentyNinth)).toBe("2026-02-28");
+    expect(advanceDueDate("2026-02-28", "monthly", twentyNinth)).toBe("2026-03-29");
+
+    // A leap February takes the 29th unclamped, so there is nothing to recover.
+    expect(advanceDueDate("2028-01-29", "monthly", "2028-01-29")).toBe("2028-02-29");
+  });
+
+  it("keeps the anchor for quarterly and yearly steps", () => {
+    expect(advanceDueDate("2025-11-30", "quarterly", "2025-11-30")).toBe(
+      "2026-02-28",
+    );
+    expect(advanceDueDate("2026-02-28", "quarterly", "2025-11-30")).toBe(
+      "2026-05-30",
+    );
+
+    expect(advanceDueDate("2028-02-29", "yearly", "2028-02-29")).toBe(
+      "2029-02-28",
+    );
+    expect(advanceDueDate("2029-02-28", "yearly", "2028-02-29")).toBe(
+      "2030-02-28",
+    );
+    expect(advanceDueDate("2031-02-28", "yearly", "2028-02-29")).toBe(
+      "2032-02-29",
     );
   });
 
-  it("currently drifts off the month-end anchor after a short month", () => {
-    expect(advanceDueDate(advanceDueDate("2026-01-31", "monthly"), "monthly")).toBe(
-      "2026-03-28",
-    );
+  // Without an anchor the previous due date supplies the day, so a clamped date stays clamped.
+  it("falls back to the given date's day when no anchor is supplied", () => {
+    expect(advanceDueDate("2026-02-28", "monthly")).toBe("2026-03-28");
   });
 });
 
@@ -77,6 +136,18 @@ describe("firstDueOnOrAfter", () => {
     expect(firstDueOnOrAfter("2026-03-01", "weekly", "2026-03-15")).toBe(
       "2026-03-15",
     );
+  });
+
+  it("holds a month-end start date while rolling forward", () => {
+    expect(firstDueOnOrAfter("2026-01-31", "monthly", "2026-06-15")).toBe(
+      "2026-06-30",
+    );
+  });
+
+  it("uses an explicit anchor when resuming from a drifted due date", () => {
+    expect(
+      firstDueOnOrAfter("2026-02-28", "monthly", "2026-06-15", "2026-01-31"),
+    ).toBe("2026-06-30");
   });
 
   it("rolls forward across a year boundary", () => {
@@ -125,7 +196,20 @@ describe("planOccurrences", () => {
       today,
     );
     expect(plan.map((o) => o.dueDate)).toEqual(["2026-01-31", "2026-02-28"]);
-    expect(plan.at(-1)!.nextDue).toBe("2026-03-28");
+    expect(plan.at(-1)!.nextDue).toBe("2026-03-31");
+  });
+
+  it("anchors catch-up on the start date, not the drifted due date", () => {
+    const plan = planOccurrences(
+      {
+        nextDueDate: "2026-02-28",
+        frequency: "monthly",
+        startDate: "2025-12-31",
+      },
+      today,
+    );
+    expect(plan.map((o) => o.dueDate)).toEqual(["2026-02-28"]);
+    expect(plan.at(-1)!.nextDue).toBe("2026-03-31");
   });
 
   it("does not re-plan an occurrence once the schedule has advanced past it", () => {
