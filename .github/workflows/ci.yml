@@ -15,7 +15,7 @@ defaults:
 
 jobs:
   check:
-    name: Lint, typecheck, build
+    name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
     env:
       # Placeholders only. `next build` imports lib/db.ts and lib/auth.ts during
@@ -50,6 +50,9 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
 
       - name: Build
         run: pnpm build
