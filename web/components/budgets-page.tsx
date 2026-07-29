@@ -39,6 +39,7 @@ import {
   getBucketColor,
   formatAmountDisplay,
   getAmountInputLength,
+  initialDecimalSeparator,
   parseAmountInput,
   parseStoredAmount,
 } from "@/lib/finance-utils";
@@ -202,15 +203,16 @@ export function BudgetsPage({
     setConfirmingDeleteId(null);
     setEditing(budget);
     setFilterBucket(budget.category.allocationBucket ?? "needs");
+    const amount = Number(budget.amount).toString();
     setFormState({
       categoryId: budget.categoryId,
-      amount: Number(budget.amount).toString(),
+      amount,
       period: budget.period,
       startDate: budget.startDate,
     });
     setError("");
     setDatePickerOpen(false);
-    setAmountDecimalSeparator(null);
+    setAmountDecimalSeparator(initialDecimalSeparator(amount));
     setSheetOpen(true);
   }
 

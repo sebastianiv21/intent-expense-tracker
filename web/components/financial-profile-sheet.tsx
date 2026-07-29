@@ -6,6 +6,7 @@ import {
   formatCurrency,
   formatAmountDisplay,
   getAmountInputLength,
+  initialDecimalSeparator,
   parseAmountInput,
   parseStoredAmount,
   BUCKET_DEFINITIONS,
@@ -95,7 +96,7 @@ export function FinancialProfileSheet({
   const [loading, setLoading] = useState(false);
   const [incomeDecimalSeparator, setIncomeDecimalSeparator] = useState<
     "." | "," | null
-  >(null);
+  >(() => initialDecimalSeparator(income));
 
   // Reset state when the sheet opens (to pick up any profile prop changes)
   useEffect(() => {
@@ -104,7 +105,9 @@ export function FinancialProfileSheet({
       setBuckets(bucketsFromProfile(profile));
       setCurrency(profile.currency ?? "USD");
       setError("");
-      setIncomeDecimalSeparator(null);
+      setIncomeDecimalSeparator(
+        initialDecimalSeparator(profile.monthlyIncomeTarget.toString()),
+      );
     }
   }, [open, profile]);
 
@@ -118,7 +121,9 @@ export function FinancialProfileSheet({
     setBuckets(bucketsFromProfile(profile));
     setCurrency(profile.currency ?? "USD");
     setError("");
-    setIncomeDecimalSeparator(null);
+    setIncomeDecimalSeparator(
+      initialDecimalSeparator(profile.monthlyIncomeTarget.toString()),
+    );
   }
 
   function updateBucket(key: keyof Buckets, value: number) {

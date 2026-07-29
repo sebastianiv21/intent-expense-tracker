@@ -32,6 +32,7 @@ import {
   formatCurrency,
   getAmountInputLength,
   getCurrencyDecimals,
+  initialDecimalSeparator,
   parseAmountInput,
   parseStoredAmount,
 } from "@/lib/finance-utils";
@@ -180,7 +181,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [amountDecimalSeparator, setAmountDecimalSeparator] = useState<
     "." | "," | null
-  >(null);
+  >(() => initialDecimalSeparator(form.amount));
   const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
   const [previewRate, setPreviewRate] = useState<number | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -188,10 +189,16 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
   // Reset form whenever the sheet opens
   useEffect(() => {
     if (isOpen) {
-      setForm(buildInitialState(mode, transaction, categories, baseCurrency));
+      const initial = buildInitialState(
+        mode,
+        transaction,
+        categories,
+        baseCurrency,
+      );
+      setForm(initial);
       setError(null);
       setDatePickerOpen(false);
-      setAmountDecimalSeparator(null);
+      setAmountDecimalSeparator(initialDecimalSeparator(initial.amount));
       setCurrencyPickerOpen(false);
       setPreviewRate(null);
       setPreviewLoading(false);

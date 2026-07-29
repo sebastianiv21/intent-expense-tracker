@@ -48,6 +48,7 @@ import {
   formatCurrency,
   getAmountInputLength,
   getCurrencyDecimals,
+  initialDecimalSeparator,
   parseAmountInput,
   parseStoredAmount,
 } from "@/lib/finance-utils";
@@ -258,8 +259,9 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
         ? item.category.allocationBucket
         : "needs",
     );
+    const amount = Number(item.originalAmount).toString();
     setFormState({
-      amount: Number(item.originalAmount).toString(),
+      amount,
       type: item.type,
       description: item.description ?? "",
       frequency: item.frequency,
@@ -274,7 +276,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     setCurrencyPickerOpen(false);
     setPreviewRate(null);
     setPreviewLoading(false);
-    setAmountDecimalSeparator(null);
+    setAmountDecimalSeparator(initialDecimalSeparator(amount));
     setSheetOpen(true);
   }
 
