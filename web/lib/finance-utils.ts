@@ -116,24 +116,33 @@ export function formatCurrencyCompact(
 
 export type AmountDecimalSeparator = "." | "," | null;
 
+/** Integer parts that a thousands separator could plausibly have grouped. */
+const GROUPED_INTEGER = {
+  ".": /^[1-9]\d{0,2}(?:\.\d{3})*$/,
+  ",": /^[1-9]\d{0,2}(?:,\d{3})*$/,
+} as const;
+
 function inferDecimalSeparator(input: string): AmountDecimalSeparator {
   const matches = [...input.matchAll(/[.,]/g)];
   if (matches.length === 0) return null;
 
-  if (matches.length === 1) {
-    const match = matches[0];
-    const digitsAfter = input.length - (match.index ?? 0) - 1;
-    if (digitsAfter >= 3) return null; // 3+ digits after separator = thousands, not decimal
-    return match[0] as "." | ",";
-  }
-
   const lastMatch = matches[matches.length - 1];
-  const digitsAfter = input.length - (lastMatch.index ?? 0) - 1;
-  if (digitsAfter === 0 || digitsAfter <= 2) {
-    return lastMatch[0] as "." | ",";
+  const index = lastMatch.index ?? 0;
+  const separator = lastMatch[0] as "." | ",";
+  const digitsAfter = input.length - index - 1;
+
+  // Three or more trailing digits are either a thousands group ("1.234") or a
+  // decimal being typed into ("1234.567"); appending a digit makes both the same
+  // length. Only the integer part tells them apart — a thousands separator can
+  // follow nothing but a validly grouped one.
+  if (
+    digitsAfter >= 3 &&
+    GROUPED_INTEGER[separator].test(input.slice(0, index))
+  ) {
+    return null;
   }
 
-  return null;
+  return separator;
 }
 
 /**
@@ -201,6 +210,16 @@ export function parseAmountInput(
     normalizedValue: `${intPart || "0"}.${decPart}`,
     decimalSeparator,
   };
+}
+
+/**
+ * The separator an amount input should start out tracking for an already
+ * normalized value. `formatAmountDisplay` renders an untracked fraction with a
+ * dot, so seeding anything else would make the next keystroke re-read that dot
+ * as a thousands group and multiply the amount by 1000.
+ */
+export function initialDecimalSeparator(raw: string): AmountDecimalSeparator {
+  return raw.includes(".") ? "." : null;
 }
 
 export function parseStoredAmount(raw: string): number {

@@ -8,6 +8,7 @@ import {
   getAmountInputLength,
   getBucketColor,
   getCurrencyDecimals,
+  initialDecimalSeparator,
   parseAmountInput,
   parseStoredAmount,
   BUCKET_DEFINITIONS,
@@ -155,13 +156,49 @@ describe("parseAmountInput", () => {
     });
   });
 
-  // Known defect: typing a third decimal digit ("12.34" → "12.345") makes the parser
-  // reclassify the dot as a thousands separator, turning 12.34 into 12345 — a silent
-  // 1000x error. Un-skip once the separator heuristic distinguishes "digits appended
-  // after a decimal" from "digits appended after a thousands group"; a naive
-  // `digitsAfter === 3` fix breaks ordinary five-digit entry ("1,2345" → 12345).
-  it.skip("does not reinterpret a decimal as thousands when a third decimal digit is typed", () => {
+  it("does not reinterpret a decimal as thousands when a third decimal digit is typed", () => {
     expect(parseAmountInput("12.345", ".").normalizedValue).toBe("12.345");
+    expect(parseAmountInput("12,345", ",").normalizedValue).toBe("12.345");
+  });
+
+  it("reads a separator as a decimal when the integer part is not validly grouped", () => {
+    expect(parseAmountInput("1234.567")).toEqual({
+      normalizedValue: "1234.567",
+      decimalSeparator: ".",
+    });
+    expect(parseAmountInput("0.345")).toEqual({
+      normalizedValue: "0.345",
+      decimalSeparator: ".",
+    });
+    expect(parseAmountInput(".345")).toEqual({
+      normalizedValue: "0.345",
+      decimalSeparator: ".",
+    });
+  });
+
+  it("keeps the decimal of a mixed-separator amount with three decimal digits", () => {
+    expect(parseAmountInput("1,234.567").normalizedValue).toBe("1234.567");
+    expect(parseAmountInput("1.234,567").normalizedValue).toBe("1234.567");
+  });
+
+  it("still strips a digit appended to a thousands group", () => {
+    expect(parseAmountInput("1,2345").normalizedValue).toBe("12345");
+    expect(parseAmountInput("12,3456").normalizedValue).toBe("123456");
+    expect(parseAmountInput("1,234,5678").normalizedValue).toBe("12345678");
+  });
+
+  it("reads a shape-ambiguous amount as thousands when the caller tracks no separator", () => {
+    // "12.345" is shaped like both 12345 grouped and 12.345 decimal; only the
+    // caller's tracked separator can break the tie, and there is none here.
+    expect(parseAmountInput("12.345").normalizedValue).toBe("12345");
+  });
+});
+
+describe("initialDecimalSeparator", () => {
+  it("tracks a dot for stored values that carry a fraction", () => {
+    expect(initialDecimalSeparator("12.34")).toBe(".");
+    expect(initialDecimalSeparator("1234")).toBe(null);
+    expect(initialDecimalSeparator("")).toBe(null);
   });
 });
 
@@ -208,6 +245,53 @@ describe("parse/format round trip", () => {
   it("round-trips comma-separated display back to a dot-normalized value", () => {
     const display = formatAmountDisplay("1234.56", ",");
     expect(parseAmountInput(display, ",").normalizedValue).toBe("1234.56");
+  });
+});
+
+describe("typing keystroke by keystroke", () => {
+  /** Mirrors the amount inputs: display the value, append a key, re-parse. */
+  function type(keystrokes: string, from = ""): string {
+    let value = from;
+    let separator = initialDecimalSeparator(from);
+    for (const key of keystrokes) {
+      const parsed = parseAmountInput(
+        formatAmountDisplay(value, separator) + key,
+        separator,
+      );
+      value = parsed.normalizedValue;
+      separator = parsed.decimalSeparator;
+    }
+    return value;
+  }
+
+  it("keeps three decimal digits in a dot locale", () => {
+    expect(type("12.3")).toBe("12.3");
+    expect(type("12.34")).toBe("12.34");
+    expect(type("12.345")).toBe("12.345");
+    expect(type("1234.567")).toBe("1234.567");
+  });
+
+  it("keeps three decimal digits in a comma locale", () => {
+    expect(type("12,34")).toBe("12.34");
+    expect(type("12,345")).toBe("12.345");
+    expect(type("1234,567")).toBe("1234.567");
+  });
+
+  it("keeps whole amounts whole past the grouping boundary", () => {
+    expect(type("1234")).toBe("1234");
+    expect(type("12345")).toBe("12345");
+    expect(type("123456")).toBe("123456");
+    expect(type("12345678")).toBe("12345678");
+  });
+
+  it("appends to a stored fractional amount instead of multiplying it by 1000", () => {
+    expect(type("5", "12.34")).toBe("12.345");
+    expect(type("9", "1234.5")).toBe("1234.59");
+  });
+
+  it("reads a genuine thousands-grouped paste in a comma locale as thousands", () => {
+    expect(parseAmountInput("1.234", ",").normalizedValue).toBe("1234");
+    expect(parseAmountInput("1.234.567", ",").normalizedValue).toBe("1234567");
   });
 });
 
