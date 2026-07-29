@@ -90,13 +90,12 @@ intent-expense-tracker/
 │   ├── types/
 │   │   └── index.ts              # Shared TypeScript interfaces
 │   └── drizzle/                  # Migration files
-├── docs/                         # Project documentation
-│   ├── PRD.md
-│   ├── TECH_STACK.md
-│   ├── DATA_MODEL.md
-│   ├── API_SPECIFICATION.md
-│   └── UI_VIEWS_SPECIFICATION.md
-└── specs/                        # Feature specifications
+└── docs/                         # Project documentation
+    ├── PRD.md
+    ├── TECH_STACK.md
+    ├── DATA_MODEL.md
+    ├── API_SPECIFICATION.md
+    └── UI_VIEWS_SPECIFICATION.md
 ```
 
 ## Database Schema
