@@ -86,9 +86,11 @@ intent-expense-tracker/
 │   │   ├── auth-client.ts        # Better Auth browser client
 │   │   ├── currencies.ts         # Supported currencies list
 │   │   ├── finance-utils.ts      # Budget/bucket helpers
+│   │   ├── recurring-schedule.ts # Pure recurrence date arithmetic
 │   │   └── utils.ts              # General utilities
 │   ├── types/
 │   │   └── index.ts              # Shared TypeScript interfaces
+│   ├── tests/                    # Vitest unit tests
 │   └── drizzle/                  # Migration files
 └── docs/                         # Project documentation
     ├── PRD.md
@@ -171,6 +173,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `pnpm build` | Production build |
 | `pnpm start` | Start production server |
 | `pnpm lint` | Run ESLint |
+| `pnpm test` | Run the Vitest suite once |
+| `pnpm test:watch` | Run Vitest in watch mode |
 | `pnpm db:generate` | Generate Drizzle migration files |
 | `pnpm db:push` | Push schema directly to the database |
 | `pnpm db:migrate` | Run pending migrations |

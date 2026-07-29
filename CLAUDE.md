@@ -23,6 +23,7 @@ pnpm install
 pnpm dev      # dev server
 pnpm build    # production build
 pnpm lint     # eslint
+pnpm test     # vitest, single run
 ```
 
 Database scripts (`db:push`, `db:migrate`, `db:generate`, `db:studio`) and the full script list
@@ -51,6 +52,13 @@ commands need a configured `.env.local`.
 - Reads live in `lib/queries/` and are called directly from Server Components — there is no API
   layer for reads. Writes go through `lib/actions/` and call `revalidatePath()` only after a
   confirmed successful write.
+
+### Tests
+
+Vitest, in `web/tests/`, one `*.test.ts` per module under test. Node environment, no DOM and
+no database — anything that needs `lib/db.ts` either gets the pure part extracted (see
+`lib/recurring-schedule.ts`) or mocks `@/lib/db`. CI runs `pnpm test` between typecheck and
+build.
 
 ### Code style
 

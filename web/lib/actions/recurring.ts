@@ -1,50 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { format, parseISO, addDays, addWeeks, addMonths, addYears } from "date-fns";
+import { format } from "date-fns";
 import { and, eq, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { financialProfile, recurringTransactions, transactions } from "@/lib/schema";
 import { getAuthenticatedUser } from "@/lib/queries/auth";
 import { getOrFetchExchangeRate } from "@/lib/exchange-rates";
+import { firstDueOnOrAfter, planOccurrences } from "@/lib/recurring-schedule";
 import {
   createRecurringSchema,
   updateRecurringSchema,
 } from "@/lib/validations/recurring";
 import type { ActionResult, RecurringTransaction } from "@/types";
-
-function computeNextDueDate(date: Date, frequency: string) {
-  switch (frequency) {
-    case "daily":
-      return addDays(date, 1);
-    case "weekly":
-      return addWeeks(date, 1);
-    case "biweekly":
-      return addWeeks(date, 2);
-    case "quarterly":
-      return addMonths(date, 3);
-    case "yearly":
-      return addYears(date, 1);
-    default:
-      return addMonths(date, 1);
-  }
-}
-
-// First occurrence on or after `today` — advances a past start date forward so we never
-// backfill missed occurrences from before the item existed (product decision: forward-only).
-function firstDueOnOrAfter(
-  startDate: string,
-  frequency: string,
-  today: string,
-): string {
-  let due = startDate;
-  while (due < today) {
-    // parseISO (local midnight) round-trips stably with format; `new Date(iso)` parses
-    // as UTC and compounds a ~1-day drift each iteration.
-    due = format(computeNextDueDate(parseISO(due), frequency), "yyyy-MM-dd");
-  }
-  return due;
-}
 
 // Resolves the user's base currency from their financial profile (defaults to USD).
 async function getBaseCurrency(userId: string): Promise<string> {
@@ -322,25 +290,17 @@ export async function processRecurringTransactions(): Promise<{
 
     for (const item of dueItems) {
       // Process all overdue periods, not just one
-      let currentDueDate = item.nextDueDate;
-
-      while (currentDueDate <= today) {
-        const nextDate = parseISO(currentDueDate);
-        const computedNext = computeNextDueDate(nextDate, item.frequency);
-        const nextDue = format(computedNext, "yyyy-MM-dd");
-        const shouldDeactivate = item.endDate && item.endDate < nextDue;
-
+      for (const { dueDate, nextDue, deactivate } of planOccurrences(
+        item,
+        today,
+      )) {
         // Convert the item's currency to base at this due date's rate. Same-currency
         // short-circuits to 1.0 (no fetch); on fetch failure fall back to the last known
         // rate stored on the item — this is a background job with no user to retry.
         let rate = 1.0;
         if (item.currency !== baseCur) {
           try {
-            rate = await getOrFetchExchangeRate(
-              item.currency,
-              baseCur,
-              currentDueDate,
-            );
+            rate = await getOrFetchExchangeRate(item.currency, baseCur, dueDate);
           } catch {
             rate = Number(item.exchangeRate);
           }
@@ -348,8 +308,8 @@ export async function processRecurringTransactions(): Promise<{
         const convertedAmount = (Number(item.originalAmount) * rate).toFixed(2);
 
         // Claim-then-insert to avoid double-generation under concurrent requests.
-        // The guarded UPDATE (nextDueDate = currentDueDate) is a compare-and-swap: only
-        // one racing request can advance the row from this due date, and only that request
+        // The guarded UPDATE (nextDueDate = dueDate) is a compare-and-swap: only one
+        // racing request can advance the row from this due date, and only that request
         // inserts. The loser matches 0 rows and bails. Both writes share one transaction so
         // a failed insert rolls back the claim.
         const claimed = await db.transaction(async (tx) => {
@@ -357,13 +317,13 @@ export async function processRecurringTransactions(): Promise<{
             .update(recurringTransactions)
             .set({
               nextDueDate: nextDue,
-              lastGeneratedDate: currentDueDate,
-              isActive: shouldDeactivate ? false : item.isActive,
+              lastGeneratedDate: dueDate,
+              isActive: deactivate ? false : item.isActive,
             })
             .where(
               and(
                 eq(recurringTransactions.id, item.id),
-                eq(recurringTransactions.nextDueDate, currentDueDate),
+                eq(recurringTransactions.nextDueDate, dueDate),
               ),
             )
             .returning({ id: recurringTransactions.id });
@@ -378,7 +338,7 @@ export async function processRecurringTransactions(): Promise<{
             exchangeRate: rate.toString(),
             type: item.type,
             description: item.description,
-            date: currentDueDate,
+            date: dueDate,
             categoryId: item.categoryId,
           });
 
@@ -389,10 +349,6 @@ export async function processRecurringTransactions(): Promise<{
         if (!claimed) break;
 
         generated += 1;
-        currentDueDate = nextDue;
-
-        // If deactivated, stop generating
-        if (shouldDeactivate) break;
       }
     }
 
