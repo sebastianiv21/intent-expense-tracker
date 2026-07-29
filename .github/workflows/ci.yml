@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  check:
+    name: Lint, typecheck, build
+    runs-on: ubuntu-latest
+    env:
+      # Placeholders only. `next build` imports lib/db.ts and lib/auth.ts during
+      # page-data collection, which throw on missing values, but nothing in the
+      # build opens a database connection or talks to Google.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      BETTER_AUTH_SECRET: ci-placeholder-secret-not-a-real-credential
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: ci-placeholder-client-id
+      GOOGLE_CLIENT_SECRET: ci-placeholder-client-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      # Version pinned explicitly: there is no root package.json and no
+      # `packageManager` field for the action to infer from.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
