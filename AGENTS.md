@@ -40,6 +40,15 @@ commands need a configured `.env.local`.
 - `"use client"` on any interactive component; `"use server"` as the first line of every file in
   `lib/actions/`. Never mix the two in one file.
 
+### Theming
+
+Colours are CSS custom properties in `web/app/globals.css` — `:root` is light, `.dark` is dark,
+`next-themes` sets the class on `<html>` (default `dark`). Never hard-code a colour in a
+component; use `var(--token)`, which works in inline styles and in SVG `fill`. Contrast floors
+are enforced by `web/tests/theme-tokens.test.ts` against `lib/theme-tokens.ts`. The palette
+rules live in `docs/UI_VIEWS_SPECIFICATION.md` → Design System → Color Palette; read that before
+touching a colour.
+
 ### Server actions and queries
 
 - Every server action returns `ActionResult<T>` (`types/index.ts`) — a discriminated union of

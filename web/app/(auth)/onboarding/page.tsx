@@ -80,9 +80,9 @@ export default function OnboardingPage() {
   }
 
   const BUCKETS: Array<{ key: keyof Buckets; label: string; color: string }> = [
-    { key: "needs", label: "Needs", color: "#8b9a7e" },
-    { key: "wants", label: "Wants", color: "#c97a5a" },
-    { key: "future", label: "Future", color: "#a89562" },
+    { key: "needs", label: "Needs", color: "var(--bucket-needs)" },
+    { key: "wants", label: "Wants", color: "var(--bucket-wants)" },
+    { key: "future", label: "Future", color: "var(--bucket-future)" },
   ];
 
   return (
@@ -108,7 +108,7 @@ export default function OnboardingPage() {
             className="relative rounded-2xl px-4 py-5 text-center transition-all duration-300"
             style={{
               background:
-                "radial-gradient(ellipse at 50% 100%, #c4714a18 0%, transparent 70%)",
+                "radial-gradient(ellipse at 50% 100%, var(--primary-glow) 0%, transparent 70%)",
             }}
           >
             <div className="flex items-center justify-center">

@@ -7,6 +7,7 @@ import { LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
 import { FinancialProfileSheet } from "@/components/financial-profile-sheet";
 import { PageHeader } from "@/components/page-header";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -205,6 +206,20 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
       </AnimatedSection>
 
       <AnimatedSection index={2}>
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Appearance</p>
+              <p className="text-xs text-muted-foreground">
+                System follows your device setting
+              </p>
+            </div>
+            <ThemeToggle />
+          </CardContent>
+        </Card>
+      </AnimatedSection>
+
+      <AnimatedSection index={3}>
         <div className="pt-4 border-t border-border">
           <Button
             variant="ghost"

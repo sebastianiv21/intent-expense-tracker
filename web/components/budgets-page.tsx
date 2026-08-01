@@ -37,6 +37,7 @@ import {
   BUCKET_ORDER,
   calculatePercentage,
   getBucketColor,
+  withAlpha,
   formatAmountDisplay,
   getAmountInputLength,
   initialDecimalSeparator,
@@ -78,21 +79,21 @@ const BUCKET_META: Record<
   needs: {
     label: "NEEDS",
     Icon: Home,
-    color: "#8b9a7e",
+    color: "var(--bucket-needs)",
     borderClass: "border-bucket-needs",
     textClass: "text-bucket-needs",
   },
   wants: {
     label: "WANTS",
     Icon: Coffee,
-    color: "#c4714a",
+    color: "var(--bucket-wants)",
     borderClass: "border-bucket-wants",
     textClass: "text-bucket-wants",
   },
   future: {
     label: "FUTURE",
     Icon: PiggyBank,
-    color: "#a89562",
+    color: "var(--bucket-future)",
     borderClass: "border-bucket-future",
     textClass: "text-bucket-future",
   },
@@ -424,7 +425,7 @@ export function BudgetsPage({
                             className="h-10 w-10 rounded-full flex items-center justify-center text-lg shrink-0"
                             style={{
                               backgroundColor:
-                                getBucketColor(group.bucket) + "26",
+                                withAlpha(getBucketColor(group.bucket), 15),
                             }}
                           >
                             {budget.category.icon ?? "•"}
@@ -509,7 +510,10 @@ export function BudgetsPage({
                         value={progress}
                         className="h-2"
                         style={{
-                          backgroundColor: getBucketColor(group.bucket) + "22",
+                          backgroundColor: withAlpha(
+                            getBucketColor(group.bucket),
+                            13,
+                          ),
                         }}
                         indicatorStyle={{
                           backgroundColor: getBucketColor(group.bucket),
@@ -573,7 +577,7 @@ export function BudgetsPage({
                 className="relative rounded-2xl px-4 py-5 text-center"
                 style={{
                   background:
-                    "radial-gradient(ellipse at 50% 100%, #c97a5a18 0%, transparent 70%)",
+                    "radial-gradient(ellipse at 50% 100%, var(--primary-glow) 0%, transparent 70%)",
                 }}
               >
                 <div className="flex items-center justify-center">
@@ -633,7 +637,7 @@ export function BudgetsPage({
                     className={cn(
                       "relative z-10 flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200",
                       formState.period === option
-                        ? "text-white"
+                        ? "text-primary-foreground"
                         : "text-foreground/25",
                     )}
                   >
@@ -754,9 +758,10 @@ export function BudgetsPage({
                 type="button"
                 onClick={handleSave}
                 disabled={!canSave || loading}
-                className="flex w-full items-center justify-center gap-2 rounded-3xl py-6 text-base font-bold text-white shadow-xl active:scale-[0.98] transition-all duration-200 hover:opacity-90 disabled:opacity-40"
+                className="flex w-full items-center justify-center gap-2 rounded-3xl py-6 text-base font-bold text-primary-foreground shadow-xl active:scale-[0.98] transition-all duration-200 hover:opacity-90 disabled:opacity-40"
                 style={{
-                  background: "linear-gradient(to right, #c97a5a, #a36248)",
+                  background:
+                    "linear-gradient(to right, var(--primary), var(--primary-strong))",
                 }}
               >
                 {loading ? "Saving…" : editing ? "Update" : "Save"}

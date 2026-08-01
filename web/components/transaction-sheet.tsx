@@ -59,21 +59,21 @@ const BUCKET_META: Record<
   needs: {
     label: "NEEDS",
     Icon: Home,
-    color: "#8b9a7e",
+    color: "var(--bucket-needs)",
     borderClass: "border-bucket-needs",
     textClass: "text-bucket-needs",
   },
   wants: {
     label: "WANTS",
     Icon: Coffee,
-    color: "#c4714a",
+    color: "var(--bucket-wants)",
     borderClass: "border-bucket-wants",
     textClass: "text-bucket-wants",
   },
   future: {
     label: "FUTURE",
     Icon: PiggyBank,
-    color: "#a89562",
+    color: "var(--bucket-future)",
     borderClass: "border-bucket-future",
     textClass: "text-bucket-future",
   },
@@ -92,8 +92,8 @@ function getCategoryColor(
   bucket: AllocationBucket | null,
   type: TransactionType,
 ): string {
-  if (type === "income") return "#7aaa7a";
-  return bucket ? BUCKET_META[bucket].color : "#c4714a";
+  if (type === "income") return "var(--income)";
+  return bucket ? BUCKET_META[bucket].color : "var(--primary)";
 }
 
 function today(): string {
@@ -300,8 +300,8 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
   const fontSizeClass = getAmountFontSize(getAmountInputLength(form.amount));
   const isIncome = form.type === "income";
   const amountGlow = isIncome
-    ? "radial-gradient(ellipse at 50% 100%, #7aaa7a18 0%, transparent 70%)"
-    : "radial-gradient(ellipse at 50% 100%, #c4714a18 0%, transparent 70%)";
+    ? "radial-gradient(ellipse at 50% 100%, var(--income-glow) 0%, transparent 70%)"
+    : "radial-gradient(ellipse at 50% 100%, var(--primary-glow) 0%, transparent 70%)";
 
   return (
     <Sheet
@@ -447,7 +447,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                 className="absolute inset-y-1 w-[calc(50%-4px)] rounded-xl transition-all duration-200"
                 style={{
                   left: isIncome ? "calc(50%)" : 4,
-                  backgroundColor: isIncome ? "#7aaa7a" : "var(--primary)",
+                  backgroundColor: isIncome ? "var(--income)" : "var(--primary)",
                 }}
               />
               <button
@@ -455,7 +455,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                 aria-pressed={!isIncome}
                 className={cn(
                   "relative z-10 flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200",
-                  !isIncome ? "text-white" : "text-foreground/25",
+                  !isIncome ? "text-primary-foreground" : "text-foreground/25",
                 )}
               >
                 Expense
@@ -465,7 +465,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                 aria-pressed={isIncome}
                 className={cn(
                   "relative z-10 flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200",
-                  isIncome ? "text-white" : "text-foreground/25",
+                  isIncome ? "text-income-foreground" : "text-foreground/25",
                 )}
               >
                 Income
@@ -596,10 +596,10 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
               onClick={handleSubmit}
               disabled={saving || !canSave}
               className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-3xl py-6 text-base font-bold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-40",
+                "flex w-full items-center justify-center gap-2 rounded-3xl py-6 text-base font-bold transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-40",
                 isIncome
-                  ? "bg-income shadow-lg shadow-income/20"
-                  : "bg-linear-to-r from-primary to-[#a36248] shadow-lg shadow-primary/25",
+                  ? "bg-income text-income-foreground shadow-lg shadow-income/20"
+                  : "bg-linear-to-r from-primary to-primary-strong text-primary-foreground shadow-lg shadow-primary/25",
               )}
             >
               {saving ? "Saving…" : mode === "edit" ? "Update" : "Add"}
