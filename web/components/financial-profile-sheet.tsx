@@ -177,7 +177,7 @@ export function FinancialProfileSheet({
               className="relative rounded-2xl px-4 py-5 text-center transition-all duration-300"
               style={{
                 background:
-                  "radial-gradient(ellipse at 50% 100%, #c4714a18 0%, transparent 70%)",
+                  "radial-gradient(ellipse at 50% 100%, var(--primary-glow) 0%, transparent 70%)",
               }}
             >
               <div className="flex items-center justify-center">

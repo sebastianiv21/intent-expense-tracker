@@ -2,7 +2,7 @@
 
 ## Overview
 
-A mindful expense tracker implementing the 50/30/20 budgeting rule (Needs/Wants/Savings). The app features a warm, zen-like aesthetic with a dark theme and terracotta accents.
+A mindful expense tracker implementing the 50/30/20 budgeting rule (Needs/Wants/Savings). The app features a warm, zen-like aesthetic with terracotta accents. It ships light and dark themes plus a "follow my system" option; **dark is the default** for anyone who has never chosen.
 
 **Design Approach**: Mobile-First - All designs start at 375px viewport and scale up. Desktop is an enhancement, not the baseline.
 
@@ -42,15 +42,32 @@ A mindful expense tracker implementing the 50/30/20 budgeting rule (Needs/Wants/
 
 ### Color Palette
 
-- **Background**: `#16110a` (dark brown/black)
-- **Card Background**: `#1f1815`
-- **Border**: `#2d2420`
-- **Primary Text**: `#f5f2ed` (warm white)
-- **Secondary Text**: `#a89580` (warm gray)
-- **Accent**: `#c97a5a` (terracotta/warm orange)
-- **Needs (Green)**: `#8b9a7e`
-- **Wants (Orange)**: `#c97a5a`
-- **Savings (Gold)**: `#a89562`
+The palette is a token system, not a list of literals. Every colour lives in
+`web/app/globals.css` as a CSS custom property: `:root` holds the **light** values, `.dark`
+holds the **dark** ones, and `next-themes` puts the `dark` class on `<html>`. Those two blocks
+are the single source of truth — read them rather than copying values here.
+
+Character (both themes): warm neutrals in the 15–35° hue band, never blue-grey; terracotta
+around hue 19° as the accent; sage green / terracotta / olive-gold for Needs / Wants / Future.
+Light is *derived* from dark — hues carry over unchanged and the lightness relationships
+invert, so the two themes read as the same product at different times of day.
+
+**Rules for editing colours**
+
+- Never hard-code a colour in a component. Inline styles and SVG `fill` both take
+  `var(--token)` (verified with Recharts), and `withAlpha()` in `lib/finance-utils.ts` replaces
+  hex-alpha string concatenation.
+- Every token needs a counterpart in the other theme.
+- Contrast floors: **4.5:1 for body text, 3:1 for large text and for UI components that must
+  be identifiable** (the focus ring). `lib/theme-tokens.ts` encodes the enforced pairs and
+  `tests/theme-tokens.test.ts` checks them against `globals.css`, so a token edit that breaks
+  contrast fails the build. Add the pair to `CONTRAST_REQUIREMENTS` when adding a token.
+- On-fill foregrounds follow one rule: in dark they are the warm near-black `#171210`, in
+  light they are white. That is why the terracotta and red fills carry dark labels in dark
+  mode — white on them measures below 4.5:1.
+- Known and deliberate exceptions, not covered by the enforced contract: surface separation
+  (`--card` vs `--background`, ~1.08:1) and field boundaries (`--border`, `--input`) are
+  intentionally quiet in both themes.
 
 ### Typography
 

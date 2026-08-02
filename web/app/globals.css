@@ -3,7 +3,55 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Light is the derived theme: hues carry over from dark unchanged, lightness
+   relationships invert. Surfaces go warm paper -> white (elevation still means
+   "lighter"), and every ink/accent is darkened until it clears 4.5:1 against
+   --background, the harder of the two surfaces. The enforced pairs and their
+   measured ratios live in lib/theme-tokens.ts and docs/UI_VIEWS_SPECIFICATION.md. */
 :root {
+    --background: #faf5ef;
+    --foreground: #261c16;
+    --card: #ffffff;
+    --card-foreground: #261c16;
+    --popover: #ffffff;
+    --popover-foreground: #261c16;
+    --primary: #a9522a;
+    --primary-foreground: #ffffff;
+    --primary-strong: #8e4020;
+    --secondary: #f1e7dc;
+    --secondary-foreground: #261c16;
+    --muted: #f1e7dc;
+    --muted-foreground: #796154;
+    --accent: #a9522a;
+    --accent-foreground: #ffffff;
+    --destructive: #d21e1e;
+    --destructive-foreground: #ffffff;
+    --border: #e6d8c8;
+    --input: #f1e7dc;
+    --ring: #a9522a;
+    --radius: 0.75rem;
+
+    /* 50/30/20 bucket colors */
+    --bucket-needs: #597243;
+    --bucket-wants: #a9522a;
+    --bucket-future: #7d6933;
+
+    /* Semantic state colors */
+    --warning: #9e5b05;
+
+    /* Income / Expense */
+    --income: #43764a;
+    --income-foreground: #ffffff;
+    --expense: #c53434;
+
+    /* Typography */
+    --font-sans: var(--font-plus-jakarta);
+    --font-mono: var(--font-geist-mono);
+}
+
+/* Must stay after :root — both selectors match <html> at equal specificity, so
+   source order is what lets .dark win. */
+.dark {
     --background: #171210;
     --foreground: #f5ede6;
     --card: #211916;
@@ -12,18 +60,18 @@
     --popover-foreground: #f5ede6;
     --primary: #c4714a;
     --primary-foreground: #171210;
+    --primary-strong: #bd6b4c;
     --secondary: #2c2018;
     --secondary-foreground: #f5ede6;
     --muted: #2c2018;
     --muted-foreground: #9e8a7e;
     --accent: #c4714a;
-    --accent-foreground: #ffffff;
+    --accent-foreground: #171210;
     --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
+    --destructive-foreground: #171210;
     --border: #3a2820;
     --input: #2c2018;
     --ring: #c4714a;
-    --radius: 0.75rem;
 
     /* 50/30/20 bucket colors */
     --bucket-needs: #8b9a7e;
@@ -35,11 +83,15 @@
 
     /* Income / Expense */
     --income: #7aaa7a;
+    --income-foreground: #171210;
     --expense: #e05252;
+}
 
-    /* Typography */
-    --font-sans: var(--font-plus-jakarta);
-    --font-mono: var(--font-geist-mono);
+/* Declared once: the var() references resolve against whichever theme block is
+   active on <html>, so these track the theme without a per-theme duplicate. */
+:root {
+    --primary-glow: color-mix(in srgb, var(--primary) 10%, transparent);
+    --income-glow: color-mix(in srgb, var(--income) 10%, transparent);
 }
 
 @theme inline {
@@ -51,6 +103,7 @@
     --color-popover-foreground: var(--popover-foreground);
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
+    --color-primary-strong: var(--primary-strong);
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
@@ -67,6 +120,7 @@
     --color-bucket-future: var(--bucket-future);
     --color-warning: var(--warning);
     --color-income: var(--income);
+    --color-income-foreground: var(--income-foreground);
     --color-expense: var(--expense);
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);

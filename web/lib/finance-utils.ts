@@ -3,22 +3,24 @@ import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 // ─── Bucket Definitions ───────────────────────────────────────────────────────
 
+// Colors are token references rather than literals so a single value follows the
+// active theme. Valid anywhere CSS is: inline styles, and SVG `fill`/`stroke`.
 export const BUCKET_DEFINITIONS = {
   needs: {
     label: "Needs",
-    color: "#8b9a7e",
+    color: "var(--bucket-needs)",
     defaultPercentage: 50,
     description: "Essential expenses",
   },
   wants: {
     label: "Wants",
-    color: "#c97a5a",
+    color: "var(--bucket-wants)",
     defaultPercentage: 30,
     description: "Non-essential spending",
   },
   future: {
     label: "Future",
-    color: "#a89562",
+    color: "var(--bucket-future)",
     defaultPercentage: 20,
     description: "Savings & investments",
   },
@@ -37,12 +39,17 @@ export const BUCKET_ORDER: AllocationBucket[] = ["needs", "wants", "future"];
 // ─── Color Mappings ───────────────────────────────────────────────────────────
 
 export function getBucketColor(bucket: AllocationBucket | null): string {
-  if (!bucket) return "#888888";
+  if (!bucket) return "var(--muted-foreground)";
   return BUCKET_DEFINITIONS[bucket].color;
 }
 
 export function getTransactionColor(type: "income" | "expense"): string {
-  return type === "income" ? "#6aaa6a" : "#e05252";
+  return type === "income" ? "var(--income)" : "var(--expense)";
+}
+
+/** Token-safe replacement for appending a hex alpha suffix to a color literal. */
+export function withAlpha(color: string, percent: number): string {
+  return `color-mix(in srgb, ${color} ${percent}%, transparent)`;
 }
 
 // ─── Currency Formatter ───────────────────────────────────────────────────────

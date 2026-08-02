@@ -33,7 +33,11 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
-import { getBucketColor, getTransactionColor } from "@/lib/finance-utils";
+import {
+  getBucketColor,
+  getTransactionColor,
+  withAlpha,
+} from "@/lib/finance-utils";
 import {
   createCategory,
   deleteCategory,
@@ -126,7 +130,7 @@ function getEmojiPreviewColor(formState: CategoryFormState): string {
       : getBucketColor(
           (formState.allocationBucket || "needs") as AllocationBucket,
         );
-  return base + "26";
+  return withAlpha(base, 15);
 }
 
 export function CategoriesPage({ categories }: CategoriesPageProps) {
@@ -381,7 +385,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                   <div className="flex items-center gap-3">
                     <div
                       className="h-10 w-10 rounded-full flex items-center justify-center text-lg shrink-0"
-                      style={{ backgroundColor: accentColor + "26" }}
+                      style={{ backgroundColor: withAlpha(accentColor, 15) }}
                     >
                       {category.icon ?? "•"}
                     </div>
@@ -679,9 +683,10 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 type="button"
                 onClick={handleSave}
                 disabled={!canSave || loading}
-                className="w-full rounded-3xl py-6 text-lg font-bold text-white shadow-xl flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-3xl py-6 text-lg font-bold text-primary-foreground shadow-xl flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  background: "linear-gradient(to right, #c97a5a, #a36248)",
+                  background:
+                    "linear-gradient(to right, var(--primary), var(--primary-strong))",
                 }}
               >
                 {loading ? "Saving…" : editingCategory ? "Update" : "Create"}

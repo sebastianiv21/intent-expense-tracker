@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import {
   getTransactionColor,
   getBucketColor,
+  withAlpha,
   calculatePercentage,
   BUCKET_ORDER,
   formatAmountDisplay,
@@ -106,21 +107,21 @@ const BUCKET_META: Record<
   needs: {
     label: "NEEDS",
     Icon: Home,
-    color: "#8b9a7e",
+    color: "var(--bucket-needs)",
     borderClass: "border-bucket-needs",
     textClass: "text-bucket-needs",
   },
   wants: {
     label: "WANTS",
     Icon: Coffee,
-    color: "#c4714a",
+    color: "var(--bucket-wants)",
     borderClass: "border-bucket-wants",
     textClass: "text-bucket-wants",
   },
   future: {
     label: "FUTURE",
     Icon: PiggyBank,
-    color: "#a89562",
+    color: "var(--bucket-future)",
     borderClass: "border-bucket-future",
     textClass: "text-bucket-future",
   },
@@ -406,13 +407,13 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
         <div className="flex items-center justify-between">
           <div className="text-center flex-1">
             <p className="text-xs text-muted-foreground">Total Income</p>
-            <p className="text-lg font-semibold text-[#6aaa6a]">
+            <p className="text-lg font-semibold text-income">
               {formatCurrencyCompact(summary.totalIncome)}
             </p>
           </div>
           <div className="text-center flex-1 border-x border-border">
             <p className="text-xs text-muted-foreground">Total Expenses</p>
-            <p className="text-lg font-semibold text-[#e05252]">
+            <p className="text-lg font-semibold text-expense">
               {formatCurrencyCompact(summary.totalExpenses)}
             </p>
           </div>
@@ -421,7 +422,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
             <p
               className={cn(
                 "text-lg font-semibold",
-                summary.netRecurring >= 0 ? "text-[#6aaa6a]" : "text-[#e05252]",
+                summary.netRecurring >= 0 ? "text-income" : "text-expense",
               )}
             >
               {summary.netRecurring >= 0 ? "+" : ""}
@@ -435,7 +436,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
             value={summary.expenseRatio}
             className="h-2"
             indicatorClassName={
-              summary.expenseRatio >= 100 ? "bg-[#e05252]" : "bg-primary"
+              summary.expenseRatio >= 100 ? "bg-expense" : "bg-primary"
             }
           />
         )}
@@ -505,7 +506,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                       <div className="flex items-center gap-3">
                         <div
                           className="h-10 w-10 rounded-full flex items-center justify-center text-lg shrink-0"
-                          style={{ backgroundColor: typeColor + "26" }}
+                          style={{ backgroundColor: withAlpha(typeColor, 15) }}
                         >
                           {item.category?.icon ?? "•"}
                         </div>
@@ -642,7 +643,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                 className="relative rounded-2xl px-4 py-5 text-center"
                 style={{
                   background:
-                    "radial-gradient(ellipse at 50% 100%, #c97a5a18 0%, transparent 70%)",
+                    "radial-gradient(ellipse at 50% 100%, var(--primary-glow) 0%, transparent 70%)",
                 }}
               >
                 <div className="flex items-center justify-center">
@@ -812,7 +813,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                       className={cn(
                         "relative z-10 flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200",
                         formState.type === option
-                          ? "text-white"
+                          ? "text-primary-foreground"
                           : "text-foreground/25",
                       )}
                     >
@@ -995,9 +996,10 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                 type="button"
                 onClick={handleSave}
                 disabled={!canSave || loading}
-                className="flex w-full items-center justify-center gap-2 rounded-3xl py-6 text-base font-bold text-white shadow-xl active:scale-[0.98] transition-all duration-200 hover:opacity-90 disabled:opacity-40"
+                className="flex w-full items-center justify-center gap-2 rounded-3xl py-6 text-base font-bold text-primary-foreground shadow-xl active:scale-[0.98] transition-all duration-200 hover:opacity-90 disabled:opacity-40"
                 style={{
-                  background: "linear-gradient(to right, #c97a5a, #a36248)",
+                  background:
+                    "linear-gradient(to right, var(--primary), var(--primary-strong))",
                 }}
               >
                 {loading ? "Saving…" : editing ? "Update" : "Save"}

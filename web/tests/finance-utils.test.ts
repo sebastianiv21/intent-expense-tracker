@@ -8,10 +8,13 @@ import {
   getAmountInputLength,
   getBucketColor,
   getCurrencyDecimals,
+  getTransactionColor,
   initialDecimalSeparator,
   parseAmountInput,
   parseStoredAmount,
+  withAlpha,
   BUCKET_DEFINITIONS,
+  BUCKET_ORDER,
 } from "@/lib/finance-utils";
 
 describe("getCurrencyDecimals", () => {
@@ -370,7 +373,23 @@ describe("getBucketColor", () => {
     expect(getBucketColor("needs")).toBe(BUCKET_DEFINITIONS.needs.color);
   });
 
-  it("returns a neutral grey for an unbucketed row", () => {
-    expect(getBucketColor(null)).toBe("#888888");
+  it("returns a neutral token for an unbucketed row", () => {
+    expect(getBucketColor(null)).toBe("var(--muted-foreground)");
+  });
+
+  it("returns theme tokens, never literals, so colours follow the theme", () => {
+    for (const bucket of BUCKET_ORDER) {
+      expect(getBucketColor(bucket)).toMatch(/^var\(--bucket-[a-z]+\)$/);
+    }
+    expect(getTransactionColor("income")).toBe("var(--income)");
+    expect(getTransactionColor("expense")).toBe("var(--expense)");
+  });
+});
+
+describe("withAlpha", () => {
+  it("keeps the token reference intact instead of splicing a hex suffix", () => {
+    expect(withAlpha("var(--income)", 15)).toBe(
+      "color-mix(in srgb, var(--income) 15%, transparent)",
+    );
   });
 });
