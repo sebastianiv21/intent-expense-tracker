@@ -66,15 +66,18 @@ describe("formatCurrencyCompact", () => {
 
   it("compacts from one thousand up", () => {
     expect(formatCurrencyCompact(1500, "USD")).toBe("$1.5K");
-    expect(formatCurrencyCompact(1234567, "USD")).toBe("$1.2M");
+    expect(formatCurrencyCompact(1234567, "USD")).toBe("$1.23M");
   });
 
   it("compacts negative amounts by magnitude", () => {
     expect(formatCurrencyCompact(-1500, "USD")).toBe("-$1.5K");
   });
 
-  it("drops the compact decimal for zero-decimal currencies", () => {
-    expect(formatCurrencyCompact(2500000, "COP")).toBe("COP\u00a03M");
+  it("keeps compact decimals for zero-decimal currencies", () => {
+    expect(formatCurrencyCompact(1500000, "COP")).toBe("COP\u00a01.5M");
+    expect(formatCurrencyCompact(2500000, "COP")).toBe("COP\u00a02.5M");
+    expect(formatCurrencyCompact(1750000, "COP")).toBe("COP\u00a01.75M");
+    expect(formatCurrencyCompact(1500, "COP")).toBe("COP\u00a01.5K");
   });
 
   it("falls back to a formatted zero for unparseable input", () => {
@@ -365,6 +368,21 @@ describe("calculateBucketTarget", () => {
       0,
     );
     expect(total).toBeCloseTo(income, 10);
+  });
+
+  it("displays the default split of a large zero-decimal income without rounding it up", () => {
+    const income = 3_000_000;
+    const displayed = (["needs", "wants", "future"] as const).map((bucket) =>
+      formatCurrencyCompact(
+        calculateBucketTarget(income, BUCKET_DEFINITIONS[bucket].defaultPercentage),
+        "COP",
+      ),
+    );
+    expect(displayed).toEqual([
+      "COP\u00a01.5M",
+      "COP\u00a0900K",
+      "COP\u00a0600K",
+    ]);
   });
 });
 
