@@ -81,13 +81,14 @@ function getCurrencyFormatter(currency: string): Intl.NumberFormat {
 function getCompactCurrencyFormatter(currency: string): Intl.NumberFormat {
   let formatter = compactFormatterCache.get(currency);
   if (!formatter) {
-    const decimals = getCurrencyDecimals(currency);
+    // Compact precision is independent of the currency's decimals: COP has no cents,
+    // but 1,500,000 still has to read as 1.5M rather than 2M.
     formatter = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
       notation: "compact",
       minimumFractionDigits: 0,
-      maximumFractionDigits: decimals === 0 ? 0 : 1,
+      maximumFractionDigits: 2,
     });
     compactFormatterCache.set(currency, formatter);
   }
