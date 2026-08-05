@@ -1,5 +1,7 @@
 "use server";
 
+import { actionError } from "@/lib/i18n/action-error";
+
 import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 import { and, eq, lte } from "drizzle-orm";
@@ -33,7 +35,7 @@ export async function createRecurring(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -60,7 +62,7 @@ export async function createRecurring(
   } catch {
     return {
       success: false,
-      error: "Couldn't fetch exchange rate — please try again.",
+      error: await actionError("exchangeRate"),
     };
   }
 
@@ -91,7 +93,7 @@ export async function createRecurring(
     return { success: true, data: result[0] as RecurringTransaction };
   } catch (err) {
     console.error("Failed to create recurring transaction:", err);
-    return { success: false, error: "Failed to create recurring transaction" };
+    return { success: false, error: await actionError("recurringCreateFailed") };
   }
 }
 
@@ -105,7 +107,7 @@ export async function updateRecurring(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -123,7 +125,7 @@ export async function updateRecurring(
     .limit(1);
 
   if (!existing[0]) {
-    return { success: false, error: "Recurring transaction not found" };
+    return { success: false, error: await actionError("recurringNotFound") };
   }
 
   const today = format(new Date(), "yyyy-MM-dd");
@@ -147,7 +149,7 @@ export async function updateRecurring(
     } catch {
       return {
         success: false,
-        error: "Couldn't fetch exchange rate — please try again.",
+        error: await actionError("exchangeRate"),
       };
     }
 
@@ -217,7 +219,7 @@ export async function updateRecurring(
       .returning();
 
     if (!result[0]) {
-      return { success: false, error: "Recurring transaction not found" };
+      return { success: false, error: await actionError("recurringNotFound") };
     }
 
     revalidatePath("/recurring");
@@ -227,7 +229,7 @@ export async function updateRecurring(
     return { success: true, data: result[0] as RecurringTransaction };
   } catch (err) {
     console.error("Failed to update recurring transaction:", err);
-    return { success: false, error: "Failed to update recurring transaction" };
+    return { success: false, error: await actionError("recurringUpdateFailed") };
   }
 }
 
@@ -246,7 +248,7 @@ export async function deleteRecurring(id: string): Promise<ActionResult> {
       .returning();
 
     if (!result[0]) {
-      return { success: false, error: "Recurring transaction not found" };
+      return { success: false, error: await actionError("recurringNotFound") };
     }
 
     revalidatePath("/recurring");
@@ -256,7 +258,7 @@ export async function deleteRecurring(id: string): Promise<ActionResult> {
     return { success: true };
   } catch (err) {
     console.error("Failed to delete recurring transaction:", err);
-    return { success: false, error: "Failed to delete recurring transaction" };
+    return { success: false, error: await actionError("recurringDeleteFailed") };
   }
 }
 

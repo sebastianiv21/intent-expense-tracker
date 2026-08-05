@@ -1,11 +1,6 @@
-export type SeedCategory = {
-  name: string;
-  type: "expense" | "income";
-  allocationBucket?: "needs" | "wants" | "future";
-  icon: string;
-};
-
-export const DEFAULT_CATEGORIES: SeedCategory[] = [
+// `name` stays a literal union so it doubles as the `seedCategories` message
+// key: adding a category here without translating it fails `pnpm typecheck`.
+export const DEFAULT_CATEGORIES = [
   // Needs (6)
   { name: "Rent/Mortgage", type: "expense", allocationBucket: "needs", icon: "🏠" },
   { name: "Groceries", type: "expense", allocationBucket: "needs", icon: "🛒" },
@@ -31,4 +26,6 @@ export const DEFAULT_CATEGORIES: SeedCategory[] = [
   { name: "Salary", type: "income", icon: "💼" },
   { name: "Freelance", type: "income", icon: "💻" },
   { name: "Other Income", type: "income", icon: "💵" },
-];
+] as const;
+
+export type SeedCategory = (typeof DEFAULT_CATEGORIES)[number];

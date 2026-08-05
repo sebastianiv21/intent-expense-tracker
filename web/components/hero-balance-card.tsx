@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { useFormatter, useTranslations } from "next-intl";
 import { useCurrency } from "@/components/currency-provider";
 
 type QuickStat = {
@@ -37,6 +37,8 @@ export function HeroBalanceCard({
   quickStats,
 }: HeroBalanceCardProps) {
   const { formatCurrency, formatCurrencyCompact } = useCurrency();
+  const t = useTranslations("dashboard");
+  const format = useFormatter();
 
   return (
     <div className="relative overflow-hidden rounded-xl bg-primary">
@@ -44,7 +46,7 @@ export function HeroBalanceCard({
       <div className="relative p-6 space-y-4">
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium text-primary-foreground/70 uppercase tracking-wide">
-            Monthly balance
+            {t("monthlyBalance")}
           </span>
           <span className="text-4xl font-bold tracking-tight text-primary-foreground">
             {balance < 0
@@ -52,22 +54,24 @@ export function HeroBalanceCard({
               : formatCurrency(balance)}
           </span>
           <span className="text-xs text-primary-foreground/80">
-            Income {formatCurrencyCompact(monthIncome)} · Expenses{" "}
-            {formatCurrencyCompact(monthExpenses)}
+            {t("incomeExpenses", {
+              income: formatCurrencyCompact(monthIncome),
+              expenses: formatCurrencyCompact(monthExpenses),
+            })}
           </span>
         </div>
         <div className="flex items-center gap-6 border-t border-primary-foreground/20 pt-4">
           <QuickStatItem
-            label="Daily avg spend"
+            label={t("dailyAverage")}
             value={formatCurrencyCompact(quickStats.dailyAverage)}
           />
           <QuickStatItem
-            label="Safe to spend"
+            label={t("safeToSpend")}
             value={formatCurrencyCompact(quickStats.safeToSpend)}
           />
           <QuickStatItem
-            label="Days remaining"
-            value={quickStats.daysRemaining}
+            label={t("daysRemaining")}
+            value={format.number(quickStats.daysRemaining, "integer")}
           />
         </div>
       </div>

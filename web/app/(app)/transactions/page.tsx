@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import {
   getTransactions,
   getTransactionTotals,
@@ -16,29 +17,11 @@ type TransactionsPageProps = {
   };
 };
 
-type EmptyStateProps = {
-  typeParam?: TransactionType;
-  searchQuery: string;
-};
-
-function EmptyState({ typeParam, searchQuery }: EmptyStateProps) {
-  const message =
-    !typeParam && !searchQuery
-      ? "No transactions yet. Add your first transaction to start tracking activity."
-      : `No results for${searchQuery ? ` "${searchQuery}"` : ""}${typeParam ? ` in ${typeParam}` : ""}. Try a different search or filter.`;
-
-  return (
-    <div className="rounded-2xl border border-dashed border-border p-10 text-center">
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
-}
-
-const FILTERS: Array<{ label: string; value: "all" | TransactionType }> = [
-  { label: "All", value: "all" },
-  { label: "Income", value: "income" },
-  { label: "Expense", value: "expense" },
-];
+const FILTERS = [
+  { key: "filterAll", value: "all" },
+  { key: "filterIncome", value: "income" },
+  { key: "filterExpense", value: "expense" },
+] as const;
 
 function buildFilterHref(
   filterValue: "all" | TransactionType,
@@ -59,7 +42,7 @@ export default async function TransactionsPage({
   const typeParam = resolvedParams?.type;
   const searchQuery = resolvedParams?.query ?? "";
 
-  const [transactions, totals] = await Promise.all([
+  const [transactions, totals, t] = await Promise.all([
     getTransactions({
       type: typeParam,
       search: searchQuery,
@@ -70,6 +53,7 @@ export default async function TransactionsPage({
       type: typeParam,
       search: searchQuery,
     }),
+    getTranslations("transactions"),
   ]);
 
   const hasMore = transactions.length > 50;
@@ -78,11 +62,23 @@ export default async function TransactionsPage({
     search: searchQuery,
   };
 
+  // Four separate messages rather than one assembled from fragments: Spanish
+  // needs "en ingresos" where English needs "in income", and a sentence stitched
+  // together in JSX cannot be reordered by a translator.
+  function emptyMessage(): string {
+    if (!typeParam && !searchQuery) return t("empty");
+    if (searchQuery && typeParam)
+      return t("noResultsQueryType", { query: searchQuery, type: typeParam });
+    if (searchQuery) return t("noResultsQuery", { query: searchQuery });
+    if (typeParam) return t("noResultsType", { type: typeParam });
+    return t("noResults");
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Transactions"
-        description="Track income and expenses"
+        title={t("title")}
+        description={t("description")}
         action={<TransactionsHeaderActions filter={filter} />}
       />
 
@@ -92,20 +88,20 @@ export default async function TransactionsPage({
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {FILTERS.map((filter) => {
-            const isAll = filter.value === "all";
+          {FILTERS.map((option) => {
+            const isAll = option.value === "all";
             const isActive =
-              (isAll && !typeParam) || typeParam === filter.value;
+              (isAll && !typeParam) || typeParam === option.value;
             return (
               <Button
-                key={filter.value}
+                key={option.value}
                 variant={isActive ? "default" : "outline"}
                 size="sm"
                 className="min-h-[44px]"
                 asChild
               >
-                <a href={buildFilterHref(filter.value, searchQuery)}>
-                  {filter.label}
+                <a href={buildFilterHref(option.value, searchQuery)}>
+                  {t(option.key)}
                 </a>
               </Button>
             );
@@ -115,7 +111,9 @@ export default async function TransactionsPage({
 
       <div className="space-y-4">
         {transactions.length === 0 ? (
-          <EmptyState typeParam={typeParam} searchQuery={searchQuery} />
+          <div className="rounded-2xl border border-dashed border-border p-10 text-center">
+            <p className="text-sm text-muted-foreground">{emptyMessage()}</p>
+          </div>
         ) : (
           <TransactionList
             key={`${typeParam ?? "all"}-${searchQuery}`}

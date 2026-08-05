@@ -1,5 +1,7 @@
 "use server";
 
+import { actionError } from "@/lib/i18n/action-error";
+
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -20,7 +22,7 @@ export async function createCategory(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -46,7 +48,7 @@ export async function createCategory(
     return { success: true, data: result[0] as Category };
   } catch (err) {
     console.error("Failed to create category:", err);
-    return { success: false, error: "Failed to create category" };
+    return { success: false, error: await actionError("categoryCreateFailed") };
   }
 }
 
@@ -60,7 +62,7 @@ export async function updateCategory(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -78,7 +80,7 @@ export async function updateCategory(
   }
 
   if (Object.keys(updateValues).length === 0) {
-    return { success: false, error: "No fields to update" };
+    return { success: false, error: await actionError("noFieldsToUpdate") };
   }
 
   try {
@@ -89,7 +91,7 @@ export async function updateCategory(
       .returning();
 
     if (!result[0]) {
-      return { success: false, error: "Category not found" };
+      return { success: false, error: await actionError("categoryNotFound") };
     }
 
     revalidatePath("/categories");
@@ -99,7 +101,7 @@ export async function updateCategory(
     return { success: true, data: result[0] as Category };
   } catch (err) {
     console.error("Failed to update category:", err);
-    return { success: false, error: "Failed to update category" };
+    return { success: false, error: await actionError("categoryUpdateFailed") };
   }
 }
 
@@ -113,7 +115,7 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
       .returning();
 
     if (!result[0]) {
-      return { success: false, error: "Category not found" };
+      return { success: false, error: await actionError("categoryNotFound") };
     }
 
     revalidatePath("/categories");
@@ -123,6 +125,6 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
     return { success: true };
   } catch (err) {
     console.error("Failed to delete category:", err);
-    return { success: false, error: "Failed to delete category" };
+    return { success: false, error: await actionError("categoryDeleteFailed") };
   }
 }

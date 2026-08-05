@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
+import { useFormatter, useTranslations } from "next-intl";
 import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { toDisplayDate } from "@/lib/i18n/dates";
 import { cn } from "@/lib/utils";
 import type { DayPicker } from "react-day-picker";
 
@@ -24,12 +26,14 @@ export function InlineDatePicker({
   open,
   onOpenChange,
   disabled,
-  placeholder = "Pick a date",
+  placeholder,
   iconClassName = "text-primary",
 }: InlineDatePickerProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
+  const t = useTranslations("common");
+  const intl = useFormatter();
 
   return (
     <div>
@@ -41,15 +45,19 @@ export function InlineDatePicker({
         <CalendarIcon className={cn("mr-3 h-4 w-4", iconClassName)} />
         {value ? (
           <span className="text-foreground">
-            {format(parseISO(value), "MMMM d, yyyy")}
+            {intl.dateTime(toDisplayDate(value), "longDate")}
           </span>
         ) : (
-          <span className="text-muted-foreground">{placeholder}</span>
+          <span className="text-muted-foreground">
+            {placeholder ?? t("pickDate")}
+          </span>
         )}
       </Button>
       {isOpen && (
         <Calendar
           mode="single"
+          // The grid is a calendar of local days, not a timeline; only the value
+          // crossing `onChange` is normalised back to a bare YYYY-MM-DD.
           selected={value ? parseISO(value) : undefined}
           onSelect={(day) => {
             if (day) {

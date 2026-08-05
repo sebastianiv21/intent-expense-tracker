@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { format, isToday, isYesterday, parseISO } from "date-fns";
+import { isToday, isYesterday, parseISO } from "date-fns";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { getDashboardData } from "@/lib/queries/dashboard";
 import { getAuthenticatedUser } from "@/lib/queries/auth";
 
@@ -9,6 +10,7 @@ import { TransactionItem } from "@/components/transaction-item";
 import { PageHeader } from "@/components/page-header";
 import { BucketCard } from "@/components/bucket-card";
 import { HeroBalanceCard } from "@/components/hero-balance-card";
+import { toDisplayDate } from "@/lib/i18n/dates";
 import type { TransactionWithCategory } from "@/types";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -27,17 +29,17 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-function getGreeting(hour: number, name: string): string {
-  const salutations: [number, number, string][] = [
-    [5, 12, "Good morning"],
-    [12, 17, "Good afternoon"],
-    [17, 21, "Good evening"],
-  ];
+const GREETINGS = [
+  [5, 12, "greetingMorning"],
+  [12, 17, "greetingAfternoon"],
+  [17, 21, "greetingEvening"],
+] as const;
 
-  const salutation =
-    salutations.find(([start, end]) => hour >= start && hour < end)?.[2] ??
-    "Good night";
-  return name ? `${salutation}, ${name}` : salutation;
+function greetingKey(hour: number) {
+  return (
+    GREETINGS.find(([start, end]) => hour >= start && hour < end)?.[2] ??
+    "greetingNight"
+  );
 }
 
 type DateGroup = {
@@ -45,45 +47,50 @@ type DateGroup = {
   transactions: TransactionWithCategory[];
 };
 
-function groupByDate(transactions: TransactionWithCategory[]): DateGroup[] {
-  const groups = new Map<string, TransactionWithCategory[]>();
-
-  for (const t of transactions) {
-    const existing = groups.get(t.date);
-    if (existing) {
-      existing.push(t);
-    } else {
-      groups.set(t.date, [t]);
-    }
-  }
-
-  return Array.from(groups.entries())
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([dateKey, txs]) => {
-      const date = parseISO(dateKey);
-      const label = isToday(date)
-        ? "Today"
-        : isYesterday(date)
-          ? "Yesterday"
-          : format(date, "MMM d");
-      return { label, transactions: txs };
-    });
-}
-
 export default async function DashboardPage() {
-  const [data, { name }] = await Promise.all([
+  const [data, { name }, t, format] = await Promise.all([
     getDashboardData(),
     getAuthenticatedUser(),
+    getTranslations("dashboard"),
+    getFormatter(),
   ]);
+
   const now = new Date();
-  const dateLabel = format(now, "EEEE, MMM d");
-  const greeting = getGreeting(now.getHours(), name);
+  const dateLabel = format.dateTime(now, "weekdayDayMonth");
+  const greeting = t(greetingKey(now.getHours()));
+
+  function groupByDate(transactions: TransactionWithCategory[]): DateGroup[] {
+    const groups = new Map<string, TransactionWithCategory[]>();
+
+    for (const tx of transactions) {
+      const existing = groups.get(tx.date);
+      if (existing) {
+        existing.push(tx);
+      } else {
+        groups.set(tx.date, [tx]);
+      }
+    }
+
+    return Array.from(groups.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([dateKey, txs]) => {
+        // "Is this today?" is a question about the reader's own calendar, so it
+        // stays on the local-midnight date; only the label is a display value.
+        const local = parseISO(dateKey);
+        const label = isToday(local)
+          ? t("today")
+          : isYesterday(local)
+            ? t("yesterday")
+            : format.dateTime(toDisplayDate(dateKey), "dayMonth");
+        return { label, transactions: txs };
+      });
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={greeting}
-        description={`Today is ${dateLabel}`}
+        title={name ? t("greetingWithName", { greeting, name }) : greeting}
+        description={t("todayIs", { date: dateLabel })}
         action={
           <Button
             asChild
@@ -91,7 +98,7 @@ export default async function DashboardPage() {
             size="sm"
             className="hidden sm:inline-flex"
           >
-            <Link href="/transactions">View activity</Link>
+            <Link href="/transactions">{t("viewActivity")}</Link>
           </Button>
         }
       />
@@ -107,9 +114,13 @@ export default async function DashboardPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <SectionHeading>
-              {data.bucketSummaries.map((b) => b.percentage).join("/")} harmony
+              {t("harmony", {
+                split: data.bucketSummaries.map((b) => b.percentage).join("/"),
+              })}
             </SectionHeading>
-            <span className="text-xs text-muted-foreground">This month</span>
+            <span className="text-xs text-muted-foreground">
+              {t("thisMonth")}
+            </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {data.bucketSummaries.map((bucket) => (
@@ -121,13 +132,13 @@ export default async function DashboardPage() {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <SectionHeading>Recent transactions</SectionHeading>
+          <SectionHeading>{t("recentTransactions")}</SectionHeading>
           <Button asChild variant="ghost" size="sm">
-            <Link href="/transactions">View all</Link>
+            <Link href="/transactions">{t("viewAll")}</Link>
           </Button>
         </div>
         {data.recentTransactions.length === 0 ? (
-          <EmptyState message="No transactions yet. Add your first one to see insights here." />
+          <EmptyState message={t("noTransactions")} />
         ) : (
           <div className="space-y-4">
             {groupByDate(
@@ -138,8 +149,8 @@ export default async function DashboardPage() {
                   {group.label}
                 </p>
                 <div className="space-y-3">
-                  {group.transactions.map((t) => (
-                    <TransactionItem key={t.id} transaction={t} />
+                  {group.transactions.map((tx) => (
+                    <TransactionItem key={tx.id} transaction={tx} />
                   ))}
                 </div>
               </section>
@@ -150,7 +161,7 @@ export default async function DashboardPage() {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <SectionHeading>Upcoming recurring</SectionHeading>
+          <SectionHeading>{t("upcomingRecurring")}</SectionHeading>
         </div>
         <UpcomingRecurringList items={data.upcomingRecurring} />
       </div>

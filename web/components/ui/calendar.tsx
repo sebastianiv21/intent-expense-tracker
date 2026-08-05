@@ -7,9 +7,11 @@ import {
   ChevronRightIcon,
 } from "lucide-react"
 import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
+import { useLocale } from "next-intl"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { WEEK_STARTS_ON, toLocale } from "@/lib/i18n/locales"
 
 function Calendar({
   className,
@@ -24,10 +26,38 @@ function Calendar({
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
   const defaultClassNames = getDefaultClassNames()
+  const locale = toLocale(useLocale())
+
+  // react-day-picker would otherwise format its own grid through date-fns, in
+  // English, while every other date in the app goes through Intl — two systems,
+  // one of them wrong. Overriding the formatters leaves Intl as the only owner.
+  // These dates are the picker's own local-midnight days, so unlike stored
+  // YYYY-MM-DD values they are formatted in local time, not UTC.
+  const intlFormatters = React.useMemo(() => {
+    const month = new Intl.DateTimeFormat(locale, { month: "long" })
+    const monthShort = new Intl.DateTimeFormat(locale, { month: "short" })
+    const monthYear = new Intl.DateTimeFormat(locale, {
+      month: "long",
+      year: "numeric",
+    })
+    const weekday = new Intl.DateTimeFormat(locale, { weekday: "short" })
+    const day = new Intl.DateTimeFormat(locale, { day: "numeric" })
+    const year = new Intl.DateTimeFormat(locale, { year: "numeric" })
+
+    return {
+      formatCaption: (date: Date) => monthYear.format(date),
+      formatMonthDropdown: (date: Date) => monthShort.format(date),
+      formatMonthCaption: (date: Date) => month.format(date),
+      formatWeekdayName: (date: Date) => weekday.format(date),
+      formatDay: (date: Date) => day.format(date),
+      formatYearDropdown: (date: Date) => year.format(date),
+    }
+  }, [locale])
 
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      weekStartsOn={WEEK_STARTS_ON[locale]}
       className={cn(
         "bg-background group/calendar p-3 [--cell-size:2rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
@@ -36,8 +66,7 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+        ...intlFormatters,
         ...formatters,
       }}
       classNames={{

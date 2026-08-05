@@ -9,7 +9,8 @@ import {
   PiggyBank,
   X,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useTransactionSheet } from "@/components/transaction-sheet-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,13 +30,13 @@ import { cn } from "@/lib/utils";
 import {
   BUCKET_ORDER,
   formatAmountDisplay,
-  formatCurrency,
   getAmountInputLength,
   getCurrencyDecimals,
   initialDecimalSeparator,
   parseAmountInput,
   parseStoredAmount,
 } from "@/lib/finance-utils";
+import { formatMoney } from "@/lib/i18n/money";
 import {
   createTransaction,
   getExchangeRateForPreview,
@@ -49,7 +50,6 @@ import type { AllocationBucket, Category, TransactionType } from "@/types";
 const BUCKET_META: Record<
   AllocationBucket,
   {
-    label: string;
     Icon: typeof Home;
     color: string;
     borderClass: string;
@@ -57,27 +57,32 @@ const BUCKET_META: Record<
   }
 > = {
   needs: {
-    label: "NEEDS",
     Icon: Home,
     color: "var(--bucket-needs)",
     borderClass: "border-bucket-needs",
     textClass: "text-bucket-needs",
   },
   wants: {
-    label: "WANTS",
     Icon: Coffee,
     color: "var(--bucket-wants)",
     borderClass: "border-bucket-wants",
     textClass: "text-bucket-wants",
   },
   future: {
-    label: "FUTURE",
     Icon: PiggyBank,
     color: "var(--bucket-future)",
     borderClass: "border-bucket-future",
     textClass: "text-bucket-future",
   },
 };
+
+/** The bucket chips shout; the catalog carries the shouting, not `.toUpperCase()`,
+ *  which mangles locale-specific casing. */
+const BUCKET_UPPER_KEYS = {
+  needs: "needsUpper",
+  wants: "wantsUpper",
+  future: "futureUpper",
+} as const satisfies Record<AllocationBucket, string>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -173,6 +178,13 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
   const router = useRouter();
   const { isOpen, mode, transaction, close } = useTransactionSheet();
   const { currency: baseCurrency } = useCurrency();
+  const t = useTranslations("transactions");
+  const tCommon = useTranslations("common");
+  const tBuckets = useTranslations("buckets");
+  const tType = useTranslations("transactionType");
+  const tErrors = useTranslations("errors");
+  const intl = useFormatter();
+  const locale = useLocale();
   const [form, setForm] = useState<FormState>(() =>
     buildInitialState(mode, transaction, categories, baseCurrency),
   );
@@ -255,7 +267,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
       setPreviewRate(result.rate);
     } else {
       // Rate fetch failed — surface error in the existing alert block; preview stays hidden
-      setError("Couldn't fetch exchange rate — please try again.");
+      setError(tErrors("exchangeRate"));
     }
   }
 
@@ -290,7 +302,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
       close();
       router.refresh();
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(tCommon("somethingWentWrong"));
     } finally {
       setSaving(false);
     }
@@ -319,17 +331,17 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
             <SheetTitle className="text-2xl font-bold">
-              {mode === "edit" ? "Edit Awareness" : "New Awareness"}
+              {mode === "edit" ? t("sheetTitleEdit") : t("sheetTitleCreate")}
             </SheetTitle>
             <SheetDescription className="sr-only">
               {mode === "edit"
-                ? "Update the details below."
-                : "Record income or expenses."}
+                ? t("sheetDescriptionEdit")
+                : t("sheetDescriptionCreate")}
             </SheetDescription>
             <button
               onClick={close}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-border text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Close"
+              aria-label={tCommon("close")}
             >
               <X className="h-5 w-5" />
             </button>
@@ -348,7 +360,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      aria-label="Select currency"
+                      aria-label={tCommon("selectCurrency")}
                       className={cn(
                         "mr-2 min-h-[44px] rounded-xl border px-3 py-2 font-mono font-bold transition-colors",
                         fontSizeClass,
@@ -389,14 +401,18 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   placeholder={
                     getCurrencyDecimals(form.currency) === 0 ? "0" : "0.00"
                   }
-                  aria-label="Transaction amount"
+                  aria-label={t("amountLabel")}
                   className={cn(
                     "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                     "placeholder:text-muted-foreground/20 focus-visible:ring-0",
                     fontSizeClass,
                     isIncome ? "text-income" : "text-foreground",
                   )}
-                  value={formatAmountDisplay(form.amount, amountDecimalSeparator)}
+                  value={formatAmountDisplay(
+                    form.amount,
+                    amountDecimalSeparator,
+                    locale,
+                  )}
                   onChange={(e) => {
                     if (getCurrencyDecimals(form.currency) === 0) {
                       // Zero-decimal currency: bypass the heuristic separator
@@ -434,9 +450,16 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   )}
                 >
                   {previewLoading
-                    ? "Fetching rate\u2026"
+                    ? tCommon("fetchingRate")
                     : previewRate !== null && parseStoredAmount(form.amount) > 0
-                      ? `\u2248 ${formatCurrency(parseStoredAmount(form.amount) * previewRate, baseCurrency)} ${baseCurrency}`
+                      ? tCommon("convertedApprox", {
+                          amount: formatMoney(
+                            intl,
+                            parseStoredAmount(form.amount) * previewRate,
+                            baseCurrency,
+                          ),
+                          currency: baseCurrency,
+                        })
                       : null}
                 </p>
               )}
@@ -458,7 +481,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   !isIncome ? "text-primary-foreground" : "text-foreground/25",
                 )}
               >
-                Expense
+                {tType("expense")}
               </button>
               <button
                 onClick={() => selectType("income")}
@@ -468,15 +491,16 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   isIncome ? "text-income-foreground" : "text-foreground/25",
                 )}
               >
-                Income
+                {tType("income")}
               </button>
             </div>
 
             {!isIncome && (
               <div className="grid grid-cols-3 gap-2">
                 {BUCKET_ORDER.map((bucket) => {
-                  const { label, Icon, borderClass, textClass, color } =
+                  const { Icon, borderClass, textClass, color } =
                     BUCKET_META[bucket];
+                  const label = tBuckets(BUCKET_UPPER_KEYS[bucket]);
                   const isActive = form.selectedBucket === bucket;
                   return (
                     <button
@@ -509,7 +533,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
 
             {filteredCategories.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No categories available
+                {t("noCategories")}
               </p>
             ) : (
               <div className="relative -mx-6">
@@ -525,7 +549,7 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                         key={cat.id}
                         type="button"
                         aria-pressed={isActive}
-                        aria-label={`Select ${cat.name}`}
+                        aria-label={tCommon("selectItem", { name: cat.name })}
                         onClick={() =>
                           updateField("categoryId", isActive ? null : cat.id)
                         }
@@ -574,8 +598,8 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
             </div>
 
             <textarea
-              placeholder="Add a note..."
-              aria-label="Notes"
+              placeholder={t("notesPlaceholder")}
+              aria-label={t("notesLabel")}
               value={form.description}
               onChange={(e) => updateField("description", e.target.value)}
               className="h-20 w-full resize-none rounded-2xl border border-border bg-background p-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -602,7 +626,11 @@ export function TransactionSheet({ categories }: TransactionSheetProps) {
                   : "bg-linear-to-r from-primary to-primary-strong text-primary-foreground shadow-lg shadow-primary/25",
               )}
             >
-              {saving ? "Saving…" : mode === "edit" ? "Update" : "Add"}
+              {saving
+                ? tCommon("saving")
+                : mode === "edit"
+                  ? tCommon("update")
+                  : tCommon("add")}
               <CheckCircle className="h-5 w-5" />
             </Button>
           </div>

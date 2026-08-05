@@ -26,7 +26,6 @@ import type {
 
 type BucketSummary = {
   bucket: AllocationBucket;
-  label: string;
   color: string;
   spent: number;
   target: number;
@@ -179,7 +178,6 @@ export async function getDashboardData(): Promise<DashboardData> {
 
     return {
       bucket,
-      label: BUCKET_DEFINITIONS[bucket].label,
       color: BUCKET_DEFINITIONS[bucket].color,
       spent,
       target,

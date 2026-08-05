@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   calculateBucketTarget,
   calculatePercentage,
+  compactCurrencyFormatOptions,
+  currencyFormatOptions,
   formatAmountDisplay,
-  formatCurrency,
-  formatCurrencyCompact,
   getAmountInputLength,
   getBucketColor,
   getCurrencyDecimals,
@@ -12,6 +12,8 @@ import {
   initialDecimalSeparator,
   parseAmountInput,
   parseStoredAmount,
+  shouldFormatCompact,
+  toAmountNumber,
   withAlpha,
   BUCKET_DEFINITIONS,
   BUCKET_ORDER,
@@ -34,54 +36,62 @@ describe("getCurrencyDecimals", () => {
   });
 });
 
-describe("formatCurrency", () => {
-  it("formats numbers and numeric strings identically", () => {
-    expect(formatCurrency(1234.5, "USD")).toBe("$1,234.50");
-    expect(formatCurrency("1234.5", "USD")).toBe("$1,234.50");
+describe("currencyFormatOptions", () => {
+  it("asks for the currency's own number of decimals", () => {
+    expect(currencyFormatOptions("USD")).toEqual({
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    expect(currencyFormatOptions("COP")).toEqual({
+      style: "currency",
+      currency: "COP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
   });
 
-  it("defaults to USD", () => {
-    expect(formatCurrency(1)).toBe("$1.00");
-  });
-
-  it("drops the fractional part for zero-decimal currencies", () => {
-    expect(formatCurrency(1234.56, "JPY")).toBe("¥1,235");
-    expect(formatCurrency(1234567, "COP")).toBe("COP\u00a01,234,567");
-  });
-
-  it("formats negative amounts", () => {
-    expect(formatCurrency(-99.999, "EUR")).toBe("-€100.00");
-  });
-
-  it("falls back to a formatted zero for unparseable input", () => {
-    expect(formatCurrency("not a number", "USD")).toBe("$0.00");
-    expect(formatCurrency(Number.NaN, "JPY")).toBe("¥0");
+  it("carries no locale of its own — that comes from the reader", () => {
+    expect(currencyFormatOptions("USD")).not.toHaveProperty("locale");
   });
 });
 
-describe("formatCurrencyCompact", () => {
-  it("uses the full format below one thousand", () => {
-    expect(formatCurrencyCompact(999.5, "USD")).toBe("$999.50");
+describe("compactCurrencyFormatOptions", () => {
+  it("keeps compact precision independent of the currency's decimals", () => {
+    // COP has no cents, but 1,500,000 still has to read as 1.5M rather than 2M.
+    for (const currency of ["USD", "COP"]) {
+      expect(compactCurrencyFormatOptions(currency)).toEqual({
+        style: "currency",
+        currency,
+        notation: "compact",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      });
+    }
+  });
+});
+
+describe("shouldFormatCompact", () => {
+  it("switches at one thousand, by magnitude", () => {
+    expect(shouldFormatCompact(999.99)).toBe(false);
+    expect(shouldFormatCompact(1000)).toBe(true);
+    expect(shouldFormatCompact(-999.99)).toBe(false);
+    expect(shouldFormatCompact(-1500)).toBe(true);
+    expect(shouldFormatCompact(0)).toBe(false);
+  });
+});
+
+describe("toAmountNumber", () => {
+  it("accepts the numeric strings Drizzle returns", () => {
+    expect(toAmountNumber("1234.5")).toBe(1234.5);
+    expect(toAmountNumber(1234.5)).toBe(1234.5);
   });
 
-  it("compacts from one thousand up", () => {
-    expect(formatCurrencyCompact(1500, "USD")).toBe("$1.5K");
-    expect(formatCurrencyCompact(1234567, "USD")).toBe("$1.23M");
-  });
-
-  it("compacts negative amounts by magnitude", () => {
-    expect(formatCurrencyCompact(-1500, "USD")).toBe("-$1.5K");
-  });
-
-  it("keeps compact decimals for zero-decimal currencies", () => {
-    expect(formatCurrencyCompact(1500000, "COP")).toBe("COP\u00a01.5M");
-    expect(formatCurrencyCompact(2500000, "COP")).toBe("COP\u00a02.5M");
-    expect(formatCurrencyCompact(1750000, "COP")).toBe("COP\u00a01.75M");
-    expect(formatCurrencyCompact(1500, "COP")).toBe("COP\u00a01.5K");
-  });
-
-  it("falls back to a formatted zero for unparseable input", () => {
-    expect(formatCurrencyCompact("", "USD")).toBe("$0.00");
+  it("reads anything unparseable as zero", () => {
+    expect(toAmountNumber("not a number")).toBe(0);
+    expect(toAmountNumber("")).toBe(0);
+    expect(toAmountNumber(Number.NaN)).toBe(0);
   });
 });
 
@@ -213,8 +223,22 @@ describe("formatAmountDisplay", () => {
     expect(formatAmountDisplay("")).toBe("");
   });
 
-  it("groups thousands", () => {
+  it("groups thousands the way the locale does", () => {
     expect(formatAmountDisplay("10000000")).toBe("10,000,000");
+    expect(formatAmountDisplay("10000000", null, "en")).toBe("10,000,000");
+    expect(formatAmountDisplay("10000000", null, "es")).toBe("10.000.000");
+  });
+
+  it("follows Spanish in leaving four digits ungrouped", () => {
+    expect(formatAmountDisplay("1234", null, "es")).toBe("1234");
+    expect(formatAmountDisplay("12345", null, "es")).toBe("12.345");
+    expect(formatAmountDisplay("1234", null, "en")).toBe("1,234");
+  });
+
+  it("echoes the separator the user typed, whatever the locale groups with", () => {
+    // The field must never rewrite a separator out from under someone mid-number.
+    expect(formatAmountDisplay("12345.5", ",", "es")).toBe("12.345,5");
+    expect(formatAmountDisplay("12345.5", ".", "en")).toBe("12,345.5");
   });
 
   it("normalizes leading zeros away", () => {
@@ -368,21 +392,6 @@ describe("calculateBucketTarget", () => {
       0,
     );
     expect(total).toBeCloseTo(income, 10);
-  });
-
-  it("displays the default split of a large zero-decimal income without rounding it up", () => {
-    const income = 3_000_000;
-    const displayed = (["needs", "wants", "future"] as const).map((bucket) =>
-      formatCurrencyCompact(
-        calculateBucketTarget(income, BUCKET_DEFINITIONS[bucket].defaultPercentage),
-        "COP",
-      ),
-    );
-    expect(displayed).toEqual([
-      "COP\u00a01.5M",
-      "COP\u00a0900K",
-      "COP\u00a0600K",
-    ]);
   });
 });
 

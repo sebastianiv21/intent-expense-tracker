@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { updateFinancialProfile } from "@/lib/actions/financial-profile";
 import {
-  formatCurrency,
   formatAmountDisplay,
   getAmountInputLength,
   initialDecimalSeparator,
@@ -13,6 +13,7 @@ import {
   BUCKET_ORDER,
 } from "@/lib/finance-utils";
 import { getCurrencySymbol } from "@/lib/currencies";
+import { formatMoney, formatPercent } from "@/lib/i18n/money";
 import { CurrencySelector } from "@/components/currency-selector";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,12 +41,6 @@ function bucketsFromProfile(profile: FinancialProfile) {
     wants: Number(profile.wantsPercentage),
     future: Number(profile.futurePercentage),
   };
-}
-
-function getAllocationCounterText(total: number): string {
-  if (total === 100) return "100%";
-  if (total < 100) return `−${100 - total}% remaining`;
-  return `+${total - 100}% over`;
 }
 
 const SLIDER_CLASS = cn(
@@ -87,6 +82,12 @@ export function FinancialProfileSheet({
   open,
   onOpenChange,
 }: FinancialProfileSheetProps) {
+  const t = useTranslations("profile");
+  const tCommon = useTranslations("common");
+  const tBuckets = useTranslations("buckets");
+  const format = useFormatter();
+  const locale = useLocale();
+
   const [income, setIncome] = useState(profile.monthlyIncomeTarget.toString());
   const [buckets, setBuckets] = useState<Buckets>(() =>
     bucketsFromProfile(profile),
@@ -115,6 +116,17 @@ export function FinancialProfileSheet({
   const isValid = total === 100 && parseStoredAmount(income) > 0;
   const incomeNum = parseStoredAmount(income) || 0;
   const fontSizeClass = getAmountFontSize(getAmountInputLength(income));
+
+  function allocationCounterText(): string {
+    if (total === 100) return formatPercent(format, 100);
+    if (total < 100)
+      return t("allocationRemaining", {
+        percentage: formatPercent(format, 100 - total),
+      });
+    return t("allocationOver", {
+      percentage: formatPercent(format, total - 100),
+    });
+  }
 
   function resetState() {
     setIncome(profile.monthlyIncomeTarget.toString());
@@ -151,7 +163,7 @@ export function FinancialProfileSheet({
 
       onOpenChange(false);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(tCommon("somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -164,15 +176,13 @@ export function FinancialProfileSheet({
         className="rounded-t-2xl px-4 pb-6 lg:left-1/2 lg:w-[min(100%-2rem,58rem)] lg:-translate-x-1/2 lg:rounded-3xl"
       >
         <SheetHeader className="text-left">
-          <SheetTitle>Update financial profile</SheetTitle>
-          <SheetDescription>
-            Adjust your income target and allocation percentages.
-          </SheetDescription>
+          <SheetTitle>{t("sheetTitle")}</SheetTitle>
+          <SheetDescription>{t("sheetDescription")}</SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="income">Monthly income</Label>
+            <Label htmlFor="income">{t("monthlyIncome")}</Label>
             <div
               className="relative rounded-2xl px-4 py-5 text-center transition-all duration-300"
               style={{
@@ -194,7 +204,7 @@ export function FinancialProfileSheet({
                   type="text"
                   inputMode="decimal"
                   placeholder="0.00"
-                  aria-label="Monthly income amount"
+                  aria-label={t("monthlyIncomeAmount")}
                   className={cn(
                     "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                     "placeholder:text-muted-foreground/20 focus-visible:ring-0",
@@ -203,6 +213,7 @@ export function FinancialProfileSheet({
                   value={formatAmountDisplay(
                     income,
                     incomeDecimalSeparator,
+                    locale,
                   )}
                   onChange={(e) => {
                     const parsed = parseAmountInput(
@@ -217,32 +228,38 @@ export function FinancialProfileSheet({
             </div>
             {incomeNum > 0 && (
               <p className="text-center text-xs text-muted-foreground tabular-nums">
-                = {formatCurrency(incomeNum * 12, currency)} / year
+                {tCommon("perYear", {
+                  amount: formatMoney(format, incomeNum * 12, currency),
+                })}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label>Currency</Label>
+            <Label>{t("currency")}</Label>
             <CurrencySelector value={currency} onChange={setCurrency} />
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Allocation split</Label>
+              <Label>{t("allocationSplit")}</Label>
               <span
                 className={cn(
                   "text-xs font-medium",
                   total === 100 ? "text-income" : "text-destructive",
                 )}
               >
-                {getAllocationCounterText(total)}
+                {allocationCounterText()}
               </span>
             </div>
 
             <div
               className="flex rounded-full overflow-hidden h-2"
-              aria-label={`Allocation: Needs ${buckets.needs}%, Wants ${buckets.wants}%, Future ${buckets.future}%`}
+              aria-label={t("allocationSummary", {
+                needs: formatPercent(format, buckets.needs),
+                wants: formatPercent(format, buckets.wants),
+                future: formatPercent(format, buckets.future),
+              })}
             >
               {BUCKET_ORDER.map((key) => {
                 const { color } = BUCKET_DEFINITIONS[key];
@@ -266,12 +283,15 @@ export function FinancialProfileSheet({
             </div>
 
             {BUCKET_ORDER.map((key) => {
-              const { label, color } = BUCKET_DEFINITIONS[key];
+              const { color } = BUCKET_DEFINITIONS[key];
+              const label = tBuckets(key);
               return (
                 <div key={key} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span style={{ color }}>{label}</span>
-                    <span className="font-semibold">{buckets[key]}%</span>
+                    <span className="font-semibold">
+                      {formatPercent(format, buckets[key])}
+                    </span>
                   </div>
                   <div
                     className="min-h-[44px] flex items-center"
@@ -286,7 +306,9 @@ export function FinancialProfileSheet({
                         updateBucket(key, Number(event.target.value))
                       }
                       className={SLIDER_CLASS}
-                      aria-label={`${label} percentage`}
+                      aria-label={tBuckets("percentageSlider", {
+                        bucket: label,
+                      })}
                     />
                   </div>
                   {incomeNum > 0 && (
@@ -295,11 +317,13 @@ export function FinancialProfileSheet({
                       style={{ color, backgroundColor: `${color}18` }}
                       aria-hidden="true"
                     >
-                      {formatCurrency(
-                        (incomeNum * buckets[key]) / 100,
-                        currency,
-                      )}{" "}
-                      / month
+                      {tCommon("perMonth", {
+                        amount: formatMoney(
+                          format,
+                          (incomeNum * buckets[key]) / 100,
+                          currency,
+                        ),
+                      })}
                     </span>
                   )}
                 </div>
@@ -323,7 +347,7 @@ export function FinancialProfileSheet({
                 onOpenChange(false);
               }}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="button"
@@ -331,7 +355,7 @@ export function FinancialProfileSheet({
               onClick={handleSave}
               disabled={!isValid || loading}
             >
-              {loading ? "Saving…" : "Save"}
+              {loading ? tCommon("saving") : tCommon("save")}
             </Button>
           </div>
         </div>

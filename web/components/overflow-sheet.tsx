@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { BarChart2, Tag, RefreshCw, User } from "lucide-react";
 import {
   Sheet,
@@ -13,11 +14,11 @@ import {
 import { cn } from "@/lib/utils";
 
 const OVERFLOW_ITEMS = [
-  { href: "/insights", label: "Stats", icon: BarChart2 },
-  { href: "/categories", label: "Categories", icon: Tag },
-  { href: "/recurring", label: "Recurring", icon: RefreshCw },
-  { href: "/profile", label: "Profile", icon: User },
-];
+  { href: "/insights", key: "stats", icon: BarChart2 },
+  { href: "/categories", key: "categories", icon: Tag },
+  { href: "/recurring", key: "recurring", icon: RefreshCw },
+  { href: "/profile", key: "profile", icon: User },
+] as const;
 
 type OverflowSheetProps = {
   open: boolean;
@@ -26,6 +27,7 @@ type OverflowSheetProps = {
 
 export function OverflowSheet({ open, onOpenChange }: OverflowSheetProps) {
   const pathname = usePathname();
+  const t = useTranslations("nav");
 
   function handleNavigate() {
     onOpenChange(false);
@@ -38,14 +40,16 @@ export function OverflowSheet({ open, onOpenChange }: OverflowSheetProps) {
         className="rounded-t-2xl border-border bg-card px-4 pb-6 pt-4"
       >
         <SheetHeader className="text-left mb-4">
-          <SheetTitle className="text-lg font-semibold">Navigation</SheetTitle>
+          <SheetTitle className="text-lg font-semibold">
+            {t("sheetTitle")}
+          </SheetTitle>
           <SheetDescription className="sr-only">
-            Additional navigation options
+            {t("sheetDescription")}
           </SheetDescription>
         </SheetHeader>
         <nav className="space-y-1">
           {OVERFLOW_ITEMS.map((item) => {
-            const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            const isActive = pathname.startsWith(item.href);
             const Icon = item.icon;
 
             return (
@@ -62,7 +66,7 @@ export function OverflowSheet({ open, onOpenChange }: OverflowSheetProps) {
                 aria-current={isActive ? "page" : undefined}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
-                <span>{item.label}</span>
+                <span>{t(item.key)}</span>
               </Link>
             );
           })}

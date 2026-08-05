@@ -1,5 +1,7 @@
 "use server";
 
+import { actionError } from "@/lib/i18n/action-error";
+
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -20,7 +22,7 @@ export async function createFinancialProfile(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -41,7 +43,7 @@ export async function createFinancialProfile(
       .limit(1);
 
     if (existing[0]) {
-      return { success: false, error: "Financial profile already exists" };
+      return { success: false, error: await actionError("profileExists") };
     }
 
     const result = await db
@@ -63,7 +65,7 @@ export async function createFinancialProfile(
     return { success: true, data: result[0] as FinancialProfile };
   } catch (err) {
     console.error("Failed to create financial profile:", err);
-    return { success: false, error: "Failed to create financial profile" };
+    return { success: false, error: await actionError("profileCreateFailed") };
   }
 }
 
@@ -76,7 +78,7 @@ export async function updateFinancialProfile(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -117,7 +119,7 @@ export async function updateFinancialProfile(
       .returning();
 
     if (!result[0]) {
-      return { success: false, error: "Financial profile not found" };
+      return { success: false, error: await actionError("profileNotFound") };
     }
 
     revalidatePath("/");
@@ -127,6 +129,6 @@ export async function updateFinancialProfile(
     return { success: true, data: result[0] as FinancialProfile };
   } catch (err) {
     console.error("Failed to update financial profile:", err);
-    return { success: false, error: "Failed to update financial profile" };
+    return { success: false, error: await actionError("profileUpdateFailed") };
   }
 }

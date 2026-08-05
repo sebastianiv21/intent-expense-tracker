@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -16,11 +17,13 @@ function SearchInput({
   disabled = false,
   onChange,
 }: SearchInputProps) {
+  const t = useTranslations("transactions");
+
   return (
     <div className="relative">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
       <Input
-        placeholder="Search transactions"
+        placeholder={t("search")}
         defaultValue={defaultValue}
         disabled={disabled}
         onChange={onChange}

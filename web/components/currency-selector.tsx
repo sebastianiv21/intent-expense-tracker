@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES, getCurrencyInfo } from "@/lib/currencies";
+import { getCurrencyNamer } from "@/lib/i18n/currency-names";
 
 type CurrencySelectorProps = {
   value: string;
@@ -19,16 +21,35 @@ type CurrencySelectorProps = {
 export function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const locale = useLocale();
+  const t = useTranslations("currencySelector");
+
+  // Currency names come from Intl, not from a catalog: the platform already
+  // knows all 30 in both languages, and keeping them out of the catalogs means
+  // a new currency needs no translation work at all.
+  const options = useMemo(() => {
+    const nameOf = getCurrencyNamer(locale);
+    return SUPPORTED_CURRENCIES.map((currency) => ({
+      code: currency.code,
+      symbol: currency.symbol,
+      name: nameOf(currency.code),
+    }));
+  }, [locale]);
 
   const selected = getCurrencyInfo(value);
+  const selectedName = useMemo(
+    () => getCurrencyNamer(locale)(selected.code),
+    [locale, selected.code],
+  );
 
-  const filtered = search
-    ? SUPPORTED_CURRENCIES.filter(
+  const needle = search.trim().toLowerCase();
+  const filtered = needle
+    ? options.filter(
         (c) =>
-          c.code.toLowerCase().includes(search.toLowerCase()) ||
-          c.name.toLowerCase().includes(search.toLowerCase()),
+          c.code.toLowerCase().includes(needle) ||
+          c.name.toLowerCase().includes(needle),
       )
-    : SUPPORTED_CURRENCIES;
+    : options;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -42,7 +63,7 @@ export function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
           <span className="flex items-center gap-2">
             <span className="font-semibold">{selected.code}</span>
             <span className="text-muted-foreground text-sm">
-              {selected.symbol} — {selected.name}
+              {t("option", { symbol: selected.symbol, name: selectedName })}
             </span>
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -52,7 +73,7 @@ export function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
         <div className="p-2 border-b border-border">
           <input
             className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            placeholder="Search currencies..."
+            placeholder={t("search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
@@ -61,7 +82,7 @@ export function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
         <div className="max-h-60 overflow-y-auto p-1">
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground p-2 text-center">
-              No currencies found.
+              {t("empty")}
             </p>
           ) : (
             filtered.map((currency) => (
@@ -86,7 +107,10 @@ export function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
                 />
                 <span className="font-semibold">{currency.code}</span>
                 <span className="text-muted-foreground">
-                  {currency.symbol} — {currency.name}
+                  {t("option", {
+                    symbol: currency.symbol,
+                    name: currency.name,
+                  })}
                 </span>
               </button>
             ))

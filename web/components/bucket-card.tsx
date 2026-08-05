@@ -6,15 +6,16 @@ import {
   CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useCurrency } from "@/components/currency-provider";
+import { formatPercent } from "@/lib/i18n/money";
 import { cn } from "@/lib/utils";
 import type { AllocationBucket } from "@/types";
 
 type BucketCardProps = {
   bucket: AllocationBucket;
-  label: string;
   color: string;
   spent: number;
   target: number;
@@ -48,13 +49,18 @@ function getState(spent: number, target: number): keyof typeof STATE_CONFIGS {
 }
 
 export function BucketCard({
-  label,
+  bucket,
   color,
   spent,
   target,
   progress,
 }: BucketCardProps) {
   const { formatCurrencyCompact } = useCurrency();
+  const t = useTranslations("dashboard");
+  const tBuckets = useTranslations("buckets");
+  const format = useFormatter();
+
+  const label = tBuckets(bucket);
   const state = getState(spent, target);
   const { Icon, textClass, indicatorClass } = STATE_CONFIGS[state];
   const displayRatio = target > 0 ? Math.round((spent / target) * 100) : 0;
@@ -69,7 +75,7 @@ export function BucketCard({
           <div>
             <p className="text-sm font-medium text-foreground">{label}</p>
             <p className="text-xs text-muted-foreground">
-              Target {formatCurrencyCompact(target)}
+              {t("bucketTarget", { amount: formatCurrencyCompact(target) })}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -82,7 +88,7 @@ export function BucketCard({
               className={cn("text-xs font-semibold", textClass)}
               style={bucketColorStyle}
             >
-              {displayRatio}%
+              {formatPercent(format, displayRatio)}
             </span>
           </div>
         </div>
@@ -94,7 +100,9 @@ export function BucketCard({
           indicatorStyle={indicatorStyle}
         />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Spent {formatCurrencyCompact(spent)}</span>
+          <span>
+            {t("bucketSpent", { amount: formatCurrencyCompact(spent) })}
+          </span>
           <span className={textClass} style={bucketColorStyle}>
             {label}
           </span>

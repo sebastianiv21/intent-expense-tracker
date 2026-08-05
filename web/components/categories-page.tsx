@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ElementType } from "react";
+import { useTranslations } from "next-intl";
 import {
   Check,
   CheckCircle,
@@ -45,25 +46,18 @@ import {
 } from "@/lib/actions/categories";
 import type { AllocationBucket, Category, TransactionType } from "@/types";
 
-const TYPE_OPTIONS: Array<{ label: string; value: TransactionType }> = [
-  { label: "Expense", value: "expense" },
-  { label: "Income", value: "income" },
-];
+const TYPE_OPTIONS = ["expense", "income"] as const satisfies readonly TransactionType[];
 
-const BUCKET_OPTIONS: Array<{ label: string; value: AllocationBucket }> = [
-  { label: "Needs", value: "needs" },
-  { label: "Wants", value: "wants" },
-  { label: "Future", value: "future" },
-];
+const BUCKET_OPTIONS = [
+  "needs",
+  "wants",
+  "future",
+] as const satisfies readonly AllocationBucket[];
 
-const BUCKET_PILLS: Array<{
-  key: AllocationBucket;
-  label: string;
-  Icon: ElementType;
-}> = [
-  { key: "needs", label: "Needs", Icon: Home },
-  { key: "wants", label: "Wants", Icon: Coffee },
-  { key: "future", label: "Future", Icon: PiggyBank },
+const BUCKET_PILLS: Array<{ key: AllocationBucket; Icon: ElementType }> = [
+  { key: "needs", Icon: Home },
+  { key: "wants", Icon: Coffee },
+  { key: "future", Icon: PiggyBank },
 ];
 
 const CATEGORY_EMOJIS = [
@@ -106,6 +100,12 @@ const CATEGORY_EMOJIS = [
   "🎓",
 ];
 
+const BUCKET_UPPER_KEYS = {
+  needs: "needsUpper",
+  wants: "wantsUpper",
+  future: "futureUpper",
+} as const satisfies Record<AllocationBucket, string>;
+
 type CategoryFormState = {
   name: string;
   icon: string;
@@ -135,6 +135,10 @@ function getEmojiPreviewColor(formState: CategoryFormState): string {
 
 export function CategoriesPage({ categories }: CategoriesPageProps) {
   const router = useRouter();
+  const t = useTranslations("categories");
+  const tCommon = useTranslations("common");
+  const tBuckets = useTranslations("buckets");
+  const tType = useTranslations("transactionType");
   const [type, setType] = useState<TransactionType>("expense");
   const [bucket, setBucket] = useState<AllocationBucket>("needs");
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -184,7 +188,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
   const counts = useMemo(
     () =>
       BUCKET_OPTIONS.reduce<Record<AllocationBucket, number>>(
-        (acc, { value }) => {
+        (acc, value) => {
           acc[value] = categories.filter(
             (c) => c.type === "expense" && c.allocationBucket === value,
           ).length;
@@ -248,7 +252,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
       setSheetOpen(false);
       router.refresh();
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(tCommon("somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -271,7 +275,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
       }
       router.refresh();
     } catch {
-      setDeleteError({ id: category.id, message: "Failed to delete category" });
+      setDeleteError({ id: category.id, message: t("deleteFailed") });
     } finally {
       setDeletingId(null);
     }
@@ -284,8 +288,8 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Categories"
-        description="Organize income sources and spending buckets."
+        title={t("title")}
+        description={t("description")}
         action={
           <Button
             variant="outline"
@@ -293,7 +297,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
             onClick={openCreate}
             className="min-h-[44px]"
           >
-            Add category
+            {t("addCategory")}
           </Button>
         }
       />
@@ -302,12 +306,8 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
         <Tabs value={type} onValueChange={(v) => setType(v as TransactionType)}>
           <TabsList className="w-full">
             {TYPE_OPTIONS.map((option) => (
-              <TabsTrigger
-                key={option.value}
-                value={option.value}
-                className="flex-1"
-              >
-                {option.label}
+              <TabsTrigger key={option} value={option} className="flex-1">
+                {tType(option)}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -316,14 +316,15 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
         {type === "expense" && (
           <div className="flex gap-2 overflow-x-auto pb-1">
             {BUCKET_OPTIONS.map((option) => {
-              const isActive = bucket === option.value;
-              const color = getBucketColor(option.value);
+              const isActive = bucket === option;
+              const color = getBucketColor(option);
+              const label = tBuckets(option);
               return (
                 <button
-                  key={option.value}
+                  key={option}
                   type="button"
-                  onClick={() => setBucket(option.value)}
-                  aria-label={`Filter ${option.label} categories`}
+                  onClick={() => setBucket(option)}
+                  aria-label={t("filterBucket", { bucket: label })}
                   className={cn(
                     "min-h-[44px] px-3 rounded-full border text-sm flex items-center gap-2 transition",
                     !isActive &&
@@ -343,8 +344,8 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                     className="h-2 w-2 rounded-full"
                     style={{ backgroundColor: color }}
                   />
-                  {option.label}
-                  <span className="text-xs">({counts[option.value]})</span>
+                  {label}
+                  <span className="text-xs">({counts[option]})</span>
                 </button>
               );
             })}
@@ -356,17 +357,15 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
         {filteredCategories.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-10 text-center space-y-4">
             <div className="text-4xl">📂</div>
-            <p className="font-semibold text-foreground">No categories here</p>
-            <p className="text-sm text-muted-foreground">
-              Add your first one to organize your spending.
-            </p>
+            <p className="font-semibold text-foreground">{t("emptyTitle")}</p>
+            <p className="text-sm text-muted-foreground">{t("emptyBody")}</p>
             <Button
               onClick={openCreate}
               variant="outline"
               className="min-h-[44px]"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add category
+              {t("addCategory")}
             </Button>
           </div>
         ) : (
@@ -395,8 +394,10 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {category.type === "income"
-                          ? "Income"
-                          : (category.allocationBucket ?? "Expense")}
+                          ? tType("income")
+                          : category.allocationBucket
+                            ? tBuckets(category.allocationBucket)
+                            : tType("expense")}
                       </p>
                     </div>
                   </div>
@@ -405,14 +406,14 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                     {isConfirming ? (
                       <>
                         <span className="text-sm text-muted-foreground">
-                          Delete?
+                          {tCommon("deletePrompt")}
                         </span>
                         <Button
                           type="button"
                           variant="destructive"
                           size="sm"
                           className="min-h-[44px]"
-                          aria-label="Confirm delete"
+                          aria-label={tCommon("confirmDelete")}
                           ref={(el) => {
                             confirmButtonRefs.current[category.id] = el;
                           }}
@@ -425,7 +426,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                           variant="outline"
                           size="sm"
                           className="min-h-[44px]"
-                          aria-label="Cancel delete"
+                          aria-label={tCommon("cancelDelete")}
                           onClick={() => setConfirmingDeleteId(null)}
                         >
                           <X className="h-4 w-4" />
@@ -439,7 +440,9 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                             variant="ghost"
                             size="icon"
                             className="min-h-[44px] min-w-[44px] -mr-2 shrink-0"
-                            aria-label={`Options for ${category.name}`}
+                            aria-label={tCommon("optionsFor", {
+                              name: category.name,
+                            })}
                             disabled={isDeleting}
                             ref={(el) => {
                               deleteButtonRefs.current[category.id] = el;
@@ -450,13 +453,13 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEdit(category)}>
-                            Edit
+                            {tCommon("edit")}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => triggerDelete(category)}
                           >
-                            Delete
+                            {tCommon("delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -484,17 +487,19 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
             <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <SheetTitle className="text-2xl font-bold">
-                  {editingCategory ? "Edit Category" : "New Category"}
+                  {editingCategory
+                    ? t("sheetTitleEdit")
+                    : t("sheetTitleCreate")}
                 </SheetTitle>
                 <SheetDescription className="sr-only">
                   {editingCategory
-                    ? "Update the details below."
-                    : "Add a new way to track income or expenses."}
+                    ? t("sheetDescriptionEdit")
+                    : t("sheetDescriptionCreate")}
                 </SheetDescription>
                 <button
                   onClick={() => setSheetOpen(false)}
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-border text-muted-foreground transition-colors hover:text-foreground"
-                  aria-label="Close"
+                  aria-label={tCommon("close")}
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -504,7 +509,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                  Preview
+                  {t("preview")}
                 </Label>
                 <div className="flex items-center gap-4 p-4 rounded-2xl bg-background border border-border">
                   <div
@@ -515,7 +520,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                   </div>
                   <div>
                     <div className="font-semibold text-foreground">
-                      {formState.name.trim() || "Category Name"}
+                      {formState.name.trim() || t("previewName")}
                     </div>
                     {formState.type === "expense" &&
                     formState.allocationBucket ? (
@@ -527,14 +532,14 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                           ),
                         }}
                       >
-                        {formState.allocationBucket}
+                        {tBuckets(formState.allocationBucket)}
                       </div>
                     ) : (
                       <div
                         className="text-xs font-medium"
                         style={{ color: getTransactionColor("income") }}
                       >
-                        Income
+                        {tType("income")}
                       </div>
                     )}
                   </div>
@@ -543,14 +548,14 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
 
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                  Name
+                  {t("nameLabel")}
                 </Label>
                 <Input
                   value={formState.name}
                   onChange={(e) =>
                     setFormState((prev) => ({ ...prev, name: e.target.value }))
                   }
-                  placeholder="e.g., Groceries, Salary, Rent..."
+                  placeholder={t("namePlaceholder")}
                   className="h-14 rounded-2xl bg-background border-border"
                 />
               </div>
@@ -559,7 +564,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                 <div className="flex items-center gap-2">
                   <Grid3X3 className="h-4 w-4 text-muted-foreground" />
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                    Choose an Icon
+                    {t("iconLabel")}
                   </Label>
                 </div>
                 <div className="max-h-[180px] overflow-y-auto rounded-xl border border-border bg-background p-2">
@@ -594,7 +599,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
 
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                  Type
+                  {t("typeLabel")}
                 </Label>
                 <Tabs
                   value={formState.type}
@@ -610,11 +615,11 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                   <TabsList className="w-full">
                     {TYPE_OPTIONS.map((option) => (
                       <TabsTrigger
-                        key={option.value}
-                        value={option.value}
+                        key={option}
+                        value={option}
                         className="flex-1"
                       >
-                        {option.label}
+                        {tType(option)}
                       </TabsTrigger>
                     ))}
                   </TabsList>
@@ -624,12 +629,13 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
               {formState.type === "expense" && (
                 <div className="space-y-3">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                    Allocation Bucket
+                    {t("bucketLabel")}
                   </Label>
                   <div className="grid grid-cols-3 gap-3">
-                    {BUCKET_PILLS.map(({ key, label, Icon }) => {
+                    {BUCKET_PILLS.map(({ key, Icon }) => {
                       const isSelected = formState.allocationBucket === key;
                       const color = getBucketColor(key);
+                      const label = tBuckets(key);
                       return (
                         <button
                           key={key}
@@ -640,7 +646,9 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                               allocationBucket: key,
                             }))
                           }
-                          aria-label={`Select ${label} bucket`}
+                          aria-label={tBuckets("selectBucket", {
+                            bucket: label,
+                          })}
                           aria-pressed={isSelected}
                           className={cn(
                             "flex flex-col items-center gap-2 rounded-3xl border-2 bg-background p-4 transition-all hover:scale-[1.02]",
@@ -659,7 +667,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                         >
                           <Icon className="h-6 w-6" />
                           <span className="text-[10px] font-bold uppercase tracking-tighter">
-                            {label}
+                            {tBuckets(BUCKET_UPPER_KEYS[key])}
                           </span>
                         </button>
                       );
@@ -689,7 +697,11 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
                     "linear-gradient(to right, var(--primary), var(--primary-strong))",
                 }}
               >
-                {loading ? "Saving…" : editingCategory ? "Update" : "Create"}
+                {loading
+                  ? tCommon("saving")
+                  : editingCategory
+                    ? tCommon("update")
+                    : tCommon("create")}
                 <CheckCircle className="h-5 w-5" />
               </Button>
             </div>
