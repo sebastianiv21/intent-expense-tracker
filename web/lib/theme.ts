@@ -7,12 +7,6 @@ export type ResolvedTheme = "light" | "dark";
 /** Anyone who has never touched the switch stays on the theme the app shipped with. */
 export const DEFAULT_THEME_CHOICE: ThemeChoice = "dark";
 
-export const THEME_LABELS: Record<ThemeChoice, string> = {
-  light: "Light",
-  system: "System",
-  dark: "Dark",
-};
-
 export function isThemeChoice(value: string | undefined): value is ThemeChoice {
   return (
     value !== undefined && (THEME_CHOICES as readonly string[]).includes(value)

@@ -1,5 +1,7 @@
 "use server";
 
+import { actionError } from "@/lib/i18n/action-error";
+
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -29,7 +31,7 @@ export async function createTransaction(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -41,7 +43,7 @@ export async function createTransaction(
   try {
     exchangeRate = await getOrFetchExchangeRate(currency, baseCurrency, date);
   } catch {
-    return { success: false, error: "Couldn't fetch exchange rate — please try again." };
+    return { success: false, error: await actionError("exchangeRate") };
   }
 
   const originalAmount = amount;
@@ -69,7 +71,7 @@ export async function createTransaction(
     return { success: true, data: result[0] as Transaction };
   } catch (err) {
     console.error("Failed to create transaction:", err);
-    return { success: false, error: "Failed to create transaction" };
+    return { success: false, error: await actionError("transactionCreateFailed") };
   }
 }
 
@@ -83,7 +85,7 @@ export async function updateTransaction(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -97,7 +99,7 @@ export async function updateTransaction(
     .limit(1);
 
   if (!existing[0]) {
-    return { success: false, error: "Transaction not found" };
+    return { success: false, error: await actionError("transactionNotFound") };
   }
 
   const newCurrency = parsed.data.currency ?? existing[0].currency;
@@ -116,7 +118,7 @@ export async function updateTransaction(
     try {
       exchangeRate = await getOrFetchExchangeRate(newCurrency, baseCurrency, newDate);
     } catch {
-      return { success: false, error: "Couldn't fetch exchange rate — please try again." };
+      return { success: false, error: await actionError("exchangeRate") };
     }
     // CRITICAL: Drizzle numeric → string at runtime; always Number() before arithmetic
     const originalAmount = parsed.data.amount ?? Number(existing[0].originalAmount);
@@ -149,7 +151,7 @@ export async function updateTransaction(
       .returning();
 
     if (!result[0]) {
-      return { success: false, error: "Transaction not found" };
+      return { success: false, error: await actionError("transactionNotFound") };
     }
 
     revalidatePath("/transactions");
@@ -158,7 +160,7 @@ export async function updateTransaction(
     return { success: true, data: result[0] as Transaction };
   } catch (err) {
     console.error("Failed to update transaction:", err);
-    return { success: false, error: "Failed to update transaction" };
+    return { success: false, error: await actionError("transactionUpdateFailed") };
   }
 }
 
@@ -178,7 +180,7 @@ export async function getExchangeRateForPreview(
     const rate = await getOrFetchExchangeRate(from, to, date);
     return { rate };
   } catch {
-    return { error: "Couldn't fetch exchange rate" };
+    return { error: await actionError("exchangeRateShort") };
   }
 }
 
@@ -192,7 +194,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
       .returning();
 
     if (!result[0]) {
-      return { success: false, error: "Transaction not found" };
+      return { success: false, error: await actionError("transactionNotFound") };
     }
 
     revalidatePath("/transactions");
@@ -201,7 +203,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
     return { success: true };
   } catch (err) {
     console.error("Failed to delete transaction:", err);
-    return { success: false, error: "Failed to delete transaction" };
+    return { success: false, error: await actionError("transactionDeleteFailed") };
   }
 }
 

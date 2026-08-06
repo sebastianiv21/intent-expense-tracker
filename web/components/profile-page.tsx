@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
 import { FinancialProfileSheet } from "@/components/financial-profile-sheet";
 import { PageHeader } from "@/components/page-header";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,13 +19,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  getBucketColor,
-  BUCKET_DEFINITIONS,
-  BUCKET_ORDER,
-} from "@/lib/finance-utils";
+import { getBucketColor, BUCKET_ORDER } from "@/lib/finance-utils";
 import { useCurrency } from "@/components/currency-provider";
 import { getCurrencyInfo } from "@/lib/currencies";
+import { formatPercent } from "@/lib/i18n/money";
 import { cn } from "@/lib/utils";
 import type { FinancialProfile } from "@/types";
 
@@ -59,7 +57,7 @@ const PCT_KEYS = {
   wants: "wantsPercentage",
   future: "futurePercentage",
 } as const satisfies Record<
-  keyof typeof BUCKET_DEFINITIONS,
+  (typeof BUCKET_ORDER)[number],
   keyof FinancialProfile
 >;
 
@@ -76,6 +74,11 @@ type ProfilePageProps = {
 export function ProfilePage({ user, profile }: ProfilePageProps) {
   const router = useRouter();
   const { formatCurrency } = useCurrency();
+  const t = useTranslations("profile");
+  const tCommon = useTranslations("common");
+  const tBuckets = useTranslations("buckets");
+  const tApp = useTranslations("app");
+  const format = useFormatter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const currencyInfo = getCurrencyInfo(profile.currency);
@@ -99,7 +102,7 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Profile" description="Account & preferences" />
+      <PageHeader title={t("title")} description={t("description")} />
 
       <AnimatedSection index={0}>
         <Card>
@@ -119,7 +122,12 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
               </p>
               {user.createdAt && (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Member since {format(new Date(user.createdAt), "MMM yyyy")}
+                  {t("memberSince", {
+                    date: format.dateTime(
+                      new Date(user.createdAt),
+                      "shortMonthYear",
+                    ),
+                  })}
                 </p>
               )}
             </div>
@@ -133,14 +141,14 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Financial profile
+                  {t("financialProfile")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Income &{" "}
-                  {BUCKET_ORDER.map((bucket) =>
-                    Math.round(Number(profile[PCT_KEYS[bucket]])),
-                  ).join("/")}{" "}
-                  split
+                  {t("incomeAndSplit", {
+                    split: BUCKET_ORDER.map((bucket) =>
+                      Math.round(Number(profile[PCT_KEYS[bucket]])),
+                    ).join("/"),
+                  })}
                 </p>
               </div>
               <Button
@@ -148,19 +156,24 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
                 size="sm"
                 onClick={() => setSheetOpen(true)}
               >
-                Edit
+                {tCommon("edit")}
               </Button>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Monthly income</span>
+              <span className="text-muted-foreground">
+                {t("monthlyIncome")}
+              </span>
               <span className="font-semibold text-foreground tabular-nums">
                 {formatCurrency(profile.monthlyIncomeTarget)}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Currency</span>
+              <span className="text-muted-foreground">{t("currency")}</span>
               <span className="font-semibold text-foreground">
-                {currencyInfo.code} ({currencyInfo.symbol})
+                {t("currencyValue", {
+                  code: currencyInfo.code,
+                  symbol: currencyInfo.symbol,
+                })}
               </span>
             </div>
             <div className="space-y-2">
@@ -175,14 +188,16 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
                         width: `${percentage}%`,
                         backgroundColor: color,
                       }}
-                      title={`${BUCKET_DEFINITIONS[bucket].label}: ${percentage}%`}
+                      title={tBuckets("labelWithPercentage", {
+                        bucket: tBuckets(bucket),
+                        percentage: formatPercent(format, percentage),
+                      })}
                     />
                   );
                 })}
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 {BUCKET_ORDER.map((bucket) => {
-                  const { label } = BUCKET_DEFINITIONS[bucket];
                   const percentage = Number(profile[PCT_KEYS[bucket]]);
                   const color = getBucketColor(bucket);
                   return (
@@ -192,9 +207,9 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
                         style={{ backgroundColor: color }}
                         aria-hidden="true"
                       />
-                      <span style={{ color }}>{label}</span>
+                      <span style={{ color }}>{tBuckets(bucket)}</span>
                       <span className="text-foreground tabular-nums font-medium">
-                        {percentage}%
+                        {formatPercent(format, percentage)}
                       </span>
                     </span>
                   );
@@ -209,12 +224,18 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
         <Card>
           <CardContent className="p-4 space-y-3">
             <div>
-              <p className="text-sm font-medium text-foreground">Appearance</p>
+              <p className="text-sm font-medium text-foreground">
+                {t("appearance")}
+              </p>
               <p className="text-xs text-muted-foreground">
-                System follows your device setting
+                {t("appearanceHint")}
               </p>
             </div>
             <ThemeToggle />
+            <p className="pt-1 text-sm font-medium text-foreground">
+              {t("language")}
+            </p>
+            <LanguageToggle />
           </CardContent>
         </Card>
       </AnimatedSection>
@@ -227,12 +248,14 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
             onClick={() => setLogoutOpen(true)}
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
-            Log out
+            {t("logOut")}
           </Button>
         </div>
       </AnimatedSection>
 
-      <p className="text-center text-xs text-muted-foreground">Intent v1.0</p>
+      <p className="text-center text-xs text-muted-foreground">
+        {tApp("version")}
+      </p>
 
       <FinancialProfileSheet
         profile={profile}
@@ -246,10 +269,8 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
           className="rounded-t-2xl px-4 pb-6 lg:left-1/2 lg:w-[min(100%-2rem,58rem)] lg:-translate-x-1/2 lg:rounded-3xl"
         >
           <SheetHeader className="text-left">
-            <SheetTitle>Log out?</SheetTitle>
-            <SheetDescription>
-              You will need to sign in again to access your data.
-            </SheetDescription>
+            <SheetTitle>{t("logOutPrompt")}</SheetTitle>
+            <SheetDescription>{t("logOutBody")}</SheetDescription>
           </SheetHeader>
           <div className="flex gap-3 mt-4">
             <Button
@@ -257,14 +278,14 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
               className="flex-1"
               onClick={() => setLogoutOpen(false)}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               variant="destructive"
               className="flex-1"
               onClick={handleLogout}
             >
-              Log out
+              {t("logOut")}
             </Button>
           </div>
         </SheetContent>

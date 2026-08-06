@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_THEME_CHOICE,
   THEME_CHOICES,
-  THEME_LABELS,
   isThemeChoice,
   resolveTheme,
   toThemeChoice,
 } from "@/lib/theme";
+import { MESSAGES } from "@/lib/i18n/messages";
+import { LOCALES } from "@/lib/i18n/locales";
 
 const read = (path: string) =>
   readFileSync(fileURLToPath(new URL(path, import.meta.url)), "utf8");
@@ -18,9 +19,14 @@ describe("theme choices", () => {
     expect(THEME_CHOICES).toEqual(["light", "system", "dark"]);
   });
 
-  it("labels every choice", () => {
-    for (const choice of THEME_CHOICES) {
-      expect(THEME_LABELS[choice]).toBeTruthy();
+  it("labels every choice in every language", () => {
+    // Labels moved out of lib/theme.ts into the catalogs when the app went
+    // bilingual; the switch reads them by choice name.
+    const keys = { light: "themeLight", system: "themeSystem", dark: "themeDark" } as const;
+    for (const locale of LOCALES) {
+      for (const choice of THEME_CHOICES) {
+        expect(MESSAGES[locale].profile[keys[choice]]).toBeTruthy();
+      }
     }
   });
 
@@ -96,5 +102,10 @@ describe("theme toggle markup", () => {
 
   it("waits for mount before marking a choice selected", () => {
     expect(toggle).toContain("mounted");
+  });
+
+  it("takes its labels from the catalog rather than a hard-coded map", () => {
+    expect(toggle).not.toContain("THEME_LABELS");
+    expect(toggle).toContain("useTranslations");
   });
 });

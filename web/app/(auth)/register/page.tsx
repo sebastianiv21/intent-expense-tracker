@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { signIn, signUp } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,9 @@ import { Eye, EyeOff, Chrome } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const t = useTranslations("register");
+  const tLogin = useTranslations("login");
+  const tCommon = useTranslations("common");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +30,7 @@ export default function RegisterPage() {
     const result = await signUp.email({ name, email, password });
 
     if (result.error) {
-      setError(result.error.message ?? "Registration failed");
+      setError(result.error.message ?? t("failed"));
       setLoading(false);
     } else {
       router.push("/onboarding");
@@ -38,7 +42,7 @@ export default function RegisterPage() {
     try {
       await signIn.social({ provider: "google", callbackURL: "/onboarding" });
     } catch {
-      setError("Google sign-in failed. Please try again.");
+      setError(tLogin("googleFailed"));
       setLoading(false);
     }
   }
@@ -46,10 +50,8 @@ export default function RegisterPage() {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-foreground">Create account</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Start tracking your expenses
-        </p>
+        <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
       </div>
 
       <Button
@@ -59,7 +61,7 @@ export default function RegisterPage() {
         disabled={loading}
       >
         <Chrome className="mr-2 h-4 w-4" />
-        Continue with Google
+        {tLogin("google")}
       </Button>
 
       <div className="relative">
@@ -67,17 +69,19 @@ export default function RegisterPage() {
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">or</span>
+          <span className="bg-background px-2 text-muted-foreground">
+            {tCommon("or")}
+          </span>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Full name</Label>
+          <Label htmlFor="name">{t("name")}</Label>
           <Input
             id="name"
             type="text"
-            placeholder="Jane Smith"
+            placeholder={t("namePlaceholder")}
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -86,11 +90,11 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{tLogin("email")}</Label>
           <Input
             id="email"
             type="email"
-            placeholder="you@example.com"
+            placeholder={tLogin("emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -99,7 +103,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{tLogin("password")}</Label>
           <div className="relative">
             <Input
               id="password"
@@ -116,7 +120,9 @@ export default function RegisterPage() {
               type="button"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
               onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={
+                showPassword ? tLogin("hidePassword") : tLogin("showPassword")
+              }
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -134,14 +140,14 @@ export default function RegisterPage() {
         )}
 
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Creating account…" : "Create account"}
+          {loading ? t("submitting") : t("submit")}
         </Button>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
+        {t("haveAccount")}{" "}
         <Link href="/login" className="text-accent hover:underline font-medium">
-          Sign in
+          {t("signIn")}
         </Link>
       </p>
     </div>

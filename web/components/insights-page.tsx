@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Cell, Pie, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { format, addMonths, subMonths } from "date-fns";
+import { useFormatter, useTranslations } from "next-intl";
 import {
   Home,
   Coffee,
@@ -17,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getBucketColor, getTransactionColor } from "@/lib/finance-utils";
+import { formatPercent } from "@/lib/i18n/money";
 import { useCurrency } from "@/components/currency-provider";
 import type { AllocationBucket } from "@/types";
 
@@ -74,17 +76,21 @@ export function InsightsPage({
 }: InsightsPageProps) {
   const router = useRouter();
   const { formatCurrencyCompact } = useCurrency();
+  const t = useTranslations("insights");
+  const tCommon = useTranslations("common");
+  const tBuckets = useTranslations("buckets");
+  const intl = useFormatter();
   const [month, setMonth] = useState(initialMonth);
   const monthDate = new Date(`${month}-01T00:00:00`);
 
   const bucketSplitLabel = useMemo(() => {
-    if (allocation.income <= 0) return "Bucket compliance";
+    if (allocation.income <= 0) return t("complianceFallback");
     const parts = (["needs", "wants", "future"] as AllocationBucket[]).map(
       (bucket) =>
         Math.round((allocation.targets[bucket] / allocation.income) * 100),
     );
-    return `${parts.join("/")} compliance`;
-  }, [allocation]);
+    return t("compliance", { split: parts.join("/") });
+  }, [allocation, t]);
 
   const bucketData = useMemo(() => {
     return (Object.keys(allocation.actual) as AllocationBucket[]).map(
@@ -117,13 +123,15 @@ export function InsightsPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Insights</h1>
-          <p className="text-sm text-muted-foreground">
-            Track allocation performance and spending patterns.
-          </p>
+          <h1 className="text-xl font-semibold text-foreground">
+            {t("title")}
+          </h1>
+          <p className="text-sm text-muted-foreground">{t("description")}</p>
         </div>
         <div className="text-xs text-muted-foreground">
-          Updated {format(new Date(), "MMM d")}
+          {t("updated", {
+            date: intl.dateTime(new Date(), "dayMonth"),
+          })}
         </div>
       </div>
 
@@ -136,12 +144,12 @@ export function InsightsPage({
             setMonth(newMonth);
             router.push(`/insights?month=${newMonth}`);
           }}
-          aria-label="Previous month"
+          aria-label={tCommon("previousMonth")}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <p className="text-sm font-medium text-foreground">
-          {format(monthDate, "MMMM yyyy")}
+          {intl.dateTime(monthDate, "monthYear")}
         </p>
         <Button
           variant="ghost"
@@ -151,7 +159,7 @@ export function InsightsPage({
             setMonth(newMonth);
             router.push(`/insights?month=${newMonth}`);
           }}
-          aria-label="Next month"
+          aria-label={tCommon("nextMonth")}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -166,11 +174,11 @@ export function InsightsPage({
                   {bucketSplitLabel}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Allocation vs target
+                  {t("allocationVsTarget")}
                 </p>
               </div>
               <span className="text-3xl font-bold text-foreground tabular-nums">
-                {showEmptyState ? "—" : `${complianceScore}%`}
+                {showEmptyState ? "—" : formatPercent(intl, complianceScore)}
               </span>
             </div>
 
@@ -210,8 +218,8 @@ export function InsightsPage({
               <div className="rounded-xl border border-dashed border-border p-6 text-center">
                 <p className="text-sm text-muted-foreground">
                   {hasIncomeTarget
-                    ? "No expenses recorded yet. Start tracking to see your compliance score."
-                    : "Set your monthly income target to track budget compliance."}
+                    ? t("emptyNoExpenses")
+                    : t("emptyNoIncome")}
                 </p>
               </div>
             ) : (
@@ -224,11 +232,11 @@ export function InsightsPage({
                       className="flex items-center justify-between text-xs"
                     >
                       <span
-                        className="flex items-center gap-1.5 capitalize"
+                        className="flex items-center gap-1.5"
                         style={{ color: bucket.color }}
                       >
                         <Icon className="h-3 w-3" />
-                        {bucket.name}
+                        {tBuckets(bucket.name)}
                       </span>
                       <span className="text-foreground tabular-nums">
                         {formatCurrencyCompact(bucket.value)} /{" "}
@@ -244,22 +252,28 @@ export function InsightsPage({
 
         <Card>
           <CardContent className="p-5 space-y-4">
-            <p className="text-sm font-semibold text-foreground">Summary</p>
+            <p className="text-sm font-semibold text-foreground">
+              {t("summary")}
+            </p>
             <div className="grid gap-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total income</span>
+                <span className="text-muted-foreground">
+                  {t("totalIncome")}
+                </span>
                 <span className="text-foreground tabular-nums font-medium">
                   {formatCurrencyCompact(insights.totalIncome)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total expenses</span>
+                <span className="text-muted-foreground">
+                  {t("totalExpenses")}
+                </span>
                 <span className="text-foreground tabular-nums font-medium">
                   {formatCurrencyCompact(insights.totalExpenses)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm pt-1 border-t border-border">
-                <span className="text-muted-foreground">Balance</span>
+                <span className="text-muted-foreground">{t("balance")}</span>
                 <span
                   className={cn(
                     "tabular-nums font-semibold",
@@ -272,12 +286,17 @@ export function InsightsPage({
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Transactions</span>
+                <span className="text-muted-foreground">
+                  {t("transactions")}
+                </span>
                 <span className="text-foreground tabular-nums font-medium">
-                  {insights.transactionCount.toLocaleString()}{" "}
-                  {insights.transactionCount === 1
-                    ? "transaction"
-                    : "transactions"}
+                  {t("transactionCount", {
+                    count: insights.transactionCount,
+                    formatted: intl.number(
+                      insights.transactionCount,
+                      "integer",
+                    ),
+                  })}
                 </span>
               </div>
             </div>
@@ -290,10 +309,10 @@ export function InsightsPage({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-foreground">
-                Spending by category
+                {t("spendingByCategory")}
               </p>
               <p className="text-xs text-muted-foreground">
-                Expense totals by category
+                {t("spendingByCategoryHint")}
               </p>
             </div>
           </div>
@@ -301,8 +320,7 @@ export function InsightsPage({
           {insights.spendingByCategory.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-8 text-center">
               <p className="text-sm text-muted-foreground">
-                No categorized expenses yet. Add categories to your transactions
-                to see spending breakdown.
+                {t("emptyNoCategorized")}
               </p>
             </div>
           ) : (
@@ -395,11 +413,11 @@ export function InsightsPage({
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <p
-                      className="flex items-center gap-1.5 text-sm font-semibold capitalize"
+                      className="flex items-center gap-1.5 text-sm font-semibold"
                       style={{ color: getBucketColor(bucket) }}
                     >
                       <Icon className="h-4 w-4" />
-                      {bucket}
+                      {tBuckets(bucket)}
                     </p>
                     <span
                       className={cn(
@@ -415,13 +433,17 @@ export function InsightsPage({
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Actual</span>
+                      <span className="text-muted-foreground">
+                        {t("actual")}
+                      </span>
                       <span className="text-foreground tabular-nums font-medium">
                         {formatCurrencyCompact(actual)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Target</span>
+                      <span className="text-muted-foreground">
+                        {t("target")}
+                      </span>
                       <span className="text-muted-foreground tabular-nums">
                         {formatCurrencyCompact(target)}
                       </span>
@@ -447,13 +469,13 @@ export function InsightsPage({
                       )}
                     </div>
                     <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>0%</span>
+                      <span>{formatPercent(intl, 0)}</span>
                       <span
                         className={cn(
                           isOverBudget && "text-destructive font-medium",
                         )}
                       >
-                        {percentage.toFixed(0)}%
+                        {formatPercent(intl, percentage)}
                       </span>
                     </div>
                   </div>

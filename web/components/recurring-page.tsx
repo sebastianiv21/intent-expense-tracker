@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Check,
@@ -46,13 +47,14 @@ import {
   calculatePercentage,
   BUCKET_ORDER,
   formatAmountDisplay,
-  formatCurrency,
   getAmountInputLength,
   getCurrencyDecimals,
   initialDecimalSeparator,
   parseAmountInput,
   parseStoredAmount,
 } from "@/lib/finance-utils";
+import { formatMoney } from "@/lib/i18n/money";
+import { toDisplayDate } from "@/lib/i18n/dates";
 import { useCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -85,19 +87,24 @@ type RecurringFormState = {
   currency: string; // ISO 4217 code; defaults to baseCurrency on create, item.currency on edit
 };
 
-const FREQUENCIES: Array<{ label: string; value: RecurrenceFrequency }> = [
-  { label: "Daily", value: "daily" },
-  { label: "Weekly", value: "weekly" },
-  { label: "Biweekly", value: "biweekly" },
-  { label: "Monthly", value: "monthly" },
-  { label: "Quarterly", value: "quarterly" },
-  { label: "Yearly", value: "yearly" },
-];
+const FREQUENCIES = [
+  "daily",
+  "weekly",
+  "biweekly",
+  "monthly",
+  "quarterly",
+  "yearly",
+] as const satisfies readonly RecurrenceFrequency[];
+
+const BUCKET_UPPER_KEYS = {
+  needs: "needsUpper",
+  wants: "wantsUpper",
+  future: "futureUpper",
+} as const satisfies Record<AllocationBucket, string>;
 
 const BUCKET_META: Record<
   AllocationBucket,
   {
-    label: string;
     Icon: typeof Home;
     color: string;
     borderClass: string;
@@ -105,21 +112,18 @@ const BUCKET_META: Record<
   }
 > = {
   needs: {
-    label: "NEEDS",
     Icon: Home,
     color: "var(--bucket-needs)",
     borderClass: "border-bucket-needs",
     textClass: "text-bucket-needs",
   },
   wants: {
-    label: "WANTS",
     Icon: Coffee,
     color: "var(--bucket-wants)",
     borderClass: "border-bucket-wants",
     textClass: "text-bucket-wants",
   },
   future: {
-    label: "FUTURE",
     Icon: PiggyBank,
     color: "var(--bucket-future)",
     borderClass: "border-bucket-future",
@@ -137,6 +141,14 @@ function getAmountFontSize(len: number): string {
 export function RecurringPage({ recurring, categories }: RecurringPageProps) {
   const [status, setStatus] = useState<"active" | "paused">("active");
   const { currency: baseCurrency, formatCurrencyCompact } = useCurrency();
+  const t = useTranslations("recurring");
+  const tCommon = useTranslations("common");
+  const tBuckets = useTranslations("buckets");
+  const tType = useTranslations("transactionType");
+  const tFrequency = useTranslations("frequency");
+  const tErrors = useTranslations("errors");
+  const intl = useFormatter();
+  const locale = useLocale();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] =
     useState<RecurringTransactionWithCategory | null>(null);
@@ -297,7 +309,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     if ("rate" in result) {
       setPreviewRate(result.rate);
     } else {
-      setError("Couldn't fetch exchange rate — please try again.");
+      setError(tErrors("exchangeRate"));
     }
   }
 
@@ -337,7 +349,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
 
       setSheetOpen(false);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(tCommon("somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -352,7 +364,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
         toast.error(result.error);
       }
     } catch {
-      toast.error("Failed to update recurring item");
+      toast.error(t("toggleFailed"));
     }
   }
 
@@ -373,7 +385,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
     } catch {
       setDeleteError({
         id: item.id,
-        message: "Failed to delete recurring item",
+        message: t("deleteFailed"),
       });
     } finally {
       setDeletingId(null);
@@ -388,8 +400,8 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Recurring"
-        description="Automate income and expenses on a schedule."
+        title={t("title")}
+        description={t("description")}
         action={
           <Button
             variant="outline"
@@ -397,7 +409,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
             onClick={openCreate}
             className="min-h-[44px]"
           >
-            Add recurring
+            {t("addRecurring")}
           </Button>
         }
       />
@@ -406,19 +418,25 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
       <div className="rounded-xl border border-border bg-card p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="text-center flex-1">
-            <p className="text-xs text-muted-foreground">Total Income</p>
+            <p className="text-xs text-muted-foreground">
+              {t("totalIncome")}
+            </p>
             <p className="text-lg font-semibold text-income">
               {formatCurrencyCompact(summary.totalIncome)}
             </p>
           </div>
           <div className="text-center flex-1 border-x border-border">
-            <p className="text-xs text-muted-foreground">Total Expenses</p>
+            <p className="text-xs text-muted-foreground">
+              {t("totalExpenses")}
+            </p>
             <p className="text-lg font-semibold text-expense">
               {formatCurrencyCompact(summary.totalExpenses)}
             </p>
           </div>
           <div className="text-center flex-1">
-            <p className="text-xs text-muted-foreground">Net Recurring</p>
+            <p className="text-xs text-muted-foreground">
+              {t("netRecurring")}
+            </p>
             <p
               className={cn(
                 "text-lg font-semibold",
@@ -442,8 +460,8 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
         )}
 
         <div className="flex justify-center gap-4 text-xs text-muted-foreground">
-          <span>{summary.activeCount} active</span>
-          <span>{summary.pausedCount} paused</span>
+          <span>{t("activeCount", { count: summary.activeCount })}</span>
+          <span>{t("pausedCount", { count: summary.pausedCount })}</span>
         </div>
       </div>
 
@@ -453,10 +471,14 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
       >
         <TabsList className="w-full">
           <TabsTrigger value="active" className="flex-1">
-            Active ({recurring.filter((item) => item.isActive).length})
+            {t("tabActive", {
+              count: recurring.filter((item) => item.isActive).length,
+            })}
           </TabsTrigger>
           <TabsTrigger value="paused" className="flex-1">
-            Paused ({recurring.filter((item) => !item.isActive).length})
+            {t("tabPaused", {
+              count: recurring.filter((item) => !item.isActive).length,
+            })}
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -467,13 +489,11 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
             <div className="text-4xl">{status === "active" ? "🔄" : "⏸️"}</div>
             <p className="font-semibold text-foreground">
               {status === "active"
-                ? "No active recurring items"
-                : "No paused recurring items"}
+                ? t("emptyActiveTitle")
+                : t("emptyPausedTitle")}
             </p>
             <p className="text-sm text-muted-foreground">
-              {status === "active"
-                ? "Set up recurring transactions to automate your finances."
-                : "Paused items will appear here."}
+              {status === "active" ? t("emptyActiveBody") : t("emptyPausedBody")}
             </p>
             {status === "active" && (
               <Button
@@ -482,7 +502,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                 className="min-h-[44px]"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add recurring
+                {t("addRecurring")}
               </Button>
             )}
           </div>
@@ -514,11 +534,16 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                           <p className="font-medium text-foreground">
                             {item.description ||
                               item.category?.name ||
-                              "Recurring"}
+                              t("fallbackName")}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {item.frequency} • Next{" "}
-                            {format(parseISO(item.nextDueDate), "MMM d")}
+                            {t("itemSchedule", {
+                              frequency: tFrequency(item.frequency),
+                              date: intl.dateTime(
+                                toDisplayDate(item.nextDueDate),
+                                "dayMonth",
+                              ),
+                            })}
                           </p>
                         </div>
                       </div>
@@ -539,7 +564,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                               variant="destructive"
                               size="sm"
                               className="min-h-[44px]"
-                              aria-label="Confirm delete"
+                              aria-label={tCommon("confirmDelete")}
                               ref={(el) => {
                                 confirmButtonRefs.current[item.id] = el;
                               }}
@@ -552,7 +577,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                               variant="outline"
                               size="sm"
                               className="min-h-[44px]"
-                              aria-label="Cancel delete"
+                              aria-label={tCommon("cancelDelete")}
                               onClick={() => setConfirmingDeleteId(null)}
                             >
                               <X className="h-4 w-4" />
@@ -566,7 +591,10 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                                 variant="ghost"
                                 size="icon"
                                 className="min-h-[44px] min-w-[44px] -mr-2 shrink-0"
-                                aria-label={`Options for ${item.description || "recurring item"}`}
+                                aria-label={tCommon("optionsFor", {
+                                  name:
+                                    item.description || t("fallbackNameLower"),
+                                })}
                                 disabled={isDeleting}
                                 ref={(el) => {
                                   deleteButtonRefs.current[item.id] = el;
@@ -577,18 +605,18 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => openEdit(item)}>
-                                Edit
+                                {tCommon("edit")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleToggle(item)}
                               >
-                                {item.isActive ? "Pause" : "Resume"}
+                                {item.isActive ? t("pause") : t("resume")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onClick={() => triggerDelete(item)}
                               >
-                                Delete
+                                {tCommon("delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -619,17 +647,17 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
             <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <SheetTitle className="text-2xl font-bold">
-                  {editing ? "Edit Recurring" : "New Recurring"}
+                  {editing ? t("sheetTitleEdit") : t("sheetTitleCreate")}
                 </SheetTitle>
                 <SheetDescription className="sr-only">
                   {editing
-                    ? "Update the schedule and details."
-                    : "Automate a repeating income or expense."}
+                    ? t("sheetDescriptionEdit")
+                    : t("sheetDescriptionCreate")}
                 </SheetDescription>
                 <button
                   type="button"
                   onClick={() => setSheetOpen(false)}
-                  aria-label="Close"
+                  aria-label={tCommon("close")}
                   className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-border text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <X className="h-5 w-5" />
@@ -654,7 +682,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                     <PopoverTrigger asChild>
                       <button
                         type="button"
-                        aria-label="Select currency"
+                        aria-label={tCommon("selectCurrency")}
                         className={cn(
                           "mr-2 min-h-[44px] rounded-xl border px-3 py-2 font-mono font-bold transition-colors",
                           getAmountFontSize(
@@ -698,7 +726,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                         ? "0"
                         : "0.00"
                     }
-                    aria-label="Amount"
+                    aria-label={t("amountLabel")}
                     className={cn(
                       "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                       "placeholder:text-muted-foreground/20 focus-visible:ring-0",
@@ -707,6 +735,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                     value={formatAmountDisplay(
                       formState.amount,
                       amountDecimalSeparator,
+                      locale,
                     )}
                     onChange={(e) => {
                       if (getCurrencyDecimals(formState.currency) === 0) {
@@ -749,13 +778,17 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                     )}
                   >
                     {previewLoading
-                      ? "Fetching rate…"
+                      ? tCommon("fetchingRate")
                       : previewRate !== null &&
                           parseStoredAmount(formState.amount) > 0
-                        ? `≈ ${formatCurrency(
-                            parseStoredAmount(formState.amount) * previewRate,
-                            baseCurrency,
-                          )} ${baseCurrency}`
+                        ? tCommon("convertedApprox", {
+                            amount: formatMoney(
+                              intl,
+                              parseStoredAmount(formState.amount) * previewRate,
+                              baseCurrency,
+                            ),
+                            currency: baseCurrency,
+                          })
                         : null}
                   </p>
                 )}
@@ -767,7 +800,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                   htmlFor="description"
                   className="text-xs font-bold text-muted-foreground uppercase tracking-widest"
                 >
-                  Description
+                  {t("descriptionLabel")}
                 </Label>
                 <Input
                   id="description"
@@ -778,7 +811,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                       description: e.target.value,
                     }))
                   }
-                  placeholder="e.g., Netflix, Rent, Salary..."
+                  placeholder={t("descriptionPlaceholder")}
                   className="h-14 rounded-2xl bg-background border-border"
                 />
               </div>
@@ -786,7 +819,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
               {/* Type toggle */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                  Type
+                  {t("typeLabel")}
                 </Label>
                 <div className="relative flex rounded-2xl bg-border p-1">
                   <div
@@ -817,7 +850,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                           : "text-foreground/25",
                       )}
                     >
-                      {option === "expense" ? "Expense" : "Income"}
+                      {tType(option)}
                     </button>
                   ))}
                 </div>
@@ -827,12 +860,13 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
               {formState.type === "expense" && (
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                    Bucket
+                    {t("bucketLabel")}
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     {BUCKET_ORDER.map((bucket) => {
-                      const { label, Icon, borderClass, textClass, color } =
+                      const { Icon, borderClass, textClass, color } =
                         BUCKET_META[bucket];
+                      const label = tBuckets(BUCKET_UPPER_KEYS[bucket]);
                       const isActive = filterBucket === bucket;
                       return (
                         <button
@@ -867,20 +901,20 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
               {/* Frequency selector */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                  Frequency
+                  {t("frequencyLabel")}
                 </Label>
                 <div className="grid grid-cols-3 gap-2">
                   {FREQUENCIES.map((freq) => {
-                    const isActive = formState.frequency === freq.value;
+                    const isActive = formState.frequency === freq;
                     return (
                       <button
-                        key={freq.value}
+                        key={freq}
                         type="button"
                         aria-pressed={isActive}
                         onClick={() =>
                           setFormState((prev) => ({
                             ...prev,
-                            frequency: freq.value,
+                            frequency: freq,
                           }))
                         }
                         className={cn(
@@ -890,7 +924,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                             : "border-border text-muted-foreground hover:border-primary/50",
                         )}
                       >
-                        {freq.label}
+                        {tFrequency(freq)}
                       </button>
                     );
                   })}
@@ -901,7 +935,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
               {categoriesByType.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                    Category
+                    {t("categoryLabel")}
                   </Label>
                   <div className="relative -mx-6">
                     <div className="flex gap-2 overflow-x-auto px-6 pb-1 [&::-webkit-scrollbar]:hidden">
@@ -918,7 +952,9 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                             key={category.id}
                             type="button"
                             aria-pressed={isActive}
-                            aria-label={`Select ${category.name}`}
+                            aria-label={tCommon("selectItem", {
+                              name: category.name,
+                            })}
                             onClick={() =>
                               setFormState((prev) => ({
                                 ...prev,
@@ -958,7 +994,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                 value={formState.startDate}
                 open={datePickerOpen}
                 onOpenChange={setDatePickerOpen}
-                placeholder="Start date"
+                placeholder={tCommon("startDate")}
                 onChange={(isoDate) =>
                   setFormState((prev) => ({ ...prev, startDate: isoDate }))
                 }
@@ -969,7 +1005,7 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                 value={formState.endDate ?? null}
                 open={endDatePickerOpen}
                 onOpenChange={setEndDatePickerOpen}
-                placeholder="End date (optional)"
+                placeholder={tCommon("endDateOptional")}
                 iconClassName="text-muted-foreground"
                 disabled={
                   formState.startDate
@@ -1002,7 +1038,11 @@ export function RecurringPage({ recurring, categories }: RecurringPageProps) {
                     "linear-gradient(to right, var(--primary), var(--primary-strong))",
                 }}
               >
-                {loading ? "Saving…" : editing ? "Update" : "Save"}
+                {loading
+                  ? tCommon("saving")
+                  : editing
+                    ? tCommon("update")
+                    : tCommon("save")}
                 <CheckCircle className="h-5 w-5" />
               </Button>
             </div>

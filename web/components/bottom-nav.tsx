@@ -3,20 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Home, List, PieChart, MoreHorizontal, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTransactionSheet } from "@/components/transaction-sheet-context";
 import { OverflowSheet } from "@/components/overflow-sheet";
 
 const LEFT_ITEMS = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/transactions", label: "Activity", icon: List },
-];
+  { href: "/", key: "home", icon: Home },
+  { href: "/transactions", key: "activity", icon: List },
+] as const;
 
-const RIGHT_ITEMS = [{ href: "/budgets", label: "Budgets", icon: PieChart }];
+const RIGHT_ITEMS = [
+  { href: "/budgets", key: "budgets", icon: PieChart },
+] as const;
 
 export function BottomNav() {
   const pathname = usePathname();
+  const t = useTranslations("nav");
   const { openCreate } = useTransactionSheet();
   const [overflowOpen, setOverflowOpen] = useState(false);
 
@@ -52,20 +56,30 @@ export function BottomNav() {
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border lg:hidden">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
           {LEFT_ITEMS.map((item) => (
-            <NavItem key={item.href} {...item} />
+            <NavItem
+              key={item.href}
+              href={item.href}
+              label={t(item.key)}
+              icon={item.icon}
+            />
           ))}
 
           <button
             type="button"
             onClick={openCreate}
             className="flex items-center justify-center h-14 w-14 rounded-full bg-accent text-accent-foreground shadow-lg -mt-6 transition-opacity hover:opacity-90"
-            aria-label="Add transaction"
+            aria-label={t("addTransaction")}
           >
             <Plus className="h-6 w-6" />
           </button>
 
           {RIGHT_ITEMS.map((item) => (
-            <NavItem key={item.href} {...item} />
+            <NavItem
+              key={item.href}
+              href={item.href}
+              label={t(item.key)}
+              icon={item.icon}
+            />
           ))}
 
           <button
@@ -75,10 +89,10 @@ export function BottomNav() {
               "flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] rounded-lg transition-colors",
               overflowOpen ? "text-accent" : "text-muted-foreground"
             )}
-            aria-label="Open navigation menu"
+            aria-label={t("openMenu")}
           >
             <MoreHorizontal className="h-5 w-5" />
-            <span className="text-[10px] font-medium">More</span>
+            <span className="text-[10px] font-medium">{t("more")}</span>
           </button>
         </div>
       </nav>

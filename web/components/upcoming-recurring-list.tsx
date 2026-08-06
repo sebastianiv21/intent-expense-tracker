@@ -1,8 +1,9 @@
 "use client";
 
-import { format, parseISO } from "date-fns";
+import { useFormatter, useTranslations } from "next-intl";
 import { getBucketColor, getTransactionColor } from "@/lib/finance-utils";
 import { useCurrency } from "@/components/currency-provider";
+import { toDisplayDate } from "@/lib/i18n/dates";
 import type { RecurringTransactionWithCategory } from "@/types";
 
 type UpcomingRecurringListProps = {
@@ -11,11 +12,13 @@ type UpcomingRecurringListProps = {
 
 export function UpcomingRecurringList({ items }: UpcomingRecurringListProps) {
   const { formatCurrencyCompact } = useCurrency();
+  const t = useTranslations("dashboard");
+  const format = useFormatter();
 
   if (items.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        No recurring items yet.
+        {t("noRecurring")}
       </div>
     );
   }
@@ -36,10 +39,15 @@ export function UpcomingRecurringList({ items }: UpcomingRecurringListProps) {
                 <p className="font-medium text-foreground">
                   {recurring.description ||
                     recurring.category?.name ||
-                    "Recurring"}
+                    t("recurringFallback")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Next {format(parseISO(recurring.nextDueDate), "MMM d")}
+                  {t("nextDue", {
+                    date: format.dateTime(
+                      toDisplayDate(recurring.nextDueDate),
+                      "dayMonth",
+                    ),
+                  })}
                 </p>
               </div>
             </div>

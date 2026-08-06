@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { format, addMonths, parseISO, subMonths } from "date-fns";
+import { format, addMonths, subMonths } from "date-fns";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import {
   Check,
   CheckCircle,
@@ -44,6 +45,7 @@ import {
   parseAmountInput,
   parseStoredAmount,
 } from "@/lib/finance-utils";
+import { getCurrencySymbol } from "@/lib/currencies";
 import { useCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -66,10 +68,15 @@ type BudgetFormState = {
   startDate: string;
 };
 
+const BUCKET_UPPER_KEYS = {
+  needs: "needsUpper",
+  wants: "wantsUpper",
+  future: "futureUpper",
+} as const satisfies Record<AllocationBucket, string>;
+
 const BUCKET_META: Record<
   AllocationBucket,
   {
-    label: string;
     Icon: typeof Home;
     color: string;
     borderClass: string;
@@ -77,21 +84,18 @@ const BUCKET_META: Record<
   }
 > = {
   needs: {
-    label: "NEEDS",
     Icon: Home,
     color: "var(--bucket-needs)",
     borderClass: "border-bucket-needs",
     textClass: "text-bucket-needs",
   },
   wants: {
-    label: "WANTS",
     Icon: Coffee,
     color: "var(--bucket-wants)",
     borderClass: "border-bucket-wants",
     textClass: "text-bucket-wants",
   },
   future: {
-    label: "FUTURE",
     Icon: PiggyBank,
     color: "var(--bucket-future)",
     borderClass: "border-bucket-future",
@@ -112,7 +116,13 @@ export function BudgetsPage({
   initialMonth,
 }: BudgetsPageProps) {
   const router = useRouter();
-  const { formatCurrencyCompact } = useCurrency();
+  const { formatCurrencyCompact, currency } = useCurrency();
+  const t = useTranslations("budgets");
+  const tCommon = useTranslations("common");
+  const tBuckets = useTranslations("buckets");
+  const tPeriod = useTranslations("period");
+  const intl = useFormatter();
+  const locale = useLocale();
   const [month, setMonth] = useState(initialMonth);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<BudgetWithSpending | null>(null);
@@ -173,7 +183,6 @@ export function BudgetsPage({
   const grouped = useMemo(() => {
     return BUCKET_ORDER.map((bucket) => ({
       bucket,
-      label: bucket[0].toUpperCase() + bucket.slice(1),
       budgets: budgets.filter(
         (budget) => budget.category.allocationBucket === bucket,
       ),
@@ -250,7 +259,7 @@ export function BudgetsPage({
 
       setSheetOpen(false);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(tCommon("somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -271,7 +280,7 @@ export function BudgetsPage({
         setDeleteError({ id: budget.id, message: result.error });
       }
     } catch {
-      setDeleteError({ id: budget.id, message: "Failed to delete budget" });
+      setDeleteError({ id: budget.id, message: t("deleteFailed") });
     } finally {
       setDeletingId(null);
     }
@@ -285,8 +294,8 @@ export function BudgetsPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Budgets"
-        description="Plan spending by category for the month ahead."
+        title={t("title")}
+        description={t("description")}
         action={
           <Button
             variant="outline"
@@ -294,7 +303,7 @@ export function BudgetsPage({
             onClick={openCreate}
             className="min-h-[44px]"
           >
-            New budget
+            {t("newBudget")}
           </Button>
         }
       />
@@ -310,15 +319,15 @@ export function BudgetsPage({
               setMonth(newMonth);
               router.push(`/budgets?month=${newMonth}`);
             }}
-            aria-label="Previous month"
+            aria-label={tCommon("previousMonth")}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="text-center">
             <p className="text-sm font-medium text-foreground">
-              {format(monthDate, "MMMM yyyy")}
+              {intl.dateTime(monthDate, "monthYear")}
             </p>
-            <p className="text-xs text-muted-foreground">Budget overview</p>
+            <p className="text-xs text-muted-foreground">{t("overview")}</p>
           </div>
           <Button
             variant="ghost"
@@ -328,7 +337,7 @@ export function BudgetsPage({
               setMonth(newMonth);
               router.push(`/budgets?month=${newMonth}`);
             }}
-            aria-label="Next month"
+            aria-label={tCommon("nextMonth")}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -344,19 +353,19 @@ export function BudgetsPage({
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
-            <p className="text-xs text-muted-foreground">Budgeted</p>
+            <p className="text-xs text-muted-foreground">{t("budgeted")}</p>
             <p className="text-lg font-semibold text-foreground">
               {formatCurrencyCompact(summary.totalBudgeted)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Spent</p>
+            <p className="text-xs text-muted-foreground">{t("spent")}</p>
             <p className="text-lg font-semibold text-foreground">
               {formatCurrencyCompact(summary.totalSpent)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Remaining</p>
+            <p className="text-xs text-muted-foreground">{t("remaining")}</p>
             <p
               className={cn(
                 "text-lg font-semibold",
@@ -375,10 +384,10 @@ export function BudgetsPage({
           <div key={group.bucket} className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-foreground">
-                {group.label}
+                {tBuckets(group.bucket)}
               </h2>
               <span className="text-xs text-muted-foreground">
-                {group.budgets.length} budgets
+                {t("groupCount", { count: group.budgets.length })}
               </span>
             </div>
 
@@ -386,11 +395,10 @@ export function BudgetsPage({
               <div className="rounded-2xl border border-border bg-card p-10 text-center space-y-4">
                 <div className="text-4xl">💸</div>
                 <p className="font-semibold text-foreground">
-                  No {group.label} budgets yet
+                  {t("emptyGroupTitle", { bucket: tBuckets(group.bucket) })}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Add a budget to track your {group.label.toLowerCase()}{" "}
-                  spending.
+                  {t("emptyGroupBody", { bucket: tBuckets(group.bucket) })}
                 </p>
                 <Button
                   onClick={openCreate}
@@ -398,7 +406,7 @@ export function BudgetsPage({
                   className="min-h-[44px]"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add budget
+                  {t("addBudget")}
                 </Button>
               </div>
             ) : (
@@ -435,8 +443,10 @@ export function BudgetsPage({
                               {budget.category.name}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {formatCurrencyCompact(spent)} of{" "}
-                              {formatCurrencyCompact(total)}
+                              {t("spentOfTotal", {
+                                spent: formatCurrencyCompact(spent),
+                                total: formatCurrencyCompact(total),
+                              })}
                             </p>
                           </div>
                         </div>
@@ -445,14 +455,14 @@ export function BudgetsPage({
                           {isConfirming ? (
                             <>
                               <span className="text-sm text-muted-foreground">
-                                Delete?
+                                {tCommon("deletePrompt")}
                               </span>
                               <Button
                                 type="button"
                                 variant="destructive"
                                 size="sm"
                                 className="min-h-[44px]"
-                                aria-label="Confirm delete"
+                                aria-label={tCommon("confirmDelete")}
                                 ref={(el) => {
                                   confirmButtonRefs.current[budget.id] = el;
                                 }}
@@ -465,7 +475,7 @@ export function BudgetsPage({
                                 variant="outline"
                                 size="sm"
                                 className="min-h-[44px]"
-                                aria-label="Cancel delete"
+                                aria-label={tCommon("cancelDelete")}
                                 onClick={() => setConfirmingDeleteId(null)}
                               >
                                 <X className="h-4 w-4" />
@@ -479,7 +489,9 @@ export function BudgetsPage({
                                   variant="ghost"
                                   size="icon"
                                   className="min-h-[44px] min-w-[44px] -mr-2 shrink-0"
-                                  aria-label={`Options for ${budget.category.name}`}
+                                  aria-label={tCommon("optionsFor", {
+                                    name: budget.category.name,
+                                  })}
                                   disabled={isDeleting}
                                   ref={(el) => {
                                     deleteButtonRefs.current[budget.id] = el;
@@ -492,13 +504,13 @@ export function BudgetsPage({
                                 <DropdownMenuItem
                                   onClick={() => openEdit(budget)}
                                 >
-                                  Edit
+                                  {tCommon("edit")}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="text-destructive focus:text-destructive"
                                   onClick={() => triggerDelete(budget)}
                                 >
-                                  Delete
+                                  {tCommon("delete")}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -522,10 +534,12 @@ export function BudgetsPage({
 
                       <div className="flex items-center justify-between text-xs">
                         <span style={{ color: getBucketColor(group.bucket) }}>
-                          {group.label}
+                          {tBuckets(group.bucket)}
                         </span>
                         {overspent && (
-                          <span className="text-destructive">Over budget</span>
+                          <span className="text-destructive">
+                            {t("overBudget")}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -553,17 +567,17 @@ export function BudgetsPage({
             <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <SheetTitle className="text-2xl font-bold">
-                  {editing ? "Edit Budget" : "New Budget"}
+                  {editing ? t("sheetTitleEdit") : t("sheetTitleCreate")}
                 </SheetTitle>
                 <SheetDescription className="sr-only">
                   {editing
-                    ? "Update the budget limits below."
-                    : "Set monthly targets per category."}
+                    ? t("sheetDescriptionEdit")
+                    : t("sheetDescriptionCreate")}
                 </SheetDescription>
                 <button
                   type="button"
                   onClick={() => setSheetOpen(false)}
-                  aria-label="Close"
+                  aria-label={tCommon("close")}
                   className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-border text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <X className="h-5 w-5" />
@@ -587,13 +601,13 @@ export function BudgetsPage({
                       getAmountFontSize(getAmountInputLength(formState.amount)),
                     )}
                   >
-                    $
+                    {getCurrencySymbol(currency)}
                   </span>
                   <Input
                     type="text"
                     inputMode="decimal"
                     placeholder="0.00"
-                    aria-label="Budget amount"
+                    aria-label={t("amountLabel")}
                     className={cn(
                       "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                       "placeholder:text-muted-foreground/20 focus-visible:ring-0",
@@ -602,6 +616,7 @@ export function BudgetsPage({
                     value={formatAmountDisplay(
                       formState.amount,
                       amountDecimalSeparator,
+                      locale,
                     )}
                     onChange={(e) => {
                       const parsed = parseAmountInput(
@@ -641,7 +656,7 @@ export function BudgetsPage({
                         : "text-foreground/25",
                     )}
                   >
-                    {option === "monthly" ? "Monthly" : "Weekly"}
+                    {tPeriod(option)}
                   </button>
                 ))}
               </div>
@@ -649,8 +664,9 @@ export function BudgetsPage({
               {/* Bucket selector */}
               <div className="grid grid-cols-3 gap-2">
                 {BUCKET_ORDER.map((bucket) => {
-                  const { label, Icon, borderClass, textClass, color } =
+                  const { Icon, borderClass, textClass, color } =
                     BUCKET_META[bucket];
+                  const label = tBuckets(BUCKET_UPPER_KEYS[bucket]);
                   const isActive = filterBucket === bucket;
                   return (
                     <button
@@ -685,7 +701,7 @@ export function BudgetsPage({
                 (c) => c.allocationBucket === filterBucket,
               ).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No categories in this bucket yet.
+                  {t("noCategoriesInBucket")}
                 </p>
               ) : (
                 <div className="relative -mx-6">
@@ -700,7 +716,9 @@ export function BudgetsPage({
                             key={category.id}
                             type="button"
                             aria-pressed={isActive}
-                            aria-label={`Select ${category.name}`}
+                            aria-label={tCommon("selectItem", {
+                              name: category.name,
+                            })}
                             onClick={() =>
                               setFormState((prev) => ({
                                 ...prev,
@@ -737,7 +755,7 @@ export function BudgetsPage({
                 value={formState.startDate}
                 open={datePickerOpen}
                 onOpenChange={setDatePickerOpen}
-                placeholder="Start date"
+                placeholder={tCommon("startDate")}
                 onChange={(isoDate) =>
                   setFormState((prev) => ({ ...prev, startDate: isoDate }))
                 }
@@ -764,7 +782,11 @@ export function BudgetsPage({
                     "linear-gradient(to right, var(--primary), var(--primary-strong))",
                 }}
               >
-                {loading ? "Saving…" : editing ? "Update" : "Save"}
+                {loading
+                  ? tCommon("saving")
+                  : editing
+                    ? tCommon("update")
+                    : tCommon("save")}
                 <CheckCircle className="h-5 w-5" />
               </Button>
             </div>

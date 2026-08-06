@@ -25,6 +25,7 @@ Intent is a full-stack web application built with Next.js 16 (App Router), React
 | **class-variance-authority** | 0.7.1 | Variant-based component styling |
 | **clsx** | 2.1.1 | Conditional classnames |
 | **tailwind-merge** | 3.4.0 | Merge Tailwind classes |
+| **next-intl** | 4.13.5 | English/Spanish messages plus all number, currency and date formatting — see `docs/LOCALIZATION.md` |
 
 ### Backend
 

@@ -1,5 +1,7 @@
 "use server";
 
+import { actionError } from "@/lib/i18n/action-error";
+
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -20,7 +22,7 @@ export async function createBudget(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -45,7 +47,7 @@ export async function createBudget(
     return { success: true, data: result[0] as Budget };
   } catch (err) {
     console.error("Failed to create budget:", err);
-    return { success: false, error: "Failed to create budget" };
+    return { success: false, error: await actionError("budgetCreateFailed") };
   }
 }
 
@@ -59,7 +61,7 @@ export async function updateBudget(
   if (!parsed.success) {
     return {
       success: false,
-      error: "Validation failed",
+      error: await actionError("validationFailed"),
       issues: parsed.error.issues,
     };
   }
@@ -77,7 +79,7 @@ export async function updateBudget(
   }
 
   if (Object.keys(updateValues).length === 0) {
-    return { success: false, error: "No fields to update" };
+    return { success: false, error: await actionError("noFieldsToUpdate") };
   }
 
   try {
@@ -88,7 +90,7 @@ export async function updateBudget(
       .returning();
 
     if (!result[0]) {
-      return { success: false, error: "Budget not found" };
+      return { success: false, error: await actionError("budgetNotFound") };
     }
 
     revalidatePath("/budgets");
@@ -97,7 +99,7 @@ export async function updateBudget(
     return { success: true, data: result[0] as Budget };
   } catch (err) {
     console.error("Failed to update budget:", err);
-    return { success: false, error: "Failed to update budget" };
+    return { success: false, error: await actionError("budgetUpdateFailed") };
   }
 }
 
@@ -111,7 +113,7 @@ export async function deleteBudget(id: string): Promise<ActionResult> {
       .returning();
 
     if (!result[0]) {
-      return { success: false, error: "Budget not found" };
+      return { success: false, error: await actionError("budgetNotFound") };
     }
 
     revalidatePath("/budgets");
@@ -120,6 +122,6 @@ export async function deleteBudget(id: string): Promise<ActionResult> {
     return { success: true };
   } catch (err) {
     console.error("Failed to delete budget:", err);
-    return { success: false, error: "Failed to delete budget" };
+    return { success: false, error: await actionError("budgetDeleteFailed") };
   }
 }

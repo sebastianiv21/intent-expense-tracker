@@ -2,17 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { createFinancialProfile } from "@/lib/actions/financial-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  formatCurrency,
   formatAmountDisplay,
   getAmountInputLength,
   parseAmountInput,
   parseStoredAmount,
+  BUCKET_DEFINITIONS,
+  BUCKET_ORDER,
 } from "@/lib/finance-utils";
+import { formatMoney, formatPercent } from "@/lib/i18n/money";
 import { getCurrencySymbol, DEFAULT_CURRENCY } from "@/lib/currencies";
 import { cn } from "@/lib/utils";
 import { CurrencySelector } from "@/components/currency-selector";
@@ -25,6 +28,12 @@ type Buckets = {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const t = useTranslations("onboarding");
+  const tCommon = useTranslations("common");
+  const tBuckets = useTranslations("buckets");
+  const format = useFormatter();
+  const locale = useLocale();
+
   const [income, setIncome] = useState("");
   const [buckets, setBuckets] = useState<Buckets>({
     needs: 50,
@@ -79,31 +88,21 @@ export default function OnboardingPage() {
     router.push("/");
   }
 
-  const BUCKETS: Array<{ key: keyof Buckets; label: string; color: string }> = [
-    { key: "needs", label: "Needs", color: "var(--bucket-needs)" },
-    { key: "wants", label: "Wants", color: "var(--bucket-wants)" },
-    { key: "future", label: "Future", color: "var(--bucket-future)" },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-foreground">
-          Set up your profile
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Enter your monthly income and allocation preferences
-        </p>
+        <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("description")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <Label>Currency</Label>
+          <Label>{t("currency")}</Label>
           <CurrencySelector value={currency} onChange={setCurrency} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="income">Monthly income</Label>
+          <Label htmlFor="income">{t("monthlyIncome")}</Label>
           <div
             className="relative rounded-2xl px-4 py-5 text-center transition-all duration-300"
             style={{
@@ -125,7 +124,7 @@ export default function OnboardingPage() {
                 type="text"
                 inputMode="decimal"
                 placeholder="0.00"
-                aria-label="Monthly income amount"
+                aria-label={t("monthlyIncomeAmount")}
                 className={cn(
                   "w-full border-none bg-transparent p-0 text-center font-mono font-extrabold shadow-none transition-all duration-200",
                   "placeholder:text-muted-foreground/20 focus-visible:ring-0",
@@ -139,21 +138,27 @@ export default function OnboardingPage() {
                   setIncome(parsed.normalizedValue);
                   setIncomeDecimalSeparator(parsed.decimalSeparator);
                 }}
-                value={formatAmountDisplay(income, incomeDecimalSeparator)}
+                value={formatAmountDisplay(
+                  income,
+                  incomeDecimalSeparator,
+                  locale,
+                )}
                 required
               />
             </div>
           </div>
           {incomeNum > 0 && (
             <p className="text-center text-xs text-muted-foreground tabular-nums">
-              = {formatCurrency(incomeNum * 12, currency)} / year
+              {tCommon("perYear", {
+                amount: formatMoney(format, incomeNum * 12, currency),
+              })}
             </p>
           )}
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label>Allocation split</Label>
+            <Label>{t("allocationSplit")}</Label>
             <span
               className={
                 total === 100
@@ -161,65 +166,81 @@ export default function OnboardingPage() {
                   : "text-xs text-destructive font-medium"
               }
             >
-              {total}% / 100%
+              {t("allocationTotal", {
+                total: formatPercent(format, total),
+                full: formatPercent(format, 100),
+              })}
             </span>
           </div>
 
-          {BUCKETS.map(({ key, label, color }) => (
-            <div key={key} className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span style={{ color }}>{label}</span>
-                <span className="font-semibold">{buckets[key]}%</span>
+          {BUCKET_ORDER.map((key) => {
+            const { color } = BUCKET_DEFINITIONS[key];
+            const label = tBuckets(key);
+            return (
+              <div key={key} className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span style={{ color }}>{label}</span>
+                  <span className="font-semibold">
+                    {formatPercent(format, buckets[key])}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={buckets[key]}
+                  onChange={(e) => updateBucket(key, Number(e.target.value))}
+                  className="w-full accent-[var(--color)]"
+                  style={{ accentColor: color }}
+                  aria-label={tBuckets("percentageSlider", { bucket: label })}
+                />
+                {incomeNum > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {tCommon("perMonth", {
+                      amount: formatMoney(
+                        format,
+                        (incomeNum * buckets[key]) / 100,
+                        currency,
+                      ),
+                    })}
+                  </p>
+                )}
               </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={buckets[key]}
-                onChange={(e) => updateBucket(key, Number(e.target.value))}
-                className="w-full accent-[var(--color)]"
-                style={{ accentColor: color }}
-                aria-label={`${label} percentage`}
-              />
-              {incomeNum > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {formatCurrency((incomeNum * buckets[key]) / 100, currency)} /
-                  month
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Pie chart preview */}
         <div className="flex justify-center">
           <svg viewBox="0 0 100 100" className="w-32 h-32" aria-hidden="true">
-            {(() => {
-              const slices = BUCKETS.map(({ key, color }) => ({
-                value: buckets[key],
-                color,
-              }));
-              let cumulative = 0;
-              return slices.map(({ value, color }, i) => {
-                const pct = value / 100;
-                const startAngle = cumulative * 2 * Math.PI - Math.PI / 2;
-                const endAngle = (cumulative + pct) * 2 * Math.PI - Math.PI / 2;
-                const x1 = 50 + 40 * Math.cos(startAngle);
-                const y1 = 50 + 40 * Math.sin(startAngle);
-                const x2 = 50 + 40 * Math.cos(endAngle);
-                const y2 = 50 + 40 * Math.sin(endAngle);
-                const largeArc = pct > 0.5 ? 1 : 0;
-                cumulative += pct;
-                if (value === 0) return null;
-                return (
-                  <path
-                    key={i}
-                    d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                    fill={color}
-                  />
-                );
-              });
-            })()}
+            {BUCKET_ORDER.map((key, i) => {
+              const value = buckets[key];
+              if (value === 0) return null;
+
+              // Each slice starts where the preceding ones ended; summing them
+              // here keeps the geometry a pure function of `buckets`.
+              const start =
+                BUCKET_ORDER.slice(0, i).reduce(
+                  (sum, earlier) => sum + buckets[earlier],
+                  0,
+                ) / 100;
+              const pct = value / 100;
+              const startAngle = start * 2 * Math.PI - Math.PI / 2;
+              const endAngle = (start + pct) * 2 * Math.PI - Math.PI / 2;
+              const x1 = 50 + 40 * Math.cos(startAngle);
+              const y1 = 50 + 40 * Math.sin(startAngle);
+              const x2 = 50 + 40 * Math.cos(endAngle);
+              const y2 = 50 + 40 * Math.sin(endAngle);
+              const largeArc = pct > 0.5 ? 1 : 0;
+
+              return (
+                <path
+                  key={key}
+                  d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                  fill={BUCKET_DEFINITIONS[key].color}
+                />
+              );
+            })}
             <circle cx="50" cy="50" r="20" fill="var(--background)" />
           </svg>
         </div>
@@ -231,7 +252,7 @@ export default function OnboardingPage() {
         )}
 
         <Button type="submit" className="w-full" disabled={loading || !isValid}>
-          {loading ? "Setting up…" : "Complete setup"}
+          {loading ? t("submitting") : t("submit")}
         </Button>
       </form>
     </div>

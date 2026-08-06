@@ -1,36 +1,30 @@
 import type { AllocationBucket } from "@/types";
-import { DEFAULT_CURRENCY } from "@/lib/currencies";
+import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 
 // ─── Bucket Definitions ───────────────────────────────────────────────────────
 
 // Colors are token references rather than literals so a single value follows the
 // active theme. Valid anywhere CSS is: inline styles, and SVG `fill`/`stroke`.
+// Names live in the message catalogs, keyed by bucket — never here, or the data
+// layer would hand the UI a string in one fixed language.
 export const BUCKET_DEFINITIONS = {
   needs: {
-    label: "Needs",
     color: "var(--bucket-needs)",
     defaultPercentage: 50,
-    description: "Essential expenses",
   },
   wants: {
-    label: "Wants",
     color: "var(--bucket-wants)",
     defaultPercentage: 30,
-    description: "Non-essential spending",
   },
   future: {
-    label: "Future",
     color: "var(--bucket-future)",
     defaultPercentage: 20,
-    description: "Savings & investments",
   },
 } as const satisfies Record<
   AllocationBucket,
   {
-    label: string;
     color: string;
     defaultPercentage: number;
-    description: string;
   }
 >;
 
@@ -52,10 +46,12 @@ export function withAlpha(color: string, percent: number): string {
   return `color-mix(in srgb, ${color} ${percent}%, transparent)`;
 }
 
-// ─── Currency Formatter ───────────────────────────────────────────────────────
+// ─── Currency Policy ──────────────────────────────────────────────────────────
 
-const formatterCache = new Map<string, Intl.NumberFormat>();
-const compactFormatterCache = new Map<string, Intl.NumberFormat>();
+// How many decimals a currency has, and when an amount is large enough to go
+// compact, are properties of the *money*. How the digits, separators and symbol
+// are then arranged is a property of the *reader's locale*. This module owns the
+// first; next-intl applies it against the second (see lib/i18n/money.ts).
 
 const ZERO_DECIMAL_CURRENCIES = new Set(["COP", "JPY", "KRW", "CLP", "HUF", "TWD"]);
 
@@ -63,61 +59,52 @@ export function getCurrencyDecimals(currency: string): number {
   return ZERO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
 }
 
-function getCurrencyFormatter(currency: string): Intl.NumberFormat {
-  let formatter = formatterCache.get(currency);
-  if (!formatter) {
-    const decimals = getCurrencyDecimals(currency);
-    formatter = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    });
-    formatterCache.set(currency, formatter);
-  }
-  return formatter;
-}
-
-function getCompactCurrencyFormatter(currency: string): Intl.NumberFormat {
-  let formatter = compactFormatterCache.get(currency);
-  if (!formatter) {
-    // Compact precision is independent of the currency's decimals: COP has no cents,
-    // but 1,500,000 still has to read as 1.5M rather than 2M.
-    formatter = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      notation: "compact",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
-    compactFormatterCache.set(currency, formatter);
-  }
-  return formatter;
-}
-
-function getZeroFormatted(currency: string): string {
-  return getCurrencyFormatter(currency).format(0);
-}
-
-export function formatCurrency(
-  amount: number | string,
-  currency: string = DEFAULT_CURRENCY,
-): string {
+/** Amounts arrive from Drizzle as strings; anything unparseable reads as zero. */
+export function toAmountNumber(amount: number | string): number {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (Number.isNaN(num)) return getZeroFormatted(currency);
-  return getCurrencyFormatter(currency).format(num);
+  return Number.isNaN(num) ? 0 : num;
 }
 
-export function formatCurrencyCompact(
-  amount: number | string,
-  currency: string = DEFAULT_CURRENCY,
-): string {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (Number.isNaN(num)) return getZeroFormatted(currency);
-  if (Math.abs(num) >= 1000) {
-    return getCompactCurrencyFormatter(currency).format(num);
-  }
-  return getCurrencyFormatter(currency).format(num);
+/** Narrower than `Intl.NumberFormatOptions`, which next-intl's formatter does not
+ *  accept wholesale; these are the only fields the app ever sets. */
+export type CurrencyFormatOptions = {
+  style: "currency";
+  currency: string;
+  notation?: "compact";
+  minimumFractionDigits: number;
+  maximumFractionDigits: number;
+};
+
+export function currencyFormatOptions(
+  currency: string,
+): CurrencyFormatOptions {
+  const decimals = getCurrencyDecimals(currency);
+  return {
+    style: "currency",
+    currency,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  };
+}
+
+export function compactCurrencyFormatOptions(
+  currency: string,
+): CurrencyFormatOptions {
+  // Compact precision is independent of the currency's decimals: COP has no cents,
+  // but 1,500,000 still has to read as 1.5M rather than 2M.
+  return {
+    style: "currency",
+    currency,
+    notation: "compact",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  };
+}
+
+export const COMPACT_THRESHOLD = 1000;
+
+export function shouldFormatCompact(amount: number): boolean {
+  return Math.abs(amount) >= COMPACT_THRESHOLD;
 }
 
 // ─── Amount Input Helpers ─────────────────────────────────────────────────────
@@ -158,21 +145,28 @@ function inferDecimalSeparator(input: string): AmountDecimalSeparator {
  * adding thousand separators while preserving a trailing decimal separator or
  * trailing zeros after the decimal.
  *
+ * Grouping follows `locale` — Spanish groups with "." and does not group four
+ * digits at all. The decimal separator does not: it echoes the key the user
+ * actually pressed, which `parseAmountInput` tracks, so the field never rewrites
+ * a separator out from under someone mid-number.
+ *
  * Examples:
- *   ("10000000", null) → "10,000,000"
- *   ("1234.5", ",")    → "1,234,5"
- *   ("1234.", ",")     → "1,234,"
- *   ("1234.50", ".")   → "1,234.50"
- *   ("", null)         → ""
+ *   ("10000000", null, "en") → "10,000,000"
+ *   ("10000000", null, "es") → "10.000.000"
+ *   ("1234.5", ",", "en")    → "1,234,5"
+ *   ("1234.", ",", "en")     → "1,234,"
+ *   ("1234.50", ".", "en")   → "1,234.50"
+ *   ("", null, "en")         → ""
  */
 export function formatAmountDisplay(
   raw: string,
   decimalSeparator: AmountDecimalSeparator = null,
+  locale: string = DEFAULT_LOCALE,
 ): string {
   if (!raw) return "";
   const [intPart, ...decParts] = raw.split(".");
   const hasDot = raw.includes(".");
-  const formatted = intPart ? Number(intPart).toLocaleString("en-US") : "";
+  const formatted = intPart ? Number(intPart).toLocaleString(locale) : "";
   if (hasDot) {
     return formatted + (decimalSeparator ?? ".") + (decParts[0] ?? "");
   }

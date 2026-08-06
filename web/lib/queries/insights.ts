@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { getTranslations } from "next-intl/server";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, financialProfile, transactions } from "@/lib/schema";
@@ -54,6 +55,10 @@ export async function getInsights(params: { month: string }) {
     )
     .groupBy(categories.name, categories.icon, categories.allocationBucket);
 
+  const uncategorized = await getTranslations("transactions").then((t) =>
+    t("uncategorized"),
+  );
+
   return {
     totalExpenses: Number(totals[0]?.totalExpenses ?? 0),
     totalIncome: Number(totals[0]?.totalIncome ?? 0),
@@ -62,7 +67,7 @@ export async function getInsights(params: { month: string }) {
       Number(totals[0]?.totalExpenses ?? 0),
     transactionCount: Number(totals[0]?.count ?? 0),
     spendingByCategory: spendingByCategory.map((row) => ({
-      name: row.name ?? "Uncategorized",
+      name: row.name ?? uncategorized,
       icon: row.icon ?? null,
       value: Number(row.value ?? 0),
       bucket: (row.bucket ?? "needs") as AllocationBucket,

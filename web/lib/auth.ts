@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { getTranslations } from "next-intl/server";
 import { db } from "./db";
 import * as schema from "./schema";
 import { DEFAULT_CATEGORIES } from "./seed-data";
@@ -34,12 +35,17 @@ export const auth = betterAuth({
       create: {
         after: async (user) => {
           try {
+            // Seeded once, in whatever language the person signed up in — these
+            // become their own editable rows, so nothing here re-translates
+            // later when they switch languages.
+            const t = await getTranslations("seedCategories");
             await db.insert(schema.categories).values(
               DEFAULT_CATEGORIES.map((cat) => ({
                 userId: user.id,
-                name: cat.name,
+                name: t(cat.name),
                 type: cat.type,
-                allocationBucket: cat.allocationBucket ?? null,
+                allocationBucket:
+                  "allocationBucket" in cat ? cat.allocationBucket : null,
                 icon: cat.icon,
               })),
             );

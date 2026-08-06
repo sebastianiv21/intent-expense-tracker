@@ -2,14 +2,10 @@
 
 import { useId, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { Sun, Monitor, Moon, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  THEME_CHOICES,
-  THEME_LABELS,
-  toThemeChoice,
-  type ThemeChoice,
-} from "@/lib/theme";
+import { THEME_CHOICES, toThemeChoice, type ThemeChoice } from "@/lib/theme";
 
 const ICONS: Record<ThemeChoice, LucideIcon> = {
   light: Sun,
@@ -17,10 +13,17 @@ const ICONS: Record<ThemeChoice, LucideIcon> = {
   dark: Moon,
 };
 
+const LABEL_KEYS = {
+  light: "themeLight",
+  system: "themeSystem",
+  dark: "themeDark",
+} as const satisfies Record<ThemeChoice, string>;
+
 const neverChanges = () => () => {};
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const t = useTranslations("profile");
   const name = useId();
   // The stored choice is unknown until the client runs, so the first paint marks
   // nothing as selected — that keeps server and client markup identical.
@@ -36,7 +39,7 @@ export function ThemeToggle() {
   return (
     <div
       role="radiogroup"
-      aria-label="Theme"
+      aria-label={t("theme")}
       className="relative flex rounded-2xl bg-secondary p-1"
     >
       {selectedIndex >= 0 && (
@@ -73,7 +76,7 @@ export function ThemeToggle() {
               )}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {THEME_LABELS[choice]}
+              {t(LABEL_KEYS[choice])}
             </span>
           </label>
         );

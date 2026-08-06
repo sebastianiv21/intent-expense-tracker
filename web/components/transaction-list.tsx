@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { format, isToday, isYesterday, parseISO } from "date-fns";
+import { isToday, isYesterday, parseISO } from "date-fns";
+import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { TransactionItem } from "@/components/transaction-item";
@@ -10,6 +11,7 @@ import {
   deleteTransaction,
   loadMoreTransactions,
 } from "@/lib/actions/transactions";
+import { toDisplayDate } from "@/lib/i18n/dates";
 import type {
   FilterState,
   TransactionTotals,
@@ -22,33 +24,6 @@ type DateGroup = {
   transactions: TransactionWithCategory[];
 };
 
-function groupByDate(transactions: TransactionWithCategory[]): DateGroup[] {
-  const groups: Map<string, TransactionWithCategory[]> = new Map();
-
-  for (const t of transactions) {
-    const dateKey = t.date;
-    if (!groups.has(dateKey)) {
-      groups.set(dateKey, []);
-    }
-    groups.get(dateKey)!.push(t);
-  }
-
-  return Array.from(groups.entries())
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([dateKey, txs]) => {
-      const date = parseISO(dateKey);
-      let label: string;
-      if (isToday(date)) {
-        label = "Today";
-      } else if (isYesterday(date)) {
-        label = "Yesterday";
-      } else {
-        label = format(date, "MMM d, yyyy");
-      }
-      return { dateKey, label, transactions: txs };
-    });
-}
-
 type TransactionListProps = {
   initialTransactions: TransactionWithCategory[];
   initialHasMore: boolean;
@@ -57,6 +32,11 @@ type TransactionListProps = {
 };
 
 export function TransactionList(props: TransactionListProps) {
+  const t = useTranslations("transactions");
+  const tCommon = useTranslations("common");
+  const tDashboard = useTranslations("dashboard");
+  const format = useFormatter();
+
   const [prevInitial, setPrevInitial] = useState(props.initialTransactions);
   const [rows, setRows] = useState<TransactionWithCategory[]>(
     props.initialTransactions,
@@ -72,6 +52,35 @@ export function TransactionList(props: TransactionListProps) {
   const [isPending, startTransition] = useTransition();
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  function groupByDate(transactions: TransactionWithCategory[]): DateGroup[] {
+    const groups: Map<string, TransactionWithCategory[]> = new Map();
+
+    for (const tx of transactions) {
+      const dateKey = tx.date;
+      if (!groups.has(dateKey)) {
+        groups.set(dateKey, []);
+      }
+      groups.get(dateKey)!.push(tx);
+    }
+
+    return Array.from(groups.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([dateKey, txs]) => {
+        // Today/yesterday are questions about the reader's own calendar, so they
+        // stay on the local-midnight date; only the label is a display value.
+        const local = parseISO(dateKey);
+        let label: string;
+        if (isToday(local)) {
+          label = tDashboard("today");
+        } else if (isYesterday(local)) {
+          label = tDashboard("yesterday");
+        } else {
+          label = format.dateTime(toDisplayDate(dateKey), "dayMonthYear");
+        }
+        return { dateKey, label, transactions: txs };
+      });
+  }
+
   function handleLoadMore() {
     startTransition(async () => {
       setLoadError(null);
@@ -85,14 +94,14 @@ export function TransactionList(props: TransactionListProps) {
         setRows((prev) => [...prev, ...result.transactions]);
         setHasMore(result.hasMore);
       } catch {
-        setLoadError("Failed to load more. Please try again.");
+        setLoadError(t("loadFailed"));
       }
     });
   }
 
   function handleDelete(transaction: TransactionWithCategory) {
-    const originalIndex = rows.findIndex((t) => t.id === transaction.id);
-    setRows((prev) => prev.filter((t) => t.id !== transaction.id));
+    const originalIndex = rows.findIndex((tx) => tx.id === transaction.id);
+    setRows((prev) => prev.filter((tx) => tx.id !== transaction.id));
 
     // Use a ref object to track state across callbacks and prevent double-delete
     const state = { undone: false, deleted: false };
@@ -106,11 +115,16 @@ export function TransactionList(props: TransactionListProps) {
     }
 
     toast(
-      `"${transaction.description ?? transaction.category?.name ?? "Transaction"}" deleted`,
+      t("deleted", {
+        name:
+          transaction.description ??
+          transaction.category?.name ??
+          t("fallbackName"),
+      }),
       {
         duration: 5000,
         action: {
-          label: "Undo",
+          label: tCommon("undo"),
           onClick: () => {
             state.undone = true;
             setRows((prev) => {
@@ -138,10 +152,10 @@ export function TransactionList(props: TransactionListProps) {
             {group.label}
           </p>
           <div className="space-y-4">
-            {group.transactions.map((t) => (
+            {group.transactions.map((tx) => (
               <TransactionItem
-                key={t.id}
-                transaction={t}
+                key={tx.id}
+                transaction={tx}
                 onDelete={handleDelete}
               />
             ))}
@@ -155,14 +169,14 @@ export function TransactionList(props: TransactionListProps) {
           onClick={handleLoadMore}
           disabled={isPending}
         >
-          {isPending ? "Loading..." : "Load more"}
+          {isPending ? tCommon("loading") : t("loadMore")}
         </Button>
       )}
       {loadError && (
         <p className="text-sm text-destructive text-center" role="alert">
           {loadError}{" "}
           <button className="underline" onClick={handleLoadMore}>
-            Retry
+            {tCommon("retry")}
           </button>
         </p>
       )}
