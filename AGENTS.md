@@ -49,6 +49,16 @@ are enforced by `web/tests/theme-tokens.test.ts` against `lib/theme-tokens.ts`. 
 rules live in `docs/UI_VIEWS_SPECIFICATION.md` → Design System → Color Palette; read that before
 touching a colour.
 
+### Localization
+
+The app is bilingual (English default, Spanish). Every user-visible string comes from
+`web/lib/i18n/messages/{en,es}.json`; **`next-intl` formats every date, number, currency
+and percentage**, and `date-fns` is for date arithmetic only. The locale lives in a cookie,
+not the URL. The rules that are easy to get wrong — the Spanish register and domain
+vocabulary, which system owns formatting, the message-key convention — live in
+`docs/LOCALIZATION.md`; read it before adding or changing a string. `web/tests/i18n-*.test.ts`
+enforce catalog parity and the vocabulary choices.
+
 ### Server actions and queries
 
 - Every server action returns `ActionResult<T>` (`types/index.ts`) — a discriminated union of
